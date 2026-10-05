@@ -1,6 +1,12 @@
 import { images } from "./images";
 import type { GalleryItem } from "./types";
 
+export const gallerySection = {
+  eyebrow: "Gallery",
+  headline: "A closer look.",
+  openLabel: "Open image",
+} as const;
+
 export const gallery: GalleryItem[] = [
   { id: "exterior", caption: "Exterior", image: images.exteriorDusk },
   { id: "living-room", caption: "Living Room", image: images.oneBedroom },

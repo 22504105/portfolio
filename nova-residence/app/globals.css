@@ -6,6 +6,9 @@
   --font-sans: var(--font-hanken), ui-sans-serif, system-ui, sans-serif;
 }
 
+/* Landscape viewports: where the hero shows its wide frame. */
+@custom-variant wide (@media (min-aspect-ratio: 1/1));
+
 @theme static {
   /* The palette is closed: only these colours exist as utilities. */
   --color-*: initial;
@@ -136,10 +139,15 @@
 }
 
 /* Type roles. Use these instead of Tailwind's text-* size utilities. */
+/*
+ * The wordmark is sized against its nearest container (`@container`), so it
+ * fills whatever measure it is given: at 17cqi "RESIDENCE" spans about 85% of
+ * the column. Set --display-size to fit a different line, e.g. the footer's.
+ */
 @utility type-display {
   font-family: var(--font-display);
   font-weight: 300;
-  font-size: clamp(3rem, 15.5vw, 12.5rem);
+  font-size: clamp(2.25rem, var(--display-size, 17cqi), 12.5rem);
   line-height: 0.88;
   letter-spacing: -0.015em;
   text-transform: uppercase;
@@ -203,6 +211,16 @@
   font-weight: 500;
   line-height: 1.3;
   letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* The short NOVA mark in the header and the mobile navigation. */
+@utility type-brand {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 1.375rem;
+  line-height: 1;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
 }
 

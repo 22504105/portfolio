@@ -52,6 +52,7 @@ export type GalleryItem = {
 };
 
 export type TravelTime = {
+  id: string;
   place: string;
   minutes: number;
   /** Set for Turkish names so uppercase and screen readers treat them correctly. */

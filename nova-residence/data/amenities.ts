@@ -1,6 +1,13 @@
 import { images } from "./images";
 import type { Amenity } from "./types";
 
+export const amenitiesSection = {
+  eyebrow: "Amenities",
+  headline: "Rooms beyond your own.",
+  intro:
+    "The shared spaces are planned as extensions of the residences: the same materials, the same light, a few steps from the door.",
+} as const;
+
 export const amenities: Amenity[] = [
   {
     id: "pool",

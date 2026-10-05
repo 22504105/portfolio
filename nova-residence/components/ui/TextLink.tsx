@@ -22,8 +22,11 @@ type TextLinkAsButton = TextLinkStyleProps &
 
 type TextLinkProps = TextLinkAsLink | TextLinkAsButton;
 
-// Vertical padding gives the link a comfortable hit area without moving it.
-const CLASSES = "type-label group -my-2 inline-flex items-baseline gap-2 py-2 text-ink";
+// Vertical padding and the pseudo-element give the link a 45px hit area
+// without moving it.
+const CLASSES =
+  "type-label group relative -my-2 inline-flex items-baseline gap-2 py-2 text-ink " +
+  "before:absolute before:inset-x-0 before:-inset-y-2";
 
 const LABEL =
   "underline decoration-line-strong decoration-1 underline-offset-[0.5em] " +

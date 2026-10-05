@@ -1,6 +1,15 @@
 import { images } from "./images";
 import type { Residence } from "./types";
 
+export const residencesSection = {
+  eyebrow: "Residences",
+  headline: "Three ways to live with the view.",
+  intro:
+    "One, two and three bedrooms, each planned around a terrace and the water beyond.",
+  priceLabel: "From",
+  viewLabel: "View Residence",
+} as const;
+
 export const residences: Residence[] = [
   {
     id: "one-bedroom",

@@ -27,6 +27,7 @@ Set type with the role utilities, not with Tailwind's `text-*` sizes:
 | Utility | Use |
 |---|---|
 | `type-display` | The NOVA RESIDENCE wordmark only (uppercase) |
+| `type-brand` | The short NOVA mark in the header and mobile navigation |
 | `type-h1` | One per page: the hero headline |
 | `type-h2` | Section headlines |
 | `type-h3` | Item titles (a residence, an amenity) |
@@ -38,6 +39,10 @@ Set type with the role utilities, not with Tailwind's `text-*` sizes:
 | `type-label` | Buttons, links, navigation (uppercase) |
 
 Newsreader is for `type-h3` and larger. Everything smaller is Hanken Grotesk.
+
+`type-display` is sized in container units: put it inside an `@container` element and
+it fills that measure (two lines, "RESIDENCE" at about 85% of the width). For another
+line length set `--display-size`, as the footer does for the one-line wordmark.
 
 Turkish names: `text-transform: uppercase` turns "Beşiktaş" into "BEŞIKTAŞ" unless
 the element has `lang="tr"`. Data marks such names with `lang: "tr"`; pass it on.
@@ -77,6 +82,14 @@ Over a photograph set `data-tone="image"` on the wrapper, which sets no backgrou
 of its own. Light skies in the photography do not carry light text: each such
 composition needs a scrim behind the text (`bg-bg/60` or stronger, or a gradient
 sized to the text area) and must be checked to reach 4.5:1 against the actual image.
+
+The hero is the one place where type sits on a photograph without a scrim: both hero
+frames keep a clear sky, and the wordmark and header are set on it in ink (the base
+tone). The headline, copy and calls to action sit on the page colour below the image.
+If a hero frame is replaced, it needs the same clear sky above and left of the building.
+The wide frame is used on landscape viewports and the tall one on portrait; the `wide:`
+variant follows the same condition, so layout that depends on the frame uses it rather
+than a width breakpoint.
 
 Anything rendered in a portal (dialog, lightbox, mobile navigation) sits outside the
 page's tones: its root element must set its own `data-tone` and `bg-bg text-ink`.
@@ -128,7 +141,7 @@ Slow, controlled, sparse. Constants in `lib/motion.ts` mirror the CSS variables.
 
 ## Components
 
-`components/ui`: `Container`, `Section`, `Button`, `TextLink`, `Reveal`,
+`components/ui`: `Container`, `Section`, `Button`, `TextLink`, `Photo`, `Reveal`,
 `MotionProvider`. Sections go in `components/sections`, header and footer in
 `components/layout`. Components are server components unless they need state,
 effects or motion.
@@ -137,6 +150,12 @@ effects or motion.
   link when given `href`, otherwise a button. Swaps fill and outline on hover.
   `disabled` and `aria-disabled` share one quiet style; use `aria-disabled` plus
   `aria-busy` on a submit button so it keeps focus while a request runs.
+- `Photo`: a photograph from the registry in a frame; give the frame an aspect ratio
+  or height through `className` and always pass `sizes`.
+- Every section opens with a `type-eyebrow` label and a `type-h2` heading that names
+  the section (`<Section labelledBy>`). Headings are never centred.
+- `cn()` only joins class names. Do not pass two utilities for the same property;
+  wrap the element instead (as the header does to hide its button on small screens).
 - `TextLink`: underlined label; `arrow` for calls to action. Renders a link when
   given `href`, otherwise a button — use that for actions such as opening a dialog.
 

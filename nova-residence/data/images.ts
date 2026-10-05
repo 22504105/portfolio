@@ -27,17 +27,17 @@ export const images = {
   heroDesktop: {
     src: heroDesktop,
     alt: "NOVA Residence seen from the street: terraced floors of pale travertine above olive trees, with the Bosphorus beyond.",
-    position: "72% 50%",
+    position: "72% 0%",
   },
   heroMobile: {
     src: heroMobile,
     alt: "NOVA Residence rising above its garden wall, terraces planted with olive trees under a clear evening sky.",
-    position: "50% 70%",
+    position: "50% 0%",
   },
   lightStudy: {
     src: lightStudy,
     alt: "Late sunlight through a linen curtain falling across a plaster wall and a travertine bench.",
-    position: "70% 50%",
+    position: "100% 50%",
   },
   oneBedroom: {
     src: oneBedroom,

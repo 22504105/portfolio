@@ -7,11 +7,17 @@ export const district = {
     "NOVA stands on the hillside above Beşiktaş, between the waterfront and the shops and restaurants of Nişantaşı.",
 } as const;
 
-// Approximate travel times by car.
+export const locationSection = {
+  eyebrow: "Location",
+  headline: "Istanbul at your doorstep.",
+  travelNote: "Approximate travel times by car.",
+  minutesUnit: "min",
+} as const;
+
 export const travelTimes: TravelTime[] = [
-  { place: "Bosphorus", minutes: 5 },
-  { place: "Nişantaşı", minutes: 8, lang: "tr" },
-  { place: "Taksim", minutes: 10, lang: "tr" },
-  { place: "Galataport", minutes: 12 },
-  { place: "Istanbul Airport", minutes: 35 },
+  { id: "bosphorus", place: "Bosphorus", minutes: 5 },
+  { id: "nisantasi", place: "Nişantaşı", minutes: 8, lang: "tr" },
+  { id: "taksim", place: "Taksim", minutes: 10 },
+  { id: "galataport", place: "Galataport", minutes: 12 },
+  { id: "airport", place: "Istanbul Airport", minutes: 35 },
 ];
