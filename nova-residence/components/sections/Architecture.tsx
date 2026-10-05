@@ -1,28 +1,37 @@
 import { Container } from "@/components/ui/Container";
+import { Parallax } from "@/components/ui/Parallax";
 import { Photo } from "@/components/ui/Photo";
+import { Reveal } from "@/components/ui/Reveal";
 import { Section } from "@/components/ui/Section";
 import { architecture } from "@/data/architecture";
+import { STAGGER } from "@/lib/motion";
 
 export function Architecture() {
   return (
     <Section id="architecture" labelledBy="architecture-title" tone="inverse">
       <Container>
         <div className="grid-editorial">
-          <div className="col-span-4 md:col-span-7 lg:col-span-8">
+          <Reveal className="col-span-4 md:col-span-7 lg:col-span-8">
             <p className="type-eyebrow text-ink-muted">{architecture.eyebrow}</p>
             <h2 id="architecture-title" className="type-h2 mt-6">
               {architecture.headline}
             </h2>
-          </div>
+          </Reveal>
         </div>
 
         <div className="grid-editorial mt-12 items-end gap-y-10 lg:mt-20">
-          <Photo
-            image={architecture.primaryImage}
-            sizes="(min-width: 90rem) 60rem, (min-width: 64rem) 66vw, 100vw"
-            className="col-span-4 aspect-6/5 bleed-left max-lg:bleed-right md:col-span-8 lg:aspect-4/3"
-          />
-          <p className="type-lead col-span-4 md:col-span-6 lg:col-span-4">{architecture.lead}</p>
+          <Reveal variant="image" className="col-span-4 bleed-left max-lg:bleed-right md:col-span-8">
+            <Parallax className="aspect-6/5 lg:aspect-4/3">
+              <Photo
+                image={architecture.primaryImage}
+                sizes="(min-width: 90rem) 60rem, (min-width: 64rem) 66vw, 100vw"
+                className="h-full"
+              />
+            </Parallax>
+          </Reveal>
+          <Reveal as="p" delay={STAGGER * 2} className="type-lead col-span-4 md:col-span-6 lg:col-span-4">
+            {architecture.lead}
+          </Reveal>
         </div>
 
         <div className="grid-editorial mt-16 gap-y-16 lg:mt-32">

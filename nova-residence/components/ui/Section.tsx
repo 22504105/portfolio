@@ -31,7 +31,10 @@ export function Section({
       id={id}
       aria-labelledby={labelledBy}
       data-tone={tone}
-      className={cn("bg-bg text-ink", SPACE[space], className)}
+      // A section that can be linked to can also be given focus by script, so
+      // the keyboard continues from it; it shows no ring, not being a control.
+      tabIndex={id ? -1 : undefined}
+      className={cn("bg-bg text-ink outline-none", SPACE[space], className)}
     >
       {children}
     </section>

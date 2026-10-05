@@ -1,14 +1,18 @@
 import { Container } from "@/components/ui/Container";
 import { Photo } from "@/components/ui/Photo";
+import { Reveal } from "@/components/ui/Reveal";
 import { Section } from "@/components/ui/Section";
 import { amenities, amenitiesSection } from "@/data/amenities";
 import { cn } from "@/lib/cn";
+import { STAGGER } from "@/lib/motion";
 
 type Placement = {
   item: string;
   frame?: string;
   sizes?: string;
   caption?: string;
+  /** The one large photograph of the section is unveiled; the rest are still. */
+  reveal?: boolean;
 };
 
 // Where each amenity sits in the mosaic. Frames are unequal on purpose; the
@@ -20,6 +24,7 @@ const PLACEMENT: Record<string, Placement> = {
       "col-span-4 aspect-5/4 max-md:bleed-left max-md:bleed-right md:col-span-8 md:aspect-3/2 lg:col-start-5 lg:row-start-1",
     sizes: "(min-width: 90rem) 54rem, (min-width: 64rem) 62vw, 100vw",
     caption: "col-span-4 md:col-span-5 lg:col-span-4 lg:col-start-1 lg:row-start-1",
+    reveal: true,
   },
   fitness: {
     item: "col-span-3 md:col-span-4 lg:col-span-5",
@@ -59,11 +64,15 @@ export function Amenities() {
       <Container>
         <div className="grid-editorial">
           <div className="col-span-4 md:col-span-6 lg:col-span-6 lg:col-start-5">
-            <p className="type-eyebrow text-ink-muted">{amenitiesSection.eyebrow}</p>
-            <h2 id="amenities-title" className="type-h2 mt-6">
-              {amenitiesSection.headline}
-            </h2>
-            <p className="type-lead mt-8 text-ink-secondary">{amenitiesSection.intro}</p>
+            <Reveal>
+              <p className="type-eyebrow text-ink-muted">{amenitiesSection.eyebrow}</p>
+              <h2 id="amenities-title" className="type-h2 mt-6">
+                {amenitiesSection.headline}
+              </h2>
+            </Reveal>
+            <Reveal as="p" delay={STAGGER * 2} className="type-lead mt-8 text-ink-secondary">
+              {amenitiesSection.intro}
+            </Reveal>
           </div>
         </div>
 
@@ -72,9 +81,16 @@ export function Amenities() {
             const place = PLACEMENT[amenity.id] ?? FALLBACK;
             return (
               <li key={amenity.id} className={place.item}>
-                {amenity.image && place.frame && place.sizes && (
-                  <Photo image={amenity.image} sizes={place.sizes} className={place.frame} />
-                )}
+                {amenity.image &&
+                  place.frame &&
+                  place.sizes &&
+                  (place.reveal ? (
+                    <Reveal variant="image" className={place.frame}>
+                      <Photo image={amenity.image} sizes={place.sizes} className="h-full" />
+                    </Reveal>
+                  ) : (
+                    <Photo image={amenity.image} sizes={place.sizes} className={place.frame} />
+                  ))}
                 <div className={cn(place.caption, amenity.image && !place.caption && "mt-5")}>
                   <h3 className="type-h3">{amenity.name}</h3>
                   <p className="type-body mt-3 text-ink-secondary">{amenity.description}</p>

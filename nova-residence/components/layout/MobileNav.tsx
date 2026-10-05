@@ -1,19 +1,56 @@
 "use client";
 
-import Link from "next/link";
-import { useRef } from "react";
+import * as m from "motion/react-m";
+import { useEffect, useRef, useState } from "react";
+import type { MouseEvent } from "react";
 import { Button } from "@/components/ui/Button";
+import { CloseButton } from "@/components/ui/CloseButton";
 import { Container } from "@/components/ui/Container";
+import { Dialog } from "@/components/ui/Dialog";
 import { navigation } from "@/data/navigation";
-import { cta, site } from "@/data/site";
+import { controls, cta, site } from "@/data/site";
+import { DURATION, EASE, REVEAL_OFFSET, STAGGER } from "@/lib/motion";
 
-const TRIGGER = "type-label -mr-3 inline-flex h-12 items-center gap-3 px-3";
+/** Where the desktop navigation takes over: Tailwind's `lg`. */
+const DESKTOP = "(min-width: 64rem)";
 
-// A native modal dialog: the browser provides the focus trap, Escape and the
-// inert page behind it.
+const TRIGGER =
+  "type-label -mr-3 inline-flex h-12 items-center gap-3 px-3 " +
+  "transition-opacity duration-(--duration-fast) hover:opacity-60";
+
+// The links follow the overlay in, one after another.
+const LIST = {
+  hidden: {},
+  shown: { transition: { delayChildren: DURATION.fast, staggerChildren: STAGGER } },
+};
+
+const ITEM = {
+  hidden: { opacity: 0, y: REVEAL_OFFSET },
+  shown: { opacity: 1, y: 0, transition: { duration: DURATION.slow, ease: EASE.out } },
+};
+
 export function MobileNav() {
-  const dialog = useRef<HTMLDialogElement>(null);
-  const close = () => dialog.current?.close();
+  const [open, setOpen] = useState(false);
+  // The section to move on to once the menu has closed.
+  const destination = useRef<string | null>(null);
+
+  useEffect(() => {
+    const desktop = window.matchMedia(DESKTOP);
+    const closeOnDesktop = () => {
+      if (desktop.matches) setOpen(false);
+    };
+    desktop.addEventListener("change", closeOnDesktop);
+    return () => desktop.removeEventListener("change", closeOnDesktop);
+  }, []);
+
+  const follow = (event: MouseEvent<HTMLAnchorElement>) => {
+    event.preventDefault();
+    const { hash } = event.currentTarget;
+    destination.current = hash;
+    // The page moves at once behind the menu, which then fades to reveal it.
+    document.querySelector(hash)?.scrollIntoView({ behavior: "instant" });
+    setOpen(false);
+  };
 
   return (
     <>
@@ -23,9 +60,10 @@ export function MobileNav() {
           type="button"
           className={TRIGGER}
           aria-haspopup="dialog"
-          onClick={() => dialog.current?.showModal()}
+          aria-expanded={open}
+          onClick={() => setOpen(true)}
         >
-          Menu
+          {controls.menu}
           <span aria-hidden="true" className="grid w-6 gap-1.5">
             <span className="h-px bg-ink" />
             <span className="h-px bg-ink" />
@@ -33,39 +71,42 @@ export function MobileNav() {
         </button>
       </div>
 
-      {/* The dialog leaves the page's tones, so it sets its own. */}
-      <dialog
-        ref={dialog}
-        data-tone="inverse"
-        aria-label="Menu"
-        className="m-0 h-dvh max-h-none w-full max-w-none overflow-y-auto bg-bg text-ink"
+      <Dialog
+        open={open}
+        onClose={() => setOpen(false)}
+        onExited={() => {
+          // Focus is back on the trigger, at the top of the page: move it on to
+          // the section, so the keyboard and screen readers continue from there.
+          const hash = destination.current;
+          destination.current = null;
+          if (!hash) return;
+          window.location.hash = hash;
+          document.querySelector<HTMLElement>(hash)?.focus({ preventScroll: true });
+        }}
+        tone="inverse"
+        label={controls.menu}
+        className="overflow-y-auto overscroll-contain bg-bg"
       >
         <Container className="flex min-h-full flex-col pb-10">
           <div className="flex h-header shrink-0 items-center justify-between">
             <span className="type-brand">{site.shortName}</span>
-            <button type="button" className={TRIGGER} onClick={close}>
-              Close
-              <span aria-hidden="true" className="relative size-6">
-                <span className="absolute inset-x-0 top-1/2 h-px rotate-45 bg-ink" />
-                <span className="absolute inset-x-0 top-1/2 h-px -rotate-45 bg-ink" />
-              </span>
-            </button>
+            <CloseButton onClick={() => setOpen(false)} />
           </div>
 
           <nav aria-label="Primary" className="mt-10">
-            <ul className="border-t border-line">
+            <m.ul className="border-t border-line" variants={LIST} initial="hidden" animate="shown">
               {navigation.map((item) => (
-                <li key={item.href} className="border-b border-line">
-                  <Link href={item.href} className="type-h2 block py-5" onClick={close}>
+                <m.li key={item.href} className="border-b border-line" variants={ITEM}>
+                  <a href={item.href} className="type-h2 block py-5" onClick={follow}>
                     {item.label}
-                  </Link>
-                </li>
+                  </a>
+                </m.li>
               ))}
-            </ul>
+            </m.ul>
           </nav>
 
           <div className="mt-auto pt-12">
-            <Button href={cta.viewing.href} size="lg" className="w-full" onClick={close}>
+            <Button href={cta.viewing.href} size="lg" className="w-full" onClick={follow}>
               {cta.viewing.label}
             </Button>
             <p className="type-small mt-8 flex justify-between gap-4 text-ink-muted">
@@ -74,7 +115,7 @@ export function MobileNav() {
             </p>
           </div>
         </Container>
-      </dialog>
+      </Dialog>
     </>
   );
 }

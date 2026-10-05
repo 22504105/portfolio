@@ -15,6 +15,12 @@ export const site = {
   },
 } as const;
 
+// Labels of controls that appear in more than one place.
+export const controls = {
+  menu: "Menu",
+  close: "Close",
+} as const;
+
 export const cta = {
   viewing: { label: "Book a Private Viewing", href: "#contact" },
   residences: { label: "Explore Residences", href: "#residences" },

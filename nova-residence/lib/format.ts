@@ -13,3 +13,8 @@ export function formatPrice(amount: number): string {
 export function formatArea({ min, max }: AreaRange): string {
   return `${min}–${max} m²`;
 }
+
+/** Counters and index numbers: 3 becomes "03". */
+export function twoDigits(value: number): string {
+  return String(value).padStart(2, "0");
+}

@@ -13,6 +13,8 @@ type PhotoProps = {
 };
 
 // A photograph from the registry, cropped to its frame around the subject.
+// Inside an element with the `group/photo` class it enlarges slightly while
+// that element is hovered — for photographs that open something.
 export function Photo({ image, sizes, className, as: Frame = "div" }: PhotoProps) {
   return (
     <Frame className={cn("relative block overflow-hidden bg-surface", className)}>
@@ -22,7 +24,7 @@ export function Photo({ image, sizes, className, as: Frame = "div" }: PhotoProps
         fill
         sizes={sizes}
         placeholder="blur"
-        className="object-cover"
+        className="object-cover transition-transform duration-(--duration-slow) ease-quiet motion-safe:group-hover/photo:scale-103"
         style={{ objectPosition: image.position }}
       />
     </Frame>

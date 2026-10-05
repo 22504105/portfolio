@@ -1,5 +1,6 @@
 import { Container } from "@/components/ui/Container";
 import { Photo } from "@/components/ui/Photo";
+import { Reveal } from "@/components/ui/Reveal";
 import { Section } from "@/components/ui/Section";
 import { contact } from "@/data/contact";
 import { images } from "@/data/images";
@@ -15,10 +16,12 @@ export function Contact() {
         {/* In source order the form precedes the photograph, which is how mobile reads. */}
         <div className="grid-editorial gap-y-14 lg:grid-rows-[auto_1fr] lg:gap-y-20">
           <div className="col-span-4 md:col-span-6 lg:col-span-5">
-            <p className="type-eyebrow text-ink-muted">{contact.eyebrow}</p>
-            <h2 id="contact-title" className="type-h2 mt-6">
-              {contact.headline}
-            </h2>
+            <Reveal>
+              <p className="type-eyebrow text-ink-muted">{contact.eyebrow}</p>
+              <h2 id="contact-title" className="type-h2 mt-6">
+                {contact.headline}
+              </h2>
+            </Reveal>
             <p className="type-lead mt-8">{contact.intro}</p>
             <p className="type-body mt-4 max-w-md text-ink-secondary">{contact.details}</p>
           </div>

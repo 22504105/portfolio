@@ -1,6 +1,8 @@
 import { Container } from "@/components/ui/Container";
+import { Reveal } from "@/components/ui/Reveal";
 import { Section } from "@/components/ui/Section";
 import { district, locationSection, travelTimes } from "@/data/location";
+import { STAGGER } from "@/lib/motion";
 import { LocationMap } from "./LocationMap";
 
 export function Location() {
@@ -8,19 +10,25 @@ export function Location() {
     <Section id="location" labelledBy="location-title" tone="surface">
       <Container>
         <div className="grid-editorial items-end gap-y-8">
-          <div className="col-span-4 md:col-span-8 lg:col-span-7">
+          <Reveal className="col-span-4 md:col-span-8 lg:col-span-7">
             <p className="type-eyebrow text-ink-muted">{locationSection.eyebrow}</p>
             <h2 id="location-title" className="type-h2 mt-6">
               {locationSection.headline}
             </h2>
-          </div>
-          <p className="type-lead col-span-4 text-ink-secondary md:col-span-6 lg:col-span-4 lg:col-start-9">
+          </Reveal>
+          <Reveal
+            as="p"
+            delay={STAGGER * 2}
+            className="type-lead col-span-4 text-ink-secondary md:col-span-6 lg:col-span-4 lg:col-start-9"
+          >
             {district.description}
-          </p>
+          </Reveal>
         </div>
 
         <div className="grid-editorial mt-12 gap-y-10 md:mt-16 lg:mt-20">
-          <LocationMap className="col-span-4 aspect-4/5 sm:aspect-4/3 md:col-span-8" />
+          <Reveal variant="fade" className="col-span-4 md:col-span-8">
+            <LocationMap className="aspect-4/5 sm:aspect-4/3" />
+          </Reveal>
 
           <div className="col-span-4 flex flex-col justify-between gap-y-8 md:col-span-6 md:col-start-3 lg:col-span-4 lg:col-start-9">
             <dl className="border-b border-line-strong">

@@ -8,6 +8,16 @@ export const residencesSection = {
     "One, two and three bedrooms, each planned around a terrace and the water beyond.",
   priceLabel: "From",
   viewLabel: "View Residence",
+  detail: {
+    bedrooms: "Bedrooms",
+    bathrooms: "Bathrooms",
+    area: "Interior area",
+    price: "Starting price",
+    highlights: "In this residence",
+    floorPlan: "Floor plan",
+    planNote: "Indicative plan. Layouts and dimensions vary by floor.",
+    cta: "Request a viewing",
+  },
 } as const;
 
 export const residences: Residence[] = [
@@ -27,6 +37,24 @@ export const residences: Residence[] = [
       "Bedroom with fitted wardrobes",
     ],
     image: images.oneBedroom,
+    // The view is at the bottom of every plan; the entrance side is at the top.
+    floorPlan: {
+      width: 480,
+      height: 380,
+      summary:
+        "Indicative plan of the 1 Bedroom residence: a living room and kitchen across the full width, opening onto a terrace, with the bedroom, bathroom and entrance behind.",
+      walls: "M0 0H480V310H0Z M0 140H480 M210 0V140 M320 0V140",
+      glazing: "M8 304H472",
+      terraces: "M0 310V380H480V310",
+      labels: [
+        { text: "Bedroom", x: 105, y: 70 },
+        { text: "Bath", x: 265, y: 70 },
+        { text: "Entrance", x: 400, y: 70 },
+        { text: "Kitchen", x: 110, y: 225 },
+        { text: "Living", x: 320, y: 225 },
+        { text: "Terrace", x: 240, y: 345 },
+      ],
+    },
   },
   {
     id: "two-bedroom",
@@ -44,6 +72,26 @@ export const residences: Residence[] = [
       "Terrace along the living space",
     ],
     image: images.twoBedroom,
+    floorPlan: {
+      width: 480,
+      height: 350,
+      summary:
+        "Indicative plan of the 2 Bedroom residence: kitchen, dining and living in a row along the window wall and its terrace, with a bedroom and bathroom at each end.",
+      walls: "M0 0H480V280H0Z M0 100H105 M375 100H480 M105 0V280 M375 0V280 M105 100H175 M305 100H375",
+      glazing: "M113 274H367 M8 274H97 M383 274H472",
+      terraces: "M105 280V350H375V280",
+      labels: [
+        { text: "Bath", x: 52, y: 50 },
+        { text: "Entrance", x: 240, y: 50 },
+        { text: "Bath", x: 428, y: 50 },
+        { text: "Bedroom", x: 52, y: 190 },
+        { text: "Kitchen", x: 150, y: 190 },
+        { text: "Dining", x: 240, y: 190 },
+        { text: "Living", x: 330, y: 190 },
+        { text: "Bedroom", x: 428, y: 190 },
+        { text: "Terrace", x: 240, y: 315 },
+      ],
+    },
   },
   {
     id: "three-bedroom",
@@ -61,5 +109,31 @@ export const residences: Residence[] = [
       "Principal bedroom with dressing room",
     ],
     image: images.threeBedroom,
+    floorPlan: {
+      width: 480,
+      height: 420,
+      summary:
+        "Indicative plan of the 3 Bedroom residence: a corner living and dining room glazed on two sides with a wraparound terrace, a kitchen, two bedrooms with bathrooms, and a principal bedroom with a dressing room, bathroom and its own terrace.",
+      walls:
+        "M0 0H420V360H0Z M0 150H420 M180 0V360 M110 0V150 M110 75H180 M300 0V150 M300 70H420 " +
+        "M0 215H180 M100 150V215",
+      glazing: "M188 354H414V158 M8 354H172",
+      terraces: "M180 360V420H480V150H420 M0 360V420H160V360",
+      labels: [
+        { text: "Bedroom", x: 55, y: 75 },
+        { text: "Bath", x: 145, y: 38 },
+        { text: "Bath", x: 145, y: 113 },
+        { text: "Bedroom", x: 240, y: 75 },
+        { text: "Entrance", x: 360, y: 35 },
+        { text: "Kitchen", x: 360, y: 110 },
+        { text: "Dressing", x: 50, y: 183 },
+        { text: "Bath", x: 140, y: 183 },
+        { text: "Principal", x: 90, y: 288 },
+        { text: "Living", x: 300, y: 225 },
+        { text: "Dining", x: 300, y: 300 },
+        { text: "Terrace", x: 80, y: 392 },
+        { text: "Terrace", x: 330, y: 392 },
+      ],
+    },
   },
 ];

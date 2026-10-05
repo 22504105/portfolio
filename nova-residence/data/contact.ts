@@ -17,7 +17,17 @@ export const contact = {
     residence: "Residence interest",
     method: "Preferred contact method",
   },
+  errors: {
+    name: "Please enter your name.",
+    emailMissing: "Please enter your email address.",
+    emailInvalid: "This email address looks incomplete — for example, name@example.com.",
+    phoneMissing: "Please enter a phone number.",
+    phoneInvalid: "Please enter a phone number with at least seven digits.",
+    residence: "Please choose the residence you are interested in.",
+    method: "Please choose how we should contact you.",
+  },
   submitLabel: "Request Private Viewing",
+  submittingLabel: "Sending…",
   // NOVA is fictional: the form says so next to the button.
   disclosure: "Concept project — this form does not send your details anywhere.",
   success: {

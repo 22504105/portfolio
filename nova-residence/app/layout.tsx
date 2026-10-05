@@ -16,7 +16,7 @@ export const viewport: Viewport = {
 // Scroll reveals start hidden and are shown by JavaScript; without it they
 // must simply be visible.
 const NO_SCRIPT_STYLES =
-  "[data-reveal]{opacity:1!important;transform:none!important}";
+  "[data-reveal]{opacity:1!important;transform:none!important;clip-path:none!important}";
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (

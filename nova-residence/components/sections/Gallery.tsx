@@ -1,9 +1,12 @@
 import { Container } from "@/components/ui/Container";
 import { Photo } from "@/components/ui/Photo";
+import { Reveal } from "@/components/ui/Reveal";
 import { Section } from "@/components/ui/Section";
 import { gallery, gallerySection } from "@/data/gallery";
 import type { GalleryItem } from "@/data/types";
 import { cn } from "@/lib/cn";
+import { twoDigits } from "@/lib/format";
+import { GalleryLightbox, GalleryTrigger } from "./GalleryLightbox";
 
 type Frame = {
   /** Grid placement of the item at each breakpoint. */
@@ -64,19 +67,14 @@ const FRAMES: Frame[] = [
   },
 ];
 
-const twoDigits = (value: number) => String(value).padStart(2, "0");
-
 function GalleryFrame({ item, index, frame }: { item: GalleryItem; index: number; frame: Frame }) {
   return (
     <li className={cn(frame.cell, frame.bleed && "max-md:bleed-left max-md:bleed-right")}>
-      {/* Phase 03 opens the lightbox from these buttons, by data-gallery-index. */}
-      <button
-        type="button"
-        data-gallery-index={index}
-        aria-haspopup="dialog"
-        aria-label={`${gallerySection.openLabel}: ${item.caption}`}
+      <GalleryTrigger
+        index={index}
+        label={`${gallerySection.openLabel}: ${item.caption}`}
         className={cn(
-          "block w-full cursor-pointer text-left",
+          "group/photo block w-full cursor-pointer text-left",
           // At the viewport edge the offset ring would be cut off, so it is drawn inside.
           frame.bleed && "max-md:-outline-offset-2",
         )}
@@ -86,7 +84,7 @@ function GalleryFrame({ item, index, frame }: { item: GalleryItem; index: number
           <span className="text-ink-muted tabular-nums">{twoDigits(index + 1)}</span>
           <span>{item.caption}</span>
         </span>
-      </button>
+      </GalleryTrigger>
     </li>
   );
 }
@@ -96,12 +94,12 @@ export function Gallery() {
     <Section id="gallery" labelledBy="gallery-title" tone="inverse">
       <Container>
         <div className="grid-editorial items-end">
-          <div className="col-span-3 md:col-span-6 lg:col-span-7 lg:col-start-2">
+          <Reveal className="col-span-3 md:col-span-6 lg:col-span-7 lg:col-start-2">
             <p className="type-eyebrow text-ink-muted">{gallerySection.eyebrow}</p>
             <h2 id="gallery-title" className="type-h2 mt-6">
               {gallerySection.headline}
             </h2>
-          </div>
+          </Reveal>
           <p
             aria-hidden="true"
             className="type-eyebrow col-span-1 pb-2 text-right text-ink-muted tabular-nums md:col-span-2 lg:col-span-4"
@@ -110,16 +108,25 @@ export function Gallery() {
           </p>
         </div>
 
-        <ul className="grid-editorial mt-12 items-start gap-y-14 md:mt-16 md:gap-y-20 lg:mt-24 lg:gap-y-28">
-          {gallery.map((item, index) => (
-            <GalleryFrame
-              key={item.id}
-              item={item}
-              index={index}
-              frame={FRAMES[index % FRAMES.length]}
-            />
-          ))}
-        </ul>
+        <GalleryLightbox
+          items={gallery}
+          labels={{
+            title: gallerySection.eyebrow,
+            previous: gallerySection.previousLabel,
+            next: gallerySection.nextLabel,
+          }}
+        >
+          <ul className="grid-editorial mt-12 items-start gap-y-14 md:mt-16 md:gap-y-20 lg:mt-24 lg:gap-y-28">
+            {gallery.map((item, index) => (
+              <GalleryFrame
+                key={item.id}
+                item={item}
+                index={index}
+                frame={FRAMES[index % FRAMES.length]}
+              />
+            ))}
+          </ul>
+        </GalleryLightbox>
       </Container>
     </Section>
   );

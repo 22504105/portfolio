@@ -5,6 +5,8 @@ export const gallerySection = {
   eyebrow: "Gallery",
   headline: "A closer look.",
   openLabel: "Open image",
+  previousLabel: "Previous",
+  nextLabel: "Next",
 } as const;
 
 export const gallery: GalleryItem[] = [

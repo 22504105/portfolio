@@ -8,10 +8,12 @@ import { Hero } from "@/components/sections/Hero";
 import { Introduction } from "@/components/sections/Introduction";
 import { Location } from "@/components/sections/Location";
 import { Residences } from "@/components/sections/Residences";
+import { ViewingRequestProvider } from "@/components/sections/ViewingRequest";
 
 export default function HomePage() {
   return (
-    <>
+    // Lets the residence details hand a viewing request to the contact form.
+    <ViewingRequestProvider>
       <Header />
       <main id="top">
         <Hero />
@@ -24,6 +26,6 @@ export default function HomePage() {
         <Contact />
       </main>
       <Footer />
-    </>
+    </ViewingRequestProvider>
   );
 }

@@ -91,15 +91,26 @@ The wide frame is used on landscape viewports and the tall one on portrait; the 
 variant follows the same condition, so layout that depends on the frame uses it rather
 than a width breakpoint.
 
-Anything rendered in a portal (dialog, lightbox, mobile navigation) sits outside the
-page's tones: its root element must set its own `data-tone` and `bg-bg text-ink`.
+Dialogs (mobile navigation, residence details, lightbox) open in the browser's top
+layer, outside the page's tones. `Dialog` takes a `tone` and sets it on the element;
+the content inside paints its own `bg-bg`.
 
 ### Stacking
 
-Three levels exist above page content: `z-(--z-header)`, `z-(--z-nav)` for the
-mobile navigation and `z-(--z-overlay)` for dialogs and the lightbox. Do not invent
-others. The header is `--spacing-header` (4.5rem) tall or less in every state,
-because anchors scroll to that offset.
+The header is the only stacked element on the page: `z-(--z-header)`. The mobile
+navigation, the residence details and the lightbox are native modal dialogs, which
+the browser puts in its top layer above everything, so they need no z-index;
+`--z-nav` and `--z-overlay` remain for anything that cannot be a dialog. Do not
+invent other levels.
+
+The header is fixed and `--spacing-header` (4.5rem) tall in every state, its bottom
+hairline included, because anchors scroll to that offset. It is transparent only at
+the very top of the page, over the hero sky; from the first scroll it is a solid bar
+in the base tone, also over dark sections.
+
+Scroll lock is CSS: `html:has(dialog[open])` hides the page's overflow, and
+`scrollbar-gutter: stable` keeps the width of a classic scrollbar so nothing shifts.
+Scrolling panels inside a dialog take `overscroll-contain`.
 
 ## Layout
 
@@ -130,21 +141,57 @@ Slow, controlled, sparse. Constants in `lib/motion.ts` mirror the CSS variables.
 - The library is Motion (the current name of Framer Motion). Animated elements use
   the light component: `import * as m from "motion/react-m"`. The full `motion`
   component is disabled by `MotionProvider` and throws.
-- `Reveal` is the only shared motion primitive. It renders hidden until scrolled
-  into view, so never wrap the hero image or headline in it.
+- `Reveal` renders hidden until scrolled into view; content jumped over by an
+  anchor link is shown at once. Its variant follows the role of the element:
+
+  | Variant | Use |
+  |---|---|
+  | `rise` (default) | The eyebrow-and-heading block of a section; the lead paragraph, `delay={STAGGER * 2}` after it; the residence cards, staggered |
+  | `fade` | Content that should not move: the figures, the map |
+  | `image` | The one large photograph of a section, unveiled from its bottom edge |
+
+  Not revealed: the hero, the header and footer, the contact form, body
+  paragraphs, captions, and photographs other than the three large ones. Only
+  opacity, vertical movement and the vertical unveiling are used — a horizontal
+  offset on a frame that bleeds to the edge would make the page scroll sideways.
+- `Parallax` is for two or three large photographs at most (today: Introduction and
+  the first Architecture image). Wrap a `Photo` with `h-full`; the frame takes the
+  aspect ratio. It is off under `useReducedMotion()`: scroll-linked values are not
+  covered by the global setting.
+- Photographs that open something enlarge slightly on hover: put `group/photo` on
+  the interactive element around a `Photo`.
+- Overlays open at `slow` and close at `base`, both `inOut` — `Dialog` does this;
+  panels that also move use its `DIALOG_TRANSITION`.
 - The loaded feature set (`domAnimation`) has no drag or layout animation. Gallery
-  swipe uses pointer events; do not switch to `domMax` without Lead approval.
-- Parallax must be switched off with `useReducedMotion()`: scroll-linked values
-  are not covered by the global setting.
+  swipe uses pointer events and a motion value; do not switch to `domMax` without
+  Lead approval.
 - Reduced motion is handled globally (`MotionConfig reducedMotion="user"` plus a
-  CSS rule); nothing may depend on an animation having run.
+  CSS rule); nothing may depend on an animation having run. That CSS rule gives
+  every property a near-instant transition, `visibility` included: an element that
+  must take focus in the same frame it reappears is hidden with opacity and
+  `inert`, not with `invisible`.
 
 ## Components
 
 `components/ui`: `Container`, `Section`, `Button`, `TextLink`, `Photo`, `Reveal`,
-`MotionProvider`. Sections go in `components/sections`, header and footer in
-`components/layout`. Components are server components unless they need state,
-effects or motion.
+`Parallax`, `Dialog`, `CloseButton`, `MotionProvider`. Sections go in
+`components/sections`, header and footer in `components/layout`. Components are
+server components unless they need state, effects or motion.
+
+Client components are small leaves around server-rendered children. They never
+import `data/residences.ts`, `data/gallery.ts` or `data/images.ts` — what they need
+arrives as props or as rendered children — so the photography registry stays out
+of the client bundle.
+
+- `Dialog`: the one overlay primitive, a native modal `<dialog>` driven by `open`.
+  The browser provides the focus trap, the inert page and the return of focus;
+  `Dialog` adds the fade, keeps the element open until the exit has played
+  (Escape and the Android back gesture included), starts focus on the first
+  button — make that the `CloseButton` — and calls `onExited` once focus is back
+  on the page. `scrim` dims the page behind a panel and closes on click.
+- `CloseButton`: the close control of every overlay.
+- `Section` with an `id` can take focus by script (`tabIndex={-1}`, no ring), which
+  is how the mobile navigation hands the keyboard on to the section it opens.
 
 - `Button`: `variant` `solid` | `outline`, `size` `md` (48px) | `lg` (56px); renders a
   link when given `href`, otherwise a button. Swaps fill and outline on hover.
@@ -175,7 +222,25 @@ effects or motion.
   upscaled for full-bleed use; keep other photographs to roughly two-thirds of the
   viewport width on desktop, or they will look soft.
 
-## Decided for later phases
+## Interactions
 
-- Floor plans are drawn as SVG in Phase 03 and added to the residence data then.
-- The residence dialog passes the chosen residence to the contact form.
+- Navigation: the desktop item of the section crossing the middle of the viewport
+  is marked (`aria-current="location"`, the hover underline held); sections without
+  an item mark nothing. A link in the mobile navigation moves the page at once
+  behind the overlay, which then fades to reveal the section.
+- Residence details: a drawer over the right two-thirds from `lg`, a full-screen
+  sheet below. The panels are rendered on the server (`ResidencePanel`) and handed
+  to the client drawer by id. The whole card opens it; the card's button is the
+  control for keyboard and assistive technology.
+- Floor plans are data (`floorPlan` on each residence: SVG path data for walls,
+  glazing and terraces, plus labels) drawn by `FloorPlan` in `currentColor`. The
+  view is at the bottom of every plan.
+- "Request a viewing" reaches the contact form through `ViewingRequestProvider`
+  (mounted in `app/page.tsx`): the drawer closes, the form selects the residence,
+  scrolls into view and puts focus in Name.
+- Lightbox: full-screen, inverse tone, photographs shown whole and never wider
+  than their file. Arrow keys, the two text controls and a horizontal swipe or
+  drag turn the page; the gallery loops.
+- Contact form: validated on submit, then field by field as each error is
+  corrected; a failed submit moves focus to the first invalid field. All messages
+  and labels are in `data/contact.ts`.

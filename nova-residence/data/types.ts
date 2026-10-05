@@ -22,6 +22,26 @@ export type AreaRange = {
   max: number;
 };
 
+export type PlanLabel = {
+  text: string;
+  /** Centre of the label, in drawing units. */
+  x: number;
+  y: number;
+};
+
+/** An indicative plan as SVG path data, one path per kind of line. */
+export type FloorPlan = {
+  width: number;
+  height: number;
+  /** Read out in place of the drawing. */
+  summary: string;
+  walls: string;
+  /** Glazed walls, drawn as a second line inside the wall. */
+  glazing: string;
+  terraces: string;
+  labels: PlanLabel[];
+};
+
 export type Residence = {
   id: string;
   name: string;
@@ -35,6 +55,7 @@ export type Residence = {
   description: string;
   highlights: string[];
   image: SiteImage;
+  floorPlan: FloorPlan;
 };
 
 export type Amenity = {

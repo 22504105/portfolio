@@ -103,6 +103,26 @@
     -webkit-text-size-adjust: 100%;
   }
 
+  /*
+   * Scroll lock: the page stays put behind any open dialog. The gutter keeps
+   * the space of a classic scrollbar (Windows), so nothing shifts sideways.
+   */
+  html {
+    scrollbar-gutter: stable;
+  }
+
+  html:has(dialog[open]) {
+    overflow: hidden;
+  }
+
+  /*
+   * A dialog cannot cover that gutter; only the page background shows there.
+   * Under a dark full-screen dialog it takes the inverse tone's background.
+   */
+  html:has(dialog[data-tone="inverse"][open]) {
+    background-color: #171917;
+  }
+
   body {
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
