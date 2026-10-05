@@ -19,8 +19,9 @@ type Frame = {
 };
 
 // Composed by hand, one frame per photograph in data order. Desktop pairs
-// unequal frames row by row; mobile alternates an edge-to-edge frame with a
-// staggered pair.
+// unequal frames row by row; the 8-column grid alternates pairs, with the large
+// frame changing sides, and a frame that runs wide alone; mobile alternates an
+// edge-to-edge frame with a staggered pair.
 const FRAMES: Frame[] = [
   {
     cell: "col-span-4 md:col-span-3 lg:col-span-5",
@@ -34,25 +35,25 @@ const FRAMES: Frame[] = [
     sizes: "(min-width: 90rem) 47rem, (min-width: 64rem) 53vw, (min-width: 48rem) 57vw, 45vw",
   },
   {
-    cell: "col-span-2 mt-12 md:col-span-5 md:mt-0 lg:col-start-2",
+    cell: "col-span-2 mt-12 md:col-span-6 md:mt-0 lg:col-span-5 lg:col-start-2",
     aspect: "aspect-4/5 md:aspect-4/3",
-    sizes: "(min-width: 90rem) 33rem, (min-width: 64rem) 37vw, (min-width: 48rem) 57vw, 45vw",
+    sizes: "(min-width: 90rem) 33rem, (min-width: 64rem) 37vw, (min-width: 48rem) 68vw, 45vw",
   },
   {
-    cell: "col-span-4 md:col-span-3 md:mt-24 lg:col-span-4 lg:col-start-8 lg:mt-40",
+    cell: "col-span-4 md:col-span-5 lg:col-span-4 lg:col-start-8 lg:mt-40",
     aspect: "aspect-square md:aspect-5/6",
-    sizes: "(min-width: 90rem) 26rem, (min-width: 64rem) 29vw, (min-width: 48rem) 34vw, 100vw",
+    sizes: "(min-width: 90rem) 26rem, (min-width: 64rem) 29vw, (min-width: 48rem) 57vw, 100vw",
     bleed: true,
   },
   {
-    cell: "col-span-2 md:col-span-3 lg:col-span-4 lg:mt-32",
+    cell: "col-span-2 md:col-span-3 md:mt-24 lg:col-span-4 lg:mt-32",
     aspect: "aspect-4/5 md:aspect-square",
     sizes: "(min-width: 90rem) 26rem, (min-width: 64rem) 29vw, (min-width: 48rem) 34vw, 45vw",
   },
   {
-    cell: "col-span-2 mt-12 md:col-span-5 md:mt-20 lg:col-span-8 lg:mt-0",
+    cell: "col-span-2 mt-12 md:col-span-8 md:mt-0",
     aspect: "aspect-4/5 md:aspect-2/1",
-    sizes: "(min-width: 90rem) 54rem, (min-width: 64rem) 60vw, (min-width: 48rem) 57vw, 45vw",
+    sizes: "(min-width: 90rem) 54rem, (min-width: 64rem) 60vw, (min-width: 48rem) 90vw, 45vw",
   },
   {
     cell: "col-span-4 lg:col-span-7",
@@ -61,9 +62,9 @@ const FRAMES: Frame[] = [
     bleed: true,
   },
   {
-    cell: "col-span-3 col-start-2 md:col-span-4 md:col-start-auto md:mt-32 lg:col-span-5 lg:mt-56",
+    cell: "col-span-4 md:mt-32 lg:col-span-5 lg:mt-56",
     aspect: "aspect-3/2",
-    sizes: "(min-width: 90rem) 33rem, (min-width: 64rem) 37vw, (min-width: 48rem) 45vw, 70vw",
+    sizes: "(min-width: 90rem) 33rem, (min-width: 64rem) 37vw, (min-width: 48rem) 45vw, 90vw",
   },
 ];
 
@@ -93,19 +94,13 @@ export function Gallery() {
   return (
     <Section id="gallery" labelledBy="gallery-title" tone="inverse">
       <Container>
-        <div className="grid-editorial items-end">
-          <Reveal className="col-span-3 md:col-span-6 lg:col-span-7 lg:col-start-2">
+        <div className="grid-editorial">
+          <Reveal className="col-span-4 md:col-span-6 lg:col-span-7">
             <p className="type-eyebrow text-ink-muted">{gallerySection.eyebrow}</p>
             <h2 id="gallery-title" className="type-h2 mt-6">
               {gallerySection.headline}
             </h2>
           </Reveal>
-          <p
-            aria-hidden="true"
-            className="type-eyebrow col-span-1 pb-2 text-right text-ink-muted tabular-nums md:col-span-2 lg:col-span-4"
-          >
-            {twoDigits(1)} — {twoDigits(gallery.length)}
-          </p>
         </div>
 
         <GalleryLightbox

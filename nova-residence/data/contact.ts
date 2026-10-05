@@ -25,6 +25,7 @@ export const contact = {
     phoneInvalid: "Please enter a phone number with at least seven digits.",
     residence: "Please choose the residence you are interested in.",
     method: "Please choose how we should contact you.",
+    summary: "Please complete the marked fields above.",
   },
   submitLabel: "Request Private Viewing",
   submittingLabel: "Sending…",

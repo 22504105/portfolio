@@ -77,9 +77,12 @@ const fieldId = (name: string) => `contact-${name}`;
 const control = (form: HTMLFormElement | null, name: Field) =>
   form?.querySelector<HTMLElement>(`[name="${name}"]`);
 
-function FieldError({ id, message }: { id: string; message: string }) {
+// There is no error colour in the palette: an error is said in ink at medium
+// weight behind a small solid mark, and the field itself takes an ink rule.
+function ErrorMessage({ id, message, className }: { id?: string; message: string; className: string }) {
   return (
-    <p id={id} className="type-small mt-3 text-ink">
+    <p id={id} className={cn("type-small flex items-baseline gap-2.5 font-medium text-ink", className)}>
+      <span aria-hidden="true" className="size-1.5 shrink-0 -translate-y-px bg-ink" />
       {message}
     </p>
   );
@@ -108,10 +111,10 @@ function TextField({ name, label, type = "text", autoComplete, value, error, onC
           "type-lead block h-14 w-full border-b border-line-strong bg-transparent text-ink",
           "transition-colors duration-(--duration-fast) hover:border-ink focus-visible:border-ink",
           // The ring sits on the edge of the field, clear of the label above it.
-          "aria-invalid:border-ink focus-visible:outline-offset-0",
+          "focus-visible:outline-offset-0 aria-invalid:border-b-2 aria-invalid:border-ink",
         )}
       />
-      {error && <FieldError id={errorId} message={error} />}
+      {error && <ErrorMessage id={errorId} message={error} className="mt-3" />}
     </div>
   );
 }
@@ -121,7 +124,11 @@ function ChoiceGroup({ name, legend, choices, value, error, onChange }: ChoiceGr
   const errorId = `${id}-error`;
 
   return (
-    <fieldset aria-describedby={error ? errorId : undefined}>
+    <fieldset
+      aria-describedby={error ? errorId : undefined}
+      data-invalid={error ? "" : undefined}
+      className="group/choices"
+    >
       <legend className="type-eyebrow text-ink-muted">{legend}</legend>
       <div className="isolate mt-4 flex">
         {choices.map((choice) => {
@@ -144,6 +151,7 @@ function ChoiceGroup({ name, legend, choices, value, error, onChange }: ChoiceGr
                 className={cn(
                   "type-label relative flex h-14 cursor-pointer items-center justify-center border border-line-strong px-2",
                   "transition-colors duration-(--duration-fast) hover:border-ink",
+                  "group-data-invalid/choices:border-ink",
                   "peer-checked:z-10 peer-checked:border-ink peer-checked:bg-ink peer-checked:text-bg",
                   "peer-focus-visible:z-20 peer-focus-visible:outline-2 peer-focus-visible:outline-offset-3 peer-focus-visible:outline-ink",
                 )}
@@ -154,7 +162,7 @@ function ChoiceGroup({ name, legend, choices, value, error, onChange }: ChoiceGr
           );
         })}
       </div>
-      {error && <FieldError id={errorId} message={error} />}
+      {error && <ErrorMessage id={errorId} message={error} className="mt-3" />}
     </fieldset>
   );
 }
@@ -240,18 +248,21 @@ export function ContactForm({ residences, className }: ContactFormProps) {
 
   const submitting = status === "submitting";
   const sent = status === "sent";
+  const hasErrors = FIELDS.some((name) => errors[name]);
 
   return (
-    // The form and the thank-you note share one cell: the form stays in place,
-    // inert and transparent, so the column keeps its height when the note
-    // replaces it. Not `invisible`: the reduced-motion rule in globals.css makes
-    // visibility change a moment late, and the form could not take focus on return.
+    // The form and the thank-you note share one cell. From lg the form stays in
+    // place, inert and transparent, so the column keeps its height beside the
+    // photograph when the note replaces it; below lg nothing stands beside it and
+    // the column closes up around the note. Not `invisible`: the reduced-motion
+    // rule in globals.css makes visibility change a moment late, and the form
+    // could not take focus on return.
     <div className={cn("grid", className)}>
       <form
         ref={form}
         noValidate
         inert={sent}
-        className={cn("col-start-1 row-start-1", sent && "opacity-0")}
+        className={cn("col-start-1 row-start-1", sent && "opacity-0 max-lg:hidden")}
         onSubmit={onSubmit}
       >
         <div className="space-y-9">
@@ -302,7 +313,12 @@ export function ContactForm({ residences, className }: ContactFormProps) {
           />
         </div>
 
-        <div className="mt-14 flex flex-col gap-x-8 gap-y-5 sm:flex-row sm:items-center lg:max-xl:flex-col lg:max-xl:items-start">
+        {/* Always in the document, so the summary is announced when it appears. */}
+        <div role="status" className="mt-14">
+          {hasErrors && <ErrorMessage message={contact.errors.summary} className="mb-6" />}
+        </div>
+
+        <div className="flex flex-col gap-x-8 gap-y-5 sm:flex-row sm:items-center lg:max-xl:flex-col lg:max-xl:items-start">
           <Button
             type="submit"
             size="lg"
@@ -326,7 +342,7 @@ export function ContactForm({ residences, className }: ContactFormProps) {
 
       {sent && (
         <m.div
-          className="col-start-1 row-start-1 border-t border-line-strong pt-8"
+          className="col-start-1 row-start-1 border-t border-line-strong pt-8 max-lg:border-b max-lg:pb-10"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: DURATION.base, ease: EASE.out }}

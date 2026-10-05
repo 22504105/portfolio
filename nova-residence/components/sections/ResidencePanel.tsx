@@ -38,9 +38,9 @@ export function ResidencePanel({ residence }: { residence: Residence }) {
         />
       </div>
 
-      <dl className="mt-10 grid grid-cols-2 gap-x-6 border-t border-line md:grid-cols-4">
+      <dl className="mt-10 grid grid-cols-2 gap-x-6 border-y border-line md:grid-cols-4">
         {facts.map((fact) => (
-          <div key={fact.label} className="flex flex-col-reverse justify-end gap-2 border-b border-line py-5">
+          <div key={fact.label} className="flex flex-col-reverse justify-end gap-2 py-5">
             <dt className="type-eyebrow text-ink-muted">{fact.label}</dt>
             <dd className="type-h3 whitespace-nowrap">{fact.value}</dd>
           </div>
@@ -62,7 +62,11 @@ export function ResidencePanel({ residence }: { residence: Residence }) {
 
         <figure>
           <figcaption className="type-eyebrow text-ink-muted">{detail.floorPlan}</figcaption>
-          <FloorPlan plan={residence.floorPlan} className="mt-6 max-w-md" />
+          <FloorPlan
+            plan={residence.floorPlan}
+            interiorLabel={detail.planInterior}
+            className="mt-6 max-w-md"
+          />
           <p className="type-small mt-5 text-ink-muted">{detail.planNote}</p>
         </figure>
       </div>

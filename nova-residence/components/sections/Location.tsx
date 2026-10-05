@@ -30,7 +30,7 @@ export function Location() {
             <LocationMap className="aspect-4/5 sm:aspect-4/3" />
           </Reveal>
 
-          <div className="col-span-4 flex flex-col justify-between gap-y-8 md:col-span-6 md:col-start-3 lg:col-span-4 lg:col-start-9">
+          <div className="col-span-4 md:col-span-8 lg:col-span-4 lg:col-start-9">
             <dl className="border-b border-line-strong">
               {travelTimes.map((item) => (
                 <div
@@ -47,7 +47,7 @@ export function Location() {
                 </div>
               ))}
             </dl>
-            <p className="type-small text-ink-muted">{locationSection.travelNote}</p>
+            <p className="type-small mt-6 text-ink-muted">{locationSection.travelNote}</p>
           </div>
         </div>
       </Container>

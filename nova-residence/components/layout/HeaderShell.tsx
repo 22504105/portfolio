@@ -4,7 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 
 // Transparent over the hero sky at the very top of the page, a solid bar from
-// the first scroll onwards. The sentinel marks "the very top": an observer on
+// the first scroll onwards. Children follow the state with the
+// `group-data-scrolled/header:` variant. The sentinel marks "the very top": an observer on
 // it replaces a scroll listener.
 export function HeaderShell({ children }: { children: ReactNode }) {
   const sentinel = useRef<HTMLDivElement>(null);
@@ -24,7 +25,7 @@ export function HeaderShell({ children }: { children: ReactNode }) {
         data-tone="base"
         data-scrolled={scrolled ? "" : undefined}
         className={
-          "fixed inset-x-0 top-0 z-(--z-header) h-header border-b border-transparent text-ink " +
+          "group/header fixed inset-x-0 top-0 z-(--z-header) h-header border-b border-transparent text-ink " +
           "transition-colors duration-(--duration-base) ease-quiet " +
           "data-scrolled:border-line data-scrolled:bg-bg"
         }

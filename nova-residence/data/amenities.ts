@@ -31,12 +31,6 @@ export const amenities: Amenity[] = [
     image: images.concierge,
   },
   {
-    id: "parking",
-    name: "Private Parking",
-    description:
-      "Two levels below ground with a space for every residence, charging points and direct lift access.",
-  },
-  {
     id: "lounge",
     name: "Residents Lounge",
     description:
@@ -49,5 +43,11 @@ export const amenities: Amenity[] = [
     description:
       "Terraces of olive, cypress and lavender that step down the hillside around the building.",
     image: images.gardens,
+  },
+  {
+    id: "parking",
+    name: "Private Parking",
+    description:
+      "Two levels below ground with a space for every residence, charging points and direct lift access.",
   },
 ];

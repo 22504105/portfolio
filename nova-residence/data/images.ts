@@ -42,6 +42,8 @@ export const images = {
   oneBedroom: {
     src: oneBedroom,
     alt: "Living room of a one-bedroom residence opening onto a terrace with a view over the Bosphorus.",
+    // Left of centre: a square crop keeps the terrace doors as well as the window.
+    position: "30% 50%",
   },
   twoBedroom: {
     src: twoBedroom,

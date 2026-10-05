@@ -14,7 +14,15 @@ export function Header() {
   return (
     <HeaderShell>
       <Container className="flex h-full items-center justify-between gap-8">
-        <Link href="#top" className="type-brand py-3" aria-label={`${site.name}, back to top`}>
+        {/*
+          At the top of the page the hero wordmark is right below, so the mark is
+          hidden there — keeping its space, out of the tab order and unannounced.
+        */}
+        <Link
+          href="#top"
+          className="type-brand invisible py-3 group-data-scrolled/header:visible"
+          aria-label={`${site.name}, back to top`}
+        >
           {site.shortName}
         </Link>
 

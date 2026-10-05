@@ -86,7 +86,7 @@ export function Dialog({
             exit={{ opacity: 0, transition: CLOSE }}
           >
             {scrim && (
-              <div aria-hidden="true" className="absolute inset-0 bg-ink/55" onClick={onClose} />
+              <div aria-hidden="true" className="absolute inset-0 bg-ink/70" onClick={onClose} />
             )}
             {children}
           </m.div>

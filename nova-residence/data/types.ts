@@ -22,24 +22,56 @@ export type AreaRange = {
   max: number;
 };
 
-export type PlanLabel = {
-  text: string;
-  /** Centre of the label, in drawing units. */
-  x: number;
-  y: number;
+/** A straight, axis-aligned line on a plan: x1, y1, x2, y2. */
+export type PlanLine = readonly [number, number, number, number];
+
+/** A rectangle on a plan, by two opposite corners: x1, y1, x2, y2. */
+export type PlanBox = readonly [number, number, number, number];
+
+export type PlanPoint = readonly [number, number];
+
+/** A hinged door: the gap it closes is left open in the wall it belongs to. */
+export type PlanDoor = {
+  hinge: PlanPoint;
+  /** Where the free edge of the leaf rests when the door is shut. */
+  closed: PlanPoint;
+  /** Where it is drawn, standing open. */
+  open: PlanPoint;
 };
 
-/** An indicative plan as SVG path data, one path per kind of line. */
+export type PlanRoom = {
+  name: string;
+  /** Square metres, as printed under the name. */
+  area: number;
+  /** Centre of the label. */
+  x: number;
+  y: number;
+  /** Terraces are not part of the interior area. */
+  outdoor?: boolean;
+};
+
+/**
+ * An indicative plan. Every coordinate is in metres from the top-left corner
+ * of the drawing; the view is at the bottom.
+ */
 export type FloorPlan = {
+  /** Overall size of the drawing, terraces included. */
   width: number;
-  height: number;
+  depth: number;
   /** Read out in place of the drawing. */
   summary: string;
-  walls: string;
-  /** Glazed walls, drawn as a second line inside the wall. */
-  glazing: string;
-  terraces: string;
-  labels: PlanLabel[];
+  /** Exterior walls, drawn heavy and broken where there is a door or glazing. */
+  walls: PlanLine[];
+  /** Interior walls, drawn thin and broken at doors and openings. */
+  partitions: PlanLine[];
+  /** Windows and sliding walls of glass, drawn as a double line. */
+  glazing: PlanLine[];
+  doors: PlanDoor[];
+  /** Outlines of the terraces, as corner points in order. */
+  terraces: PlanPoint[][];
+  /** Kitchen counters and islands. */
+  fittings: PlanBox[];
+  rooms: PlanRoom[];
 };
 
 export type Residence = {

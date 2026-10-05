@@ -60,8 +60,8 @@ the element has `lang="tr"`. Data marks such names with `lang: "tr"`; pass it on
 | `line-strong` | `#7f827a` | Field and control borders (3.5:1) |
 
 The palette is closed — Tailwind's default colours are removed. There is no accent
-colour: active, selected and success states are shown with weight, underline, a
-rule or an icon, and the focus ring is `ink`.
+colour: active, selected, success and error states are shown with weight,
+underline, a rule or a small solid mark, and the focus ring is `ink`.
 
 ### Tones
 
@@ -106,11 +106,15 @@ invent other levels.
 The header is fixed and `--spacing-header` (4.5rem) tall in every state, its bottom
 hairline included, because anchors scroll to that offset. It is transparent only at
 the very top of the page, over the hero sky; from the first scroll it is a solid bar
-in the base tone, also over dark sections.
+in the base tone, also over dark sections. `HeaderShell` marks the scrolled state
+with `data-scrolled`, which children read through `group-data-scrolled/header:`. The
+NOVA mark is `invisible` in the top state — the hero wordmark is right below it — and
+keeps its space, so nothing moves when it appears.
 
 Scroll lock is CSS: `html:has(dialog[open])` hides the page's overflow, and
 `scrollbar-gutter: stable` keeps the width of a classic scrollbar so nothing shifts.
-Scrolling panels inside a dialog take `overscroll-contain`.
+Under a dark dialog that gutter takes `--tone-inverse-bg`, the one definition of the
+inverse background. Scrolling panels inside a dialog take `overscroll-contain`.
 
 ## Layout
 
@@ -120,6 +124,11 @@ Scrolling panels inside a dialog take `overscroll-contain`.
 - Section spacing: `py-section-sm`, `-md`, `-lg` (via `<Section space>`).
 - `bleed-left` / `bleed-right` pull an element to the viewport edge.
 - Breakpoints are Tailwind's defaults. Review at 360, 390, 768, 1024, 1280, 1440.
+- The 8-column grid (768–1023) gets compositions of its own, not the mobile stack
+  enlarged: pairs of 5 + 3 or 4 + 4 with one of the two starting lower, and one frame
+  per section running wide alone.
+- The three figures of the introduction are equal thirds, which the 8-column grid
+  cannot give: that row is its own three-column grid with the editorial gaps.
 
 Asymmetry comes from the grid: text blocks of four or five columns with an offset
 start, images in unequal pairs (7/5, 8/4), one image per section running to the
@@ -188,7 +197,8 @@ of the client bundle.
   `Dialog` adds the fade, keeps the element open until the exit has played
   (Escape and the Android back gesture included), starts focus on the first
   button — make that the `CloseButton` — and calls `onExited` once focus is back
-  on the page. `scrim` dims the page behind a panel and closes on click.
+  on the page. `scrim` dims the page behind a panel (`ink` at 70%) and closes on
+  click.
 - `CloseButton`: the close control of every overlay.
 - `Section` with an `id` can take focus by script (`tabIndex={-1}`, no ring), which
   is how the mobile navigation hands the keyboard on to the section it opens.
@@ -232,15 +242,28 @@ of the client bundle.
   sheet below. The panels are rendered on the server (`ResidencePanel`) and handed
   to the client drawer by id. The whole card opens it; the card's button is the
   control for keyboard and assistive technology.
-- Floor plans are data (`floorPlan` on each residence: SVG path data for walls,
-  glazing and terraces, plus labels) drawn by `FloorPlan` in `currentColor`. The
-  view is at the bottom of every plan.
+- Floor plans are data (`floorPlan` on each residence, in metres: exterior walls,
+  partitions, glazing, doors, terraces, kitchen fittings and the rooms with their
+  areas) drawn by `FloorPlan` in `currentColor` and the token colours: heavy outer
+  walls, thin partitions, door leaves with their swing, a double line for glass,
+  terraces as a `surface` zone, a five-metre scale bar and the interior total. The
+  view is at the bottom of every plan, and the room areas add up to a figure inside
+  the residence's area range.
 - "Request a viewing" reaches the contact form through `ViewingRequestProvider`
   (mounted in `app/page.tsx`): the drawer closes, the form selects the residence,
   scrolls into view and puts focus in Name.
 - Lightbox: full-screen, inverse tone, photographs shown whole and never wider
   than their file. Arrow keys, the two text controls and a horizontal swipe or
-  drag turn the page; the gallery loops.
+  drag turn the page; the gallery loops. From `md` the counter is in the top bar
+  and the caption and controls in a bar at the bottom; below `md` caption, counter
+  and controls sit directly under the photograph, and the group is centred on the
+  screen.
 - Contact form: validated on submit, then field by field as each error is
   corrected; a failed submit moves focus to the first invalid field. All messages
-  and labels are in `data/contact.ts`.
+  and labels are in `data/contact.ts`. An error has no colour of its own: the
+  message is `ink` at medium weight behind a 6px solid square, an invalid field
+  takes a 2px `ink` underline, an invalid group of choices an `ink` outline, and
+  one summary line above the button (`role="status"`) stays until every field is
+  corrected. After a successful submit the thank-you note keeps the height of the
+  form from `lg`, where the photograph stands beside it; below `lg` the column
+  closes up around the note.

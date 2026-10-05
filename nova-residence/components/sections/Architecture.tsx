@@ -35,24 +35,24 @@ export function Architecture() {
         </div>
 
         <div className="grid-editorial mt-16 gap-y-16 lg:mt-32">
-          <dl className="col-span-4 grid grid-cols-subgrid content-start self-start md:col-span-8 lg:col-span-6 lg:col-start-7 lg:row-start-1">
+          <dl className="col-span-4 grid grid-cols-subgrid content-start self-start md:col-span-5 lg:col-span-6 lg:col-start-7 lg:row-start-1">
             {architecture.notes.map((note) => (
               <div
                 key={note.title}
                 className="col-span-full grid grid-cols-subgrid gap-y-3 border-t border-line py-6 lg:py-8"
               >
-                <dt className="type-eyebrow col-span-4 text-ink-muted md:col-span-2 md:pt-1.5">
+                <dt className="type-eyebrow col-span-full text-ink-muted lg:col-span-2 lg:pt-1.5">
                   {note.title}
                 </dt>
-                <dd className="type-body col-span-4 md:col-span-6 lg:col-span-4">{note.text}</dd>
+                <dd className="type-body col-span-full lg:col-span-4">{note.text}</dd>
               </div>
             ))}
           </dl>
-          {/* Starts lower than the notes so the pair does not settle into a tidy row. */}
+          {/* Beside the notes from md, starting lower so the pair does not settle into a tidy row. */}
           <Photo
             image={architecture.secondaryImage}
-            sizes="(min-width: 90rem) 27rem, (min-width: 64rem) 30vw, (min-width: 48rem) 45vw, 70vw"
-            className="col-span-3 col-start-2 aspect-4/5 md:col-span-4 md:col-start-5 lg:col-start-2 lg:row-start-1 lg:mt-40"
+            sizes="(min-width: 90rem) 27rem, (min-width: 64rem) 30vw, (min-width: 48rem) 38vw, 70vw"
+            className="col-span-3 col-start-2 aspect-4/5 md:col-start-6 md:mt-24 md:max-lg:bleed-right lg:col-span-4 lg:col-start-2 lg:row-start-1 lg:mt-40"
           />
         </div>
       </Container>

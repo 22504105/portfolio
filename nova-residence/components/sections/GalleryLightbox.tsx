@@ -1,6 +1,6 @@
 "use client";
 
-import { animate, AnimatePresence, useMotionValue } from "motion/react";
+import { animate, AnimatePresence, useIsPresent, useMotionValue } from "motion/react";
 import * as m from "motion/react-m";
 import Image from "next/image";
 import { createContext, useContext, useRef, useState } from "react";
@@ -8,6 +8,7 @@ import type { KeyboardEvent, PointerEvent, ReactNode } from "react";
 import { CloseButton } from "@/components/ui/CloseButton";
 import { Dialog } from "@/components/ui/Dialog";
 import type { GalleryItem } from "@/data/types";
+import { cn } from "@/lib/cn";
 import { twoDigits } from "@/lib/format";
 import { DURATION, EASE, REVEAL_OFFSET } from "@/lib/motion";
 
@@ -33,7 +34,13 @@ type SlideProps = {
 // One photograph on the stage. It follows the finger or the mouse sideways;
 // vertical gestures are left to the browser (`touch-action`), which then
 // cancels the pointer and the photograph settles back.
+//
+// From md the stage is the space between the two bars and every photograph
+// fills it. Below md the stage is as tall as the photograph on it, so the
+// caption and controls sit directly beneath; the photograph on its way out
+// leaves the flow and stays centred on the stage, which is where it was.
 function Slide({ item, direction, onSwipe }: SlideProps) {
+  const present = useIsPresent();
   const x = useMotionValue(0);
   const dragStart = useRef<number | null>(null);
 
@@ -64,7 +71,12 @@ function Slide({ item, direction, onSwipe }: SlideProps) {
 
   return (
     <m.div
-      className="absolute inset-0 flex touch-pan-y touch-pinch-zoom items-center justify-center lg:px-gutter"
+      className={cn(
+        "flex touch-pan-y touch-pinch-zoom items-center justify-center md:absolute md:inset-0 lg:px-gutter",
+        present
+          ? "max-md:col-start-1 max-md:row-start-1"
+          : "pointer-events-none max-md:absolute max-md:inset-x-0 max-md:-inset-y-[50svh]",
+      )}
       style={{ x }}
       initial={{ opacity: 0, x: direction * REVEAL_OFFSET }}
       animate={{ opacity: 1, x: 0 }}
@@ -83,9 +95,18 @@ function Slide({ item, direction, onSwipe }: SlideProps) {
         sizes="100vw"
         placeholder="blur"
         draggable={false}
-        className="h-auto max-h-full w-auto max-w-full select-none"
+        className="h-auto max-h-[60svh] w-auto max-w-full select-none md:max-h-full"
       />
     </m.div>
+  );
+}
+
+function Counter({ index, total, className }: { index: number; total: number; className: string }) {
+  return (
+    <p className={cn("type-eyebrow tabular-nums", className)}>
+      {twoDigits(index + 1)}
+      <span className="text-ink-muted"> / {twoDigits(total)}</span>
+    </p>
   );
 }
 
@@ -130,33 +151,39 @@ export function GalleryLightbox({ children, items, labels }: GalleryLightboxProp
         onKeyDown={onKeyDown}
         className="flex flex-col bg-bg"
       >
-        <div className="flex h-header shrink-0 items-center justify-between px-gutter">
-          <p className="type-eyebrow tabular-nums">
-            {twoDigits(view.index + 1)}
-            <span className="text-ink-muted"> / {twoDigits(items.length)}</span>
-          </p>
+        <div className="flex h-header shrink-0 items-center justify-end px-gutter md:justify-between">
+          <Counter index={view.index} total={items.length} className="max-md:hidden" />
           <CloseButton onClick={() => setOpen(false)} />
         </div>
 
-        <div className="relative min-h-0 flex-1 overflow-hidden">
-          <AnimatePresence initial={false}>
-            <Slide key={item.id} item={item} direction={view.direction} onSwipe={turn} />
-          </AnimatePresence>
-        </div>
+        {/*
+          Below md the photograph, its caption and the controls are one block,
+          centred on the screen: the padding answers the bar above.
+        */}
+        <div className="flex min-h-0 flex-1 flex-col max-md:justify-center max-md:pb-header">
+          <div className="relative max-md:grid max-md:overflow-x-clip md:min-h-0 md:flex-1 md:overflow-hidden">
+            <AnimatePresence initial={false}>
+              <Slide key={item.id} item={item} direction={view.direction} onSwipe={turn} />
+            </AnimatePresence>
+          </div>
 
-        <div className="flex h-header shrink-0 items-center justify-between gap-6 px-gutter">
-          <p aria-live="polite" className="type-eyebrow">
-            {item.caption}
-          </p>
-          <div className="-mr-3 flex">
-            <button type="button" className={CONTROL} onClick={() => turn(-1)}>
-              <span aria-hidden="true">←</span>
-              {labels.previous}
-            </button>
-            <button type="button" className={CONTROL} onClick={() => turn(1)}>
-              {labels.next}
-              <span aria-hidden="true">→</span>
-            </button>
+          <div className="shrink-0 px-gutter max-md:pt-5 md:flex md:h-header md:items-center md:justify-between md:gap-6">
+            <div className="flex items-baseline justify-between gap-6">
+              <p aria-live="polite" className="type-eyebrow">
+                {item.caption}
+              </p>
+              <Counter index={view.index} total={items.length} className="md:hidden" />
+            </div>
+            <div className="flex max-md:-mx-3 max-md:mt-2 max-md:justify-between md:-mr-3">
+              <button type="button" className={CONTROL} onClick={() => turn(-1)}>
+                <span aria-hidden="true">←</span>
+                {labels.previous}
+              </button>
+              <button type="button" className={CONTROL} onClick={() => turn(1)}>
+                {labels.next}
+                <span aria-hidden="true">→</span>
+              </button>
+            </div>
           </div>
         </div>
       </Dialog>

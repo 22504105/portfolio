@@ -44,6 +44,9 @@
   --duration-base: 500ms;
   --duration-slow: 900ms;
 
+  /* The dark page colour: the inverse tone's background, also used outside it. */
+  --tone-inverse-bg: #171917;
+
   /* The only stacking levels above page content. */
   --z-header: 40;
   --z-nav: 50;
@@ -73,7 +76,7 @@
 
 [data-tone="inverse"],
 [data-tone="image"] {
-  --color-bg: #171917;
+  --color-bg: var(--tone-inverse-bg);
   --color-surface: #20231f;
   --color-ink: #eeebe4;
   --color-ink-secondary: #c9c8c0;
@@ -120,7 +123,7 @@
    * Under a dark full-screen dialog it takes the inverse tone's background.
    */
   html:has(dialog[data-tone="inverse"][open]) {
-    background-color: #171917;
+    background-color: var(--tone-inverse-bg);
   }
 
   body {
