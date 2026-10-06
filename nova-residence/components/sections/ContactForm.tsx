@@ -10,7 +10,7 @@ import { cn } from "@/lib/cn";
 import { DURATION, EASE } from "@/lib/motion";
 import { useViewingRequest } from "./ViewingRequest";
 
-export type Choice = {
+type Choice = {
   value: string;
   label: string;
 };

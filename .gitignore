@@ -1,2 +1,5 @@
 # Raw generated images, processed into nova-residence/public/images
 nova-images-inbox/
+
+# Visual Studio workspace cache
+.vs/

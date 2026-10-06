@@ -4,9 +4,27 @@ import { site } from "@/data/site";
 import { displayFont, sansFont } from "./fonts";
 import "./globals.css";
 
+const title = `${site.name} — ${site.tagline}`;
+// The disclosure travels with every preview of the page: NOVA is fictional.
+const description = `${site.description} ${site.disclosure.long}`;
+
+// The sharing image is app/opengraph-image.jpg. On Vercel its absolute URL is
+// resolved from the deployment, so no metadataBase or environment variable is needed.
 export const metadata: Metadata = {
-  title: `${site.name} — ${site.tagline}`,
-  description: `${site.description} ${site.disclosure.long}`,
+  title,
+  description,
+  openGraph: {
+    type: "website",
+    siteName: site.name,
+    title,
+    description,
+    locale: "en_US",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title,
+    description,
+  },
 };
 
 export const viewport: Viewport = {

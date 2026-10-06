@@ -3,8 +3,6 @@
 
 export const contactMethods = ["WhatsApp", "Phone", "Email"] as const;
 
-export type ContactMethod = (typeof contactMethods)[number];
-
 export const contact = {
   eyebrow: "Private Viewings",
   headline: "Experience NOVA privately.",
