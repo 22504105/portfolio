@@ -20,6 +20,10 @@ export function Photo({ image, sizes, className = "", priority = false, decorati
   const t = useTranslations("images");
   const alt = decorative ? "" : t(image);
   const file = getImage(image);
+  // The frame must be positioned for the image to fill it. A caller that places
+  // the frame itself (`absolute`) has already done that; adding `relative` on
+  // top would win in the stylesheet and collapse the frame.
+  const frame = `${className.split(" ").includes("absolute") ? "" : "relative"} overflow-hidden bg-coal ${className}`;
 
   if (!file) {
     // The photograph has not been supplied yet (docs/image-brief.md). The frame
@@ -29,7 +33,7 @@ export function Photo({ image, sizes, className = "", priority = false, decorati
         role={decorative ? undefined : "img"}
         aria-label={decorative ? undefined : alt}
         aria-hidden={decorative || undefined}
-        className={`photo-pending relative overflow-hidden bg-coal ${className}`}
+        className={`photo-pending ${frame}`}
       >
         <span aria-hidden="true" className="type-eyebrow absolute bottom-3 left-3 right-3 text-bone/55">
           {t("pending")} · {t(image)}
@@ -39,7 +43,7 @@ export function Photo({ image, sizes, className = "", priority = false, decorati
   }
 
   return (
-    <div className={`relative overflow-hidden bg-coal ${className}`}>
+    <div className={frame}>
       <Image
         src={file.src}
         alt={alt}
