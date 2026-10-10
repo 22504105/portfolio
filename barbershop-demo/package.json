@@ -12,7 +12,8 @@
     "test:watch": "vitest",
     "images": "node scripts/process-images.mjs",
     "db:dev": "node scripts/dev-db.mjs",
-    "jobs": "node scripts/run-jobs.mjs"
+    "jobs": "node scripts/run-jobs.mjs",
+    "db:migrate": "node scripts/migrate.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
