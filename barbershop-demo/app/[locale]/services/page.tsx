@@ -4,7 +4,7 @@ import { BookingCallout } from "@/components/site/BookingCallout";
 import { PriceList } from "@/components/site/PriceList";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Photo } from "@/components/ui/Photo";
-import { getCatalog } from "@/lib/catalog";
+import { getCatalog } from "@/lib/catalog/server";
 import { pageLocale, pageMetadata } from "@/lib/page";
 
 export const generateMetadata = ({ params }: PageProps<"/[locale]/services">) =>

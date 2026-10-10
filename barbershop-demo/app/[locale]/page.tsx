@@ -6,7 +6,7 @@ import { ArrowLink, ButtonLink } from "@/components/ui/Button";
 import { Photo } from "@/components/ui/Photo";
 import { BARBER_PORTRAITS } from "@/data/images";
 import { Link } from "@/i18n/navigation";
-import { getCatalog } from "@/lib/catalog";
+import { getCatalog } from "@/lib/catalog/server";
 import { BOOK_HREF } from "@/lib/navigation";
 import { pageLocale } from "@/lib/page";
 

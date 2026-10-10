@@ -4,7 +4,8 @@ The decisions behind the foundation, in the order the brief asks for them.
 `docs/brief.md` is the specification; where this document and the brief
 disagree, the brief wins and this document is wrong.
 
-Status: Phase 02 (public site and booking interface on a mock). Sections marked **Phase 03** or **Phase 04**
+Status: Phase 03, part one. The booking engine, email and guest management are
+implemented and tested; accounts and the barber workspace are not. Sections marked **Phase 03** or **Phase 04**
 describe an agreed design that is not implemented yet.
 
 ## 1. Information architecture
@@ -26,8 +27,9 @@ for a year in the `NEXT_LOCALE` cookie and, for registered users, in
 | Public demo | `/demo/admin` | Everyone, against a separate demo database |
 | Machine endpoints | `/api/cron/*` | The scheduler, with `CRON_SECRET` |
 
-After Phase 02 the public site and `/book` exist. `/book` runs on a mock (see
-section 10); the routes below it in the table are not built yet.
+Built so far: the public site, `/book`, `/booking/confirm`, `/booking/manage`
+and `/api/cron/notifications`. Accounts, the barber workspace, admin and the
+demo are not built yet.
 
 ## 2. Technology
 
@@ -38,6 +40,7 @@ section 10); the routes below it in the table are not built yet.
 | Motion | `motion` | Installed; first used in Phase 02 |
 | i18n | `next-intl` 4 | Typed message catalog, locale routing, server components |
 | Database and auth | Supabase (PostgreSQL, Auth), hosted | Free tier; no Docker on the development machine |
+| Database access | `pg`, directly from server code | Booking runs in database functions inside transactions; see section 11 |
 | Validation | Zod 4 | Environment now, every server input later |
 | Email | Resend | **Phase 03.** Free tier; server-only key |
 | Scheduler | Vercel Cron calling `/api/cron/*` | **Phase 03.** No extra service |
@@ -119,7 +122,7 @@ It rests on two mechanisms.
    for `status = 'confirmed'`. Ranges are half-open, so a booking may start the
    minute the previous one ends. No code path, bug or manual `UPDATE` can put
    two confirmed bookings on top of each other.
-2. **A per-barber lock** (**Phase 03**). Holds depend on the clock — a hold
+2. **A per-barber lock** (implemented). Holds depend on the clock — a hold
    stops blocking the moment `hold_expires_at` passes — and a constraint cannot
    read the clock. So every operation that takes or moves a slot runs in one
    database function that:
@@ -153,9 +156,22 @@ Consequences:
 - Lock keys are hashes; a collision between two barbers only makes them wait
   for each other, it cannot cause a double booking.
 
-Tested now: the constraint (overlap, adjacency, other barber, cancelled frees
-the slot, a hold cannot be confirmed onto a confirmed booking). Phase 03 adds
-the functions and tests that race real connections against each other.
+Tested (`tests/db/booking.test.ts`, on a real PostgreSQL, with separate
+connections racing each other):
+
+- ten simultaneous customers for one slot: exactly one gets it;
+- overlapping visits of 65 minutes started half an hour apart: none overlap;
+- eight simultaneous "any available" requests with two free barbers: exactly
+  two succeed, with different barbers;
+- a late confirmation racing a new customer for the same slot: the late one
+  fails, the new one gets it;
+- a reschedule racing a new booking for the same time: exactly one wins;
+- one link opened three times at once: confirmed once.
+
+Differences from the plan above, decided while building: rescheduling keeps
+the same barber (so it needs one lock, and the brief does not ask for more),
+and time off does not take the lock yet because nothing writes time off until
+the barber workspace exists.
 
 ## 6. Roles and permissions
 
@@ -189,18 +205,23 @@ Points the tests pin down:
 - A guest has no database identity at all. Guest access to a booking goes
   through the server with an email-link token (section 7).
 
-## 7. Email links and email delivery — Phase 03
+## 7. Email links and email delivery
 
 - **Tokens.** 32 random bytes from the system CSPRNG, base64url in the link,
-  SHA-256 in `booking_tokens`. A verification token lives as long as the hold
-  and is consumed on use. A management token lives until the appointment ends;
-  opening it sets a short-lived, signed, HTTP-only session for that booking,
-  and cancelling or rescheduling needs that session.
+  SHA-256 in `booking_tokens`. A token is made when its email is written, so
+  the raw value exists only in that email. A verification token lives as long
+  as the hold. A management token lives until the appointment ends; opening it
+  sets a signed, HTTP-only session for that booking for thirty minutes and
+  redirects to a clean address, and cancelling or rescheduling needs that session.
+- **Confirmation takes a button.** Opening the link shows a page with a button;
+  only pressing it confirms. Mail scanners that follow links confirm nothing.
 - **No enumeration.** Responses to "resend my link" and to bad or expired
   tokens are the same whether or not the booking exists. Tokens never appear in
   logs or analytics; pages that receive one set `Referrer-Policy: no-referrer`.
-- **Throttling.** Limits per IP and per email on creating holds and on resends,
-  and a cap on simultaneous unverified holds per email, kept in PostgreSQL.
+- **Throttling.** Kept in PostgreSQL (`rate_limits`, keys hashed): ten holds an
+  hour per address and five per email, thirty link openings per ten minutes per
+  address, and at most two unverified holds per email at a time. There is no
+  "resend" button yet; a lapsed hold is simply booked again.
 - **Queue.** Verification, confirmation, 24-hour and 2-hour reminders are rows
   in `notification_jobs`, enqueued in the same transaction as the booking
   change that causes them. The idempotency key (`booking id : type : start
@@ -211,7 +232,12 @@ Points the tests pin down:
   or rescheduled bookings are cancelled, and the sender checks the booking
   again just before sending.
 - **Development.** Without `RESEND_API_KEY` nothing is sent: messages are
-  written to a local mail sink that the tests read.
+  written to `.tmp/mail` and shown at `/en/dev/mail`, which does not exist in
+  production. In production an empty key makes jobs fail and stay queued.
+- **Scheduler.** `/api/cron/notifications` runs the queue. Emails caused by an
+  action are also sent right after it, so only reminders depend on the
+  scheduler. Vercel's free plan cannot call it often enough (once a day); the
+  call has to come from Supabase `pg_cron` or another scheduler.
 
 ## 8. Public demo — Phase 04
 
@@ -240,19 +266,21 @@ the implementation in Phase 03.
 | The demo reaches real data | High | Separate project and keys |
 | Cancelling past the cutoff by rescheduling first | Medium | One cutoff rule shared by both operations |
 
-Open questions for Phase 03, none of which change the schema: the exact
-throttling limits, and whether a registered client must also verify by email
-for each booking (the brief makes verification mandatory for guests).
+Still open: whether a registered client must also verify by email for each
+booking (the brief makes verification mandatory for guests). To be decided
+with accounts.
 
-## 10. The booking interface and its mock — Phase 02
+## 10. The booking interface and its two back ends
 
 The interface talks to the booking engine through one contract,
 `lib/booking/gateway.ts`: `getAvailability` and `createHold`, with typed
-refusals (`slot_taken`, `invalid`, `unavailable`). In Phase 02 the contract is
-answered by `lib/booking/mock-gateway.ts`, in the browser. Phase 03 answers it
-with server actions and the database; the interface does not change.
+refusals (`slot_taken`, `too_many_holds`, `invalid`, `unavailable`). With a
+database configured it is answered by server actions and the booking engine
+(`lib/booking/live-gateway.ts`). Without one it is answered by
+`lib/booking/mock-gateway.ts`, in the browser, so the interface can be looked
+at with nothing set up. The table is about that mock.
 
-| Part | Real in Phase 02 | Mocked in Phase 02 |
+| Part | Real in the mock | Invented in the mock |
 |---|---|---|
 | Catalog | Same content as the seed, checked by a test | Served from a constant, not from the database |
 | Slot rules | 30-minute grid, any duration, lunch gaps, 2-hour lead, 30-day horizon, London time across clock changes (`lib/booking/slots.ts`, tested) | — |
@@ -269,5 +297,31 @@ to choose another time with their details kept.
 
 The mock is labelled in the interface (a notice on `/book` and on the final
 screen) and in the code. Nothing outside `lib/booking/mock-gateway.ts`,
-`lib/catalog/mock.ts` and the one line that creates the gateway in
+`lib/catalog/mock.ts` and the one line that chooses the gateway in
 `components/booking/BookingWizard.tsx` knows it exists.
+
+## 11. How the server reaches the database
+
+Server code connects to PostgreSQL directly (`lib/db.ts`, `DATABASE_URL`), as
+the database owner. Booking operations are single calls to the functions of
+`supabase/migrations/20261011000100_booking_engine.sql`; nothing in TypeScript
+decides whether a slot is free.
+
+Why not the Supabase client for this: a booking is several statements that
+must happen in one transaction under a lock, which is what a database function
+called over one connection gives, and the same code then runs against a plain
+PostgreSQL in tests and in local development. It also means the browser never
+talks to the database about bookings at all. Supabase's client remains for
+what it is for: Auth, when accounts are built.
+
+Consequences to keep in mind:
+
+- The connection bypasses row level security, like the service role. The
+  policies still protect anything reached with the public key; server code
+  must check the caller itself (the management session, and roles later).
+- `lib/catalog/index.ts` is types and pure helpers and may be imported by
+  client components. `lib/catalog/server.ts`, `lib/db.ts` and
+  `lib/booking/store.ts` must not be: they pull the database client in.
+- On Supabase use the transaction pooler. The connection is encrypted; its
+  certificate is verified only when `DATABASE_CA_CERT` is set.
+

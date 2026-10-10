@@ -14,12 +14,14 @@ type HeldPanelProps = {
   catalog: Catalog;
   state: WizardState;
   hold: Extract<HoldResult, { ok: true }>;
+  /** True when the wizard ran on the mock: nothing was held and no email was sent. */
+  preview: boolean;
   headingRef: Ref<HTMLHeadingElement>;
   onStartOver: () => void;
 };
 
 /** The end of the wizard: the slot is held and the customer is sent to their email. */
-export function HeldPanel({ catalog, state, hold, headingRef, onStartOver }: HeldPanelProps) {
+export function HeldPanel({ catalog, state, hold, preview, headingRef, onStartOver }: HeldPanelProps) {
   const t = useTranslations("booking.held");
   const locale = useLocale();
 
@@ -36,11 +38,15 @@ export function HeldPanel({ catalog, state, hold, headingRef, onStartOver }: Hel
             email: normalizeContact(state.contact).email,
           })}
         </p>
-        {/* Phase 02: the mock holds nothing and sends nothing, and says so. */}
-        <p className="type-body mt-6 flex max-w-xl items-baseline gap-3 border border-signal p-4">
-          <span aria-hidden="true" className="size-2 shrink-0 bg-signal" />
-          {t("demo")}
-        </p>
+        {preview ? (
+          // The mock holds nothing and sends nothing, and says so.
+          <p className="type-body mt-6 flex max-w-xl items-baseline gap-3 border border-signal p-4">
+            <span aria-hidden="true" className="size-2 shrink-0 bg-signal" />
+            {t("demo")}
+          </p>
+        ) : (
+          <p className="type-body mt-6 max-w-xl text-muted">{t("noEmail")}</p>
+        )}
 
         <div className="mt-10 flex flex-col gap-3 sm:flex-row">
           <Button variant="solid" size="lg" onClick={onStartOver}>

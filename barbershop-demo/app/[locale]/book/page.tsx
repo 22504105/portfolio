@@ -1,7 +1,8 @@
 import { getTranslations } from "next-intl/server";
 import { BookingWizard } from "@/components/booking/BookingWizard";
 import { Container } from "@/components/layout/Container";
-import { getCatalog } from "@/lib/catalog";
+import { getCatalog } from "@/lib/catalog/server";
+import { isDatabaseConfigured } from "@/lib/env";
 import { pageLocale, pageMetadata } from "@/lib/page";
 
 export const generateMetadata = ({ params }: PageProps<"/[locale]/book">) => pageMetadata(params, "book", "/book");
@@ -12,6 +13,7 @@ export default async function BookPage({ params, searchParams }: PageProps<"/[lo
   await pageLocale(params);
   const t = await getTranslations("booking");
   const catalog = await getCatalog();
+  const live = isDatabaseConfigured();
 
   // Links from the price list and the barbers' page name a service or a barber
   // by slug. Anything unknown is simply ignored.
@@ -25,14 +27,16 @@ export default async function BookPage({ params, searchParams }: PageProps<"/[lo
     <Container className="pb-section pt-10 md:pt-16">
       <p className="type-eyebrow text-muted">{t("eyebrow")}</p>
       <h1 className="type-h2 mt-4">{t("title")}</h1>
-      {/* Phase 02: the flow runs on a mock. The notice goes when the engine is connected. */}
-      <p className="type-small mt-6 flex max-w-2xl items-baseline gap-3 border border-line p-4 text-muted">
-        <span aria-hidden="true" className="size-2 shrink-0 bg-signal" />
-        {t("demoNotice")}
-      </p>
+      {!live && (
+        // No database is configured: the flow runs on a mock, and says so.
+        <p className="type-small mt-6 flex max-w-2xl items-baseline gap-3 border border-line p-4 text-muted">
+          <span aria-hidden="true" className="size-2 shrink-0 bg-signal" />
+          {t("demoNotice")}
+        </p>
+      )}
 
       <div className="mt-10 md:mt-14">
-        <BookingWizard catalog={catalog} preselection={preselection} />
+        <BookingWizard catalog={catalog} preselection={preselection} live={live} />
       </div>
     </Container>
   );

@@ -1,15 +1,9 @@
-import { mockCatalog } from "./mock";
-import type { Barber, Catalog, Service, WorkingRange } from "./types";
+import type { Barber, Service, WorkingRange } from "./types";
+
+// Types and pure helpers: safe to import from client components. Reading the
+// catalog is in ./server.ts, which must never reach the browser.
 
 export type * from "./types";
-
-/**
- * The shop's catalog. Phase 02 serves a constant; Phase 03 reads the database
- * behind this same function, so callers already treat it as asynchronous.
- */
-export async function getCatalog(): Promise<Catalog> {
-  return mockCatalog;
-}
 
 /** Barbers who can deliver every one of the given services. */
 export function eligibleBarbers(barbers: Barber[], serviceIds: string[]): Barber[] {

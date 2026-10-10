@@ -5,7 +5,7 @@ import { notFound } from "next/navigation";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { routing } from "@/i18n/routing";
-import { getCatalog } from "@/lib/catalog";
+import { getCatalog } from "@/lib/catalog/server";
 import { displayFont, sansFont } from "../fonts";
 import "../globals.css";
 

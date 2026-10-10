@@ -8,7 +8,8 @@ import { Summary } from "./Summary";
 export function ReviewStep({ catalog, state, dispatch, headingRef }: StepProps & { headingRef: Ref<HTMLHeadingElement> }) {
   const t = useTranslations("booking.review");
   const { holdMinutes, changeCutoffHours } = catalog.shop.policy;
-  const failed = state.result && !state.result.ok;
+  // A slot that has gone is reported on the time step, where the customer is sent.
+  const failure = state.result && !state.result.ok && state.result.code !== "slot_taken" ? state.result.code : null;
 
   return (
     <div>
@@ -24,7 +25,9 @@ export function ReviewStep({ catalog, state, dispatch, headingRef }: StepProps &
         <li>{t("terms3")}</li>
       </ul>
 
-      {failed && <StepHint>{t("failed")}</StepHint>}
+      {failure && (
+        <StepHint>{t(failure === "too_many_holds" ? "tooManyHolds" : failure === "invalid" ? "invalid" : "failed")}</StepHint>
+      )}
     </div>
   );
 }

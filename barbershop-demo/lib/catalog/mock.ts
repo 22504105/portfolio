@@ -1,8 +1,8 @@
 import type { Barber, Catalog, Service, WorkingRange } from "./types";
 
-// TEMPORARY, PHASE 02: the catalog as a constant, a copy of supabase/seed.sql.
-// Phase 03 reads it from the database instead. Until then
-// tests/db/foundation.test.ts fails if this copy and the seed drift apart.
+// The catalog as a constant, a copy of supabase/seed.sql, served when no
+// database is configured. tests/db/foundation.test.ts fails if this copy and
+// the seed drift apart.
 // Ids are the slugs here; in the database they are UUIDs, and nothing in the
 // interface may depend on what an id looks like.
 

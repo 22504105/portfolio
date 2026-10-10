@@ -3,7 +3,7 @@ import { Container } from "@/components/layout/Container";
 import { BookingCallout } from "@/components/site/BookingCallout";
 import { OpeningHours } from "@/components/site/OpeningHours";
 import { PageHeader } from "@/components/ui/PageHeader";
-import { getCatalog } from "@/lib/catalog";
+import { getCatalog } from "@/lib/catalog/server";
 import { pageLocale, pageMetadata } from "@/lib/page";
 
 export const generateMetadata = ({ params }: PageProps<"/[locale]/contact">) =>

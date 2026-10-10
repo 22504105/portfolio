@@ -16,6 +16,8 @@ export type Role = "anon" | "authenticated" | "service_role";
 export type TestDatabase = {
   /** A superuser connection, for arranging and inspecting data. */
   db: Client;
+  /** Connection string, for code under test that opens its own connections. */
+  url: string;
   /** A new connection, for tests that need two sessions at once. */
   connect: () => Promise<Client>;
   /**
@@ -42,11 +44,12 @@ function freePort(): Promise<number> {
 export async function startTestDatabase(): Promise<TestDatabase> {
   mkdirSync(DATA_ROOT, { recursive: true });
   const databaseDir = mkdtempSync(join(DATA_ROOT, "pg-"));
+  const port = await freePort();
   const postgres = new EmbeddedPostgres({
     databaseDir,
     user: "postgres",
     password: "postgres",
-    port: await freePort(),
+    port,
     persistent: false,
     onLog: () => {},
     onError: () => {},
@@ -99,5 +102,6 @@ export async function startTestDatabase(): Promise<TestDatabase> {
     } catch {}
   };
 
-  return { db, connect, as, seed, stop };
+  const url = `postgres://postgres:postgres@127.0.0.1:${port}/cutco_test`;
+  return { db, url, connect, as, seed, stop };
 }

@@ -252,7 +252,9 @@
       "terms2": "You can change or cancel free of charge up to {cutoffHours} hours before the appointment.",
       "terms3": "Payment is taken in the shop, in US dollars.",
       "slotTaken": "That time has just been taken. Choose another one — your details are kept.",
-      "failed": "Something went wrong and nothing was booked. Please try again."
+      "failed": "Something went wrong and nothing was booked. Please try again.",
+      "tooManyHolds": "This email address already has bookings waiting to be confirmed. Confirm or let them lapse, then try again.",
+      "invalid": "Something in this booking is no longer valid. Please start again."
     },
     "summary": {
       "title": "Your appointment",
@@ -272,7 +274,67 @@
       "reference": "Reference",
       "assigned": "Your barber",
       "another": "Book another appointment",
-      "home": "Back to the front page"
+      "home": "Back to the front page",
+      "noEmail": "Nothing in your inbox after a minute? Look in the spam folder. The hold lapses by itself if it is not confirmed."
+    },
+    "confirm": {
+      "eyebrow": "Booking",
+      "title": "Confirm your booking",
+      "lead": "Press the button to confirm. Until you do, the time is only held for you.",
+      "button": "Confirm my booking",
+      "working": "Confirming…",
+      "expiredTitle": "That hold has run out.",
+      "expiredBody": "A slot is held for a short time only, and this one was not confirmed in time. Nothing was booked. Choose a time again and it will take a minute.",
+      "invalidTitle": "This link does not work.",
+      "invalidBody": "It may have been used up, mistyped or cut short by your mail program. Open the link from the most recent email, or book again.",
+      "bookAgain": "Book an appointment"
+    },
+    "manage": {
+      "eyebrow": "Your booking",
+      "confirmedTitle": "You are booked.",
+      "justConfirmed": "Confirmed. A confirmation email is on its way.",
+      "cancelledTitle": "This booking is cancelled.",
+      "cancelledBody": "The time has been released. You are welcome to book again whenever suits.",
+      "closedTitle": "This appointment is over.",
+      "closedBody": "There is nothing left to change here. We hope to see you again.",
+      "pendingTitle": "This booking is not confirmed yet.",
+      "pendingBody": "Open the confirmation email we sent you and press the button in it.",
+      "noSessionTitle": "Open the link from your email.",
+      "noSessionBody": "To show a booking we need to know it is yours. Open the link in your confirmation or reminder email; for your security it keeps this page open for thirty minutes at a time.",
+      "invalidLinkTitle": "This link does not work.",
+      "invalidLinkBody": "It may be out of date or cut short by your mail program. Use the link from your most recent email.",
+      "status": "Status",
+      "changeTitle": "Need to change it?",
+      "changeNote": "You can move or cancel this booking free of charge up to {hours} hours before it starts.",
+      "lockedNote": "It is less than {hours} hours until this appointment, so it can no longer be changed online.",
+      "rescheduleButton": "Move to another time",
+      "rescheduleTitle": "Pick a new time",
+      "rescheduleLead": "Same services, same barber. Your current time stays yours until you confirm the new one.",
+      "rescheduleSubmit": "Move my booking",
+      "rescheduleWorking": "Moving…",
+      "rescheduleChoose": "Choose a new start time first.",
+      "rescheduleDone": "Moved. An email with the new time is on its way.",
+      "cancelButton": "Cancel booking",
+      "cancelTitle": "Cancel this booking?",
+      "cancelBody": "The time will be released for someone else. This cannot be undone.",
+      "cancelConfirm": "Yes, cancel it",
+      "cancelWorking": "Cancelling…",
+      "keep": "Keep my booking",
+      "errors": {
+        "past_cutoff": "It is too close to the appointment to change it online.",
+        "slot_taken": "That time has just been taken. Please choose another.",
+        "not_changeable": "This booking can no longer be changed. Open the link from your email again if you think that is wrong.",
+        "unavailable": "Something went wrong and nothing was changed. Please try again."
+      },
+      "bookAgainLabel": "Book an appointment"
+    },
+    "status": {
+      "pending": "Waiting for confirmation",
+      "confirmed": "Confirmed",
+      "completed": "Completed",
+      "cancelled": "Cancelled",
+      "no_show": "Missed",
+      "expired": "Expired"
     }
   },
   "footer": {

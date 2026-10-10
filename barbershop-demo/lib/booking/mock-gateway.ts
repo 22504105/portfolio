@@ -3,11 +3,11 @@ import { eligibleBarbers, totals, type Barber, type Catalog } from "@/lib/catalo
 import type { BookingGateway, Slot } from "./gateway";
 import { slotsForDay, type Interval } from "./slots";
 
-// TEMPORARY, PHASE 02: a stand-in for the booking engine, so the interface can
-// be built and reviewed. It runs in the browser, stores nothing and sends no
-// email. The working hours and slot rules are real; the "existing bookings"
-// are invented from the date so that a calendar looks lived-in and stays the
-// same from one visit to the next. Replaced in Phase 03.
+// A stand-in for the booking engine, used only when no database is configured,
+// so the interface can be looked at with nothing set up. It runs in the
+// browser, stores nothing and sends no email. The working hours and slot rules
+// are real; the "existing bookings" are invented from the date so that a
+// calendar looks lived-in and stays the same from one visit to the next.
 
 /** A small stable hash, for repeatable pseudo-randomness. */
 function hash(text: string): number {

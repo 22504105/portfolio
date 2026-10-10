@@ -1,9 +1,9 @@
 import type { Locale } from "@/i18n/routing";
 import type { Contact } from "./contact";
 
-// The contract between the booking interface and whatever answers it.
-// Phase 02 answers from a mock in the browser (./mock-gateway.ts); Phase 03
-// puts server actions and the database behind the same shapes.
+// The contract between the booking interface and whatever answers it: server
+// actions and the database when one is configured (app/actions/booking.ts),
+// a mock in the browser when not (./mock-gateway.ts).
 
 export type AvailabilityRequest = {
   serviceIds: string[];
@@ -32,6 +32,8 @@ export type HoldRequest = {
 export type HoldRefusal =
   /** Someone else took the slot between looking and booking. */
   | "slot_taken"
+  /** This email address already has two bookings waiting to be confirmed. */
+  | "too_many_holds"
   /** The request did not pass validation on the server. */
   | "invalid"
   /** Anything else: the customer can try again. */

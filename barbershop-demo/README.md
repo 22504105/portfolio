@@ -9,21 +9,24 @@ nothing here can be booked, bought or visited.**
 
 ## Status
 
-**Phase 02 of 05 — public website and booking interface.** In place: the
-bilingual public site (home, services, barbers, gallery, about, contact), the
-booking wizard, the design system, the database schema with row level security
-and seed data, and the tests.
+**Phase 03 of 05, part one — the booking engine.** In place: the bilingual
+public site, and real booking for guests: availability from the database, a
+slot held for fifteen minutes, confirmation by email link, a page to view,
+reschedule or cancel a booking, and an email queue with reminders.
 
-**Booking is not operational yet.** The wizard runs on a mock in the browser:
-the working hours and slot rules are real, the "existing bookings" are invented,
-nothing is stored and no email is sent. The pages say so. The booking engine,
-email, accounts and the admin panel come in the next phases.
+**Not built yet:** accounts and sign-in for clients and staff, the barber
+workspace (the rest of Phase 03, which needs a Supabase project), the admin
+panel and the public demo (Phase 04).
+
+Without a database configured the site still runs: it serves its built-in
+catalog, and the booking page shows the same wizard on a mock, labelled as a
+preview.
 
 | Phase | Scope | State |
 |---|---|---|
 | 01 | Architecture and foundation | Done |
-| 02 | Public website and booking interface | Done, awaiting visual review |
-| 03 | Booking engine, email and accounts | Not started |
+| 02 | Public website and booking interface | Done |
+| 03 | Booking engine, email and accounts | Engine, email and guest management done; accounts and barber workspace to do |
 | 04 | Admin panel, analytics and public demo | Not started |
 | 05 | Final QA, security and deployment | Not started |
 
@@ -38,11 +41,18 @@ Requires Node.js 22.12 or newer.
 
 ```bash
 npm install
-npm run dev
+npm run db:dev    # in one terminal: a local PostgreSQL, no Docker, no account
+npm run dev       # in another
 ```
 
-Open http://localhost:3000. The pages built so far need no environment
-variables. For later phases, copy `.env.example` to `.env.local`.
+Open http://localhost:3000. `npm run db:dev` creates the database with the
+migrations and the seed applied and writes `.env.local` on its first run.
+Skip it and the site still runs, with the booking page in preview mode.
+
+Emails are not sent in development. They are written to `.tmp/mail` and shown
+at http://localhost:3000/en/dev/mail, with their links: book an appointment,
+open that page, and follow the confirmation link. `npm run jobs` sends whatever
+is due on the queue, the way the scheduler does in production.
 
 ## Scripts
 
@@ -53,6 +63,8 @@ variables. For later phases, copy `.env.example` to `.env.local`.
 | `npm run start` | Serve the production build |
 | `npm run lint` | ESLint |
 | `npm run typecheck` | TypeScript check |
+| `npm run db:dev` | Local PostgreSQL for development (`-- --reset` to start over) |
+| `npm run jobs` | Run the email queue once against the local server |
 | `npm test` | Unit tests and database tests |
 | `npm run images -- <folder>` | Rebuild `public/images` from the raw photographs |
 
@@ -74,6 +86,18 @@ npx supabase db push
 
 Staff accounts are not seeded. An account becomes a barber or an admin when
 its `profiles.role` is set by someone with database access.
+
+The application reaches the database directly, with `DATABASE_URL`, for
+everything to do with bookings. See `.env.example` for every variable.
+
+### Scheduler
+
+`GET /api/cron/notifications` with `Authorization: Bearer <CRON_SECRET>` sends
+the emails that are due and expires stale holds. Reminders need it to run every
+few minutes. Vercel's free plan runs cron jobs once a day at most, so on that
+plan the call has to come from elsewhere: Supabase `pg_cron` with `pg_net`, or
+any external scheduler. Emails caused by an action (verification, confirmation,
+cancellation) do not wait for it: they are sent right after the action.
 
 ## Structure
 

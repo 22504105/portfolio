@@ -5,6 +5,7 @@ import { useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { totals, type Catalog } from "@/lib/catalog";
 import { normalizeContact } from "@/lib/booking/contact";
+import { liveGateway } from "@/lib/booking/live-gateway";
 import { createMockGateway } from "@/lib/booking/mock-gateway";
 import { bookableDates } from "@/lib/booking/slots";
 import { initialState, isComplete, reduce, STEPS, type Step, type WizardAction, type WizardState } from "@/lib/booking/wizard";
@@ -23,9 +24,14 @@ type BookingWizardProps = {
   catalog: Catalog;
   /** A service or barber named by the link that opened the page. */
   preselection: { serviceId?: string; barberId?: string };
+  /**
+   * True when a database is configured: the wizard then talks to the booking
+   * engine. False shows the same interface on a mock, as a preview.
+   */
+  live: boolean;
 };
 
-export function BookingWizard({ catalog, preselection }: BookingWizardProps) {
+export function BookingWizard({ catalog, preselection, live }: BookingWizardProps) {
   const t = useTranslations("booking");
   const locale = useLocale();
   const [state, dispatch] = useReducer(
@@ -33,8 +39,7 @@ export function BookingWizard({ catalog, preselection }: BookingWizardProps) {
     undefined,
     () => initialState(catalog, preselection),
   );
-  // PHASE 02: answers come from a mock in the browser. Phase 03 replaces this line.
-  const gateway = useMemo(() => createMockGateway(catalog), [catalog]);
+  const gateway = useMemo(() => (live ? liveGateway : createMockGateway(catalog)), [live, catalog]);
   const [dates] = useState(() => bookableDates(new Date(), catalog.shop.policy.horizonDays));
   // The step on which the customer pressed Continue with something missing.
   const [attemptedStep, setAttemptedStep] = useState<Step | null>(null);
@@ -54,6 +59,7 @@ export function BookingWizard({ catalog, preselection }: BookingWizardProps) {
         catalog={catalog}
         state={state}
         hold={state.result}
+        preview={!live}
         headingRef={heading}
         onStartOver={() => dispatch({ type: "startOver" })}
       />
