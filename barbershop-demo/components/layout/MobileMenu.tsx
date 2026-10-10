@@ -69,6 +69,9 @@ export function MobileMenu() {
           <ButtonLink href={BOOK_HREF} variant="signal" size="lg" className="w-full" onClick={close}>
             {t("nav.bookAppointment")}
           </ButtonLink>
+          <ButtonLink href="/account" variant="outline" size="lg" className="mt-3 w-full" onClick={close}>
+            {t("nav.account")}
+          </ButtonLink>
           <p className="type-small mt-4 text-muted">{t("brand.conceptShort")}</p>
         </div>
       </dialog>

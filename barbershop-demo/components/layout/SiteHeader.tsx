@@ -28,6 +28,13 @@ export function SiteHeader() {
           <div className="max-lg:hidden">
             <LocaleSwitcher />
           </div>
+          {/* The same link for everyone: it leads to sign-in for a visitor and to their own page for anyone signed in. */}
+          <Link
+            href="/account"
+            className="type-label inline-flex h-11 items-center px-2 text-muted transition-colors duration-(--duration-fast) hover:text-fg max-lg:hidden"
+          >
+            {t("nav.account")}
+          </Link>
           <ButtonLink href={BOOK_HREF} variant="signal" className="max-sm:px-4">
             {t("nav.book")}
           </ButtonLink>

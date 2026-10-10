@@ -34,7 +34,12 @@ export default async function AccountPage({ params }: PageProps<"/[locale]/accou
       <p className="type-eyebrow text-muted">{t("account.eyebrow")}</p>
       <h1 className="type-h1 mt-5">{t("account.title")}</h1>
       <p className="type-body mt-5 text-muted">{t("account.greeting", { email: user.email })}</p>
-      {user.role !== "client" && <p className="type-body mt-3 max-w-xl border border-line p-4">{t("account.staffNote")}</p>}
+      {user.role === "barber" && user.barberId && (
+        <ButtonLink href="/barber" variant="solid" size="lg" className="mt-6">
+          {t("nav.workspace")}
+        </ButtonLink>
+      )}
+      {user.role === "admin" && <p className="type-body mt-3 max-w-xl border border-line p-4">{t("account.staffNote")}</p>}
 
       <div className="mt-12 grid gap-x-8 gap-y-16 lg:grid-cols-12">
         <div className="min-w-0 lg:col-span-8">
