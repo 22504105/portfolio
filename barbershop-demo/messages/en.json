@@ -1,0 +1,42 @@
+{
+  "brand": {
+    "name": "CUT&CO",
+    "tagline": "Sharp cuts. No small talk required.",
+    "location": "Shoreditch, London",
+    "conceptShort": "Concept project",
+    "conceptLong": "CUT&CO is a concept portfolio project, not a real barbershop. Nothing here can be booked, bought or visited."
+  },
+  "meta": {
+    "title": "CUT&CO — Barbershop, London",
+    "description": "A barbershop in East London with online booking. A concept portfolio project — not a real business."
+  },
+  "locale": {
+    "en": "English",
+    "ru": "Русский",
+    "shortEn": "EN",
+    "shortRu": "RU",
+    "switcherLabel": "Language",
+    "current": "{language}, current language",
+    "switchTo": "Switch to {language}"
+  },
+  "nav": {
+    "skipToContent": "Skip to content",
+    "home": "CUT&CO, home"
+  },
+  "home": {
+    "eyebrow": "Barbershop · East London",
+    "headline": "Good hair is a decision.",
+    "lead": "Four barbers, eight services and a booking system that respects your time. Pick the cut, pick the chair, turn up.",
+    "foundationTitle": "In the build",
+    "foundationBody": "This is the foundation of the project: languages, design tokens and the database are in place. The site and the booking flow come next."
+  },
+  "footer": {
+    "rights": "© {year} CUT&CO",
+    "pricesNote": "All prices are in US dollars."
+  },
+  "notFound": {
+    "title": "Nothing at this address",
+    "body": "The page has moved, or it was never here.",
+    "back": "Back to the front page"
+  }
+}

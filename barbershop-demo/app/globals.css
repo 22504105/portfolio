@@ -1,0 +1,171 @@
+@import "tailwindcss";
+
+/*
+  CUT&CO design tokens. docs/design-system.md explains how they are meant to
+  be used; change them here and nowhere else.
+*/
+
+@theme {
+  /* Palette: near-black, warm white and one signal colour. */
+  --color-ink: #0c0c0b;
+  --color-coal: #171715;
+  --color-iron: #2a2a27;
+  --color-bone: #f2eee5;
+  --color-paper: #faf8f3;
+  --color-signal: #e5532b;
+
+  --font-display: var(--font-oswald), "Arial Narrow", "Helvetica Neue", sans-serif;
+  --font-sans: var(--font-onest), system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  /* Layout */
+  --spacing-gutter: clamp(1.25rem, 4vw, 3rem);
+  --spacing-section: clamp(4.5rem, 11vw, 10rem);
+  --spacing-header: 4.5rem;
+  --container-page: 90rem;
+
+  /* Motion: quick and flat, nothing floats. */
+  --duration-fast: 150ms;
+  --duration-base: 300ms;
+  --duration-slow: 600ms;
+  --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+/*
+  Semantic colours follow the tone of the surface they sit on. `inline` makes
+  the utilities read the tone variables where they are used; an ordinary theme
+  variable would be resolved once at the root and stay dark everywhere.
+*/
+@theme inline {
+  --color-bg: var(--tone-bg);
+  --color-fg: var(--tone-fg);
+  --color-muted: var(--tone-muted);
+  --color-line: var(--tone-line);
+}
+
+/* Tones. The page is dark by default; data-tone flips a section. */
+:root,
+[data-tone="dark"] {
+  --tone-bg: var(--color-ink);
+  --tone-fg: var(--color-bone);
+  --tone-muted: #a19d93;
+  --tone-line: rgb(242 238 229 / 0.18);
+}
+
+[data-tone="light"] {
+  --tone-bg: var(--color-bone);
+  --tone-fg: var(--color-ink);
+  --tone-muted: #5a564e;
+  --tone-line: rgb(12 12 11 / 0.16);
+}
+
+@layer base {
+  html {
+    background: var(--color-ink);
+    color-scheme: dark;
+    -webkit-text-size-adjust: 100%;
+    scroll-padding-top: var(--spacing-header);
+  }
+
+  body {
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  ::selection {
+    background: var(--color-signal);
+    color: var(--color-ink);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-signal);
+    outline-offset: 3px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    ::before,
+    ::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+/*
+  Type scale. Display and headings are condensed capitals; long Russian words
+  are allowed to break rather than push the page sideways.
+*/
+
+@utility type-display {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(3.25rem, 13.5vw, 12.5rem);
+  line-height: 0.9;
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+
+@utility type-h1 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(2.5rem, 7vw, 5.5rem);
+  line-height: 0.95;
+  text-transform: uppercase;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+
+@utility type-h2 {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: clamp(1.75rem, 3.6vw, 3rem);
+  line-height: 1;
+  text-transform: uppercase;
+  text-wrap: balance;
+}
+
+@utility type-h3 {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: clamp(1.25rem, 2vw, 1.625rem);
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+
+@utility type-lead {
+  font-size: clamp(1.125rem, 1.6vw, 1.375rem);
+  line-height: 1.45;
+}
+
+@utility type-body {
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+@utility type-small {
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+/* Labels, navigation, buttons. */
+@utility type-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+@utility type-eyebrow {
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
