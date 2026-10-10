@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Local test databases and browser-check scratch files.
+    ".tmp/**",
   ]),
 ]);
 

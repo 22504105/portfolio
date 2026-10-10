@@ -38,3 +38,16 @@ export function formatDateTime(
     new Date(instant),
   );
 }
+
+/** The name of a day of the week. ISO numbering: 1 is Monday, 7 is Sunday. */
+export function formatWeekday(weekday: number, locale: Locale, width: "long" | "short" = "long"): string {
+  // 1 January 2024 was a Monday.
+  const date = new Date(Date.UTC(2024, 0, weekday));
+  const name = new Intl.DateTimeFormat(INTL_LOCALE[locale], { weekday: width, timeZone: "UTC" }).format(date);
+  return name.charAt(0).toUpperCase() + name.slice(1);
+}
+
+/** Several days of the week as a list: "Tue, Wed, Thu". */
+export function formatWeekdays(weekdays: number[], locale: Locale): string {
+  return weekdays.map((weekday) => formatWeekday(weekday, locale, "short")).join(", ");
+}

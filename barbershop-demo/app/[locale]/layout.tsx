@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { routing } from "@/i18n/routing";
+import { getCatalog } from "@/lib/catalog";
 import { displayFont, sansFont } from "../fonts";
 import "../globals.css";
 
@@ -36,6 +37,7 @@ export default async function LocaleLayout({ children, params }: LayoutProps<"/[
   // Lets the pages below be rendered statically.
   setRequestLocale(locale);
   const t = await getTranslations({ locale, namespace: "nav" });
+  const { shop } = await getCatalog();
 
   return (
     <html lang={locale} className={`${displayFont.variable} ${sansFont.variable}`}>
@@ -51,7 +53,7 @@ export default async function LocaleLayout({ children, params }: LayoutProps<"/[
           <main id="main" className="flex-1">
             {children}
           </main>
-          <SiteFooter year={new Date().getFullYear()} />
+          <SiteFooter shop={shop} year={new Date().getFullYear()} />
         </NextIntlClientProvider>
       </body>
     </html>

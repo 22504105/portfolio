@@ -1,8 +1,7 @@
 # CUT&CO — Design System
 
 The foundation of the visual language. Tokens are defined in
-`app/globals.css`; this document says what they are for. Components arrive in
-Phase 02 and will be added here as they are built.
+`app/globals.css`; this document says what they are for.
 
 ## Direction
 
@@ -82,3 +81,22 @@ With `prefers-reduced-motion` all transitions and animations are instant.
 - The language switcher is a pair of links with `lang`, `hreflang` and
   `aria-current`; it works without JavaScript.
 - `<html lang>` follows the page language.
+
+## Components
+
+| Component | Use |
+|---|---|
+| `Button`, `ButtonLink` | `signal` for the one main action on a screen, `solid` for a main action on a light surface, `outline` for the second action |
+| `ArrowLink` | "See more" at the end of a section |
+| `PageHeader` | The top of every inner page: eyebrow, one large title, a line under it |
+| `Photo` | A photograph from the set, cropped to its frame; an empty captioned frame until the file is supplied |
+| `PriceList` | Services as ruled rows, read like a menu. Never cards |
+| `OpeningHours` | The week as a ruled list |
+| `BookingCallout` | The light closing section of the inner pages |
+| Choice rows | In the booking wizard: a native checkbox or radio button, visually hidden, with its label as the row |
+
+Patterns that hold across pages:
+
+- Lists are ruled rows with hairlines, not grids of boxes.
+- A page alternates dark and light sections; a light section is `data-tone="light"`.
+- A visually hidden input needs a positioned parent (`relative`), or it widens the page.

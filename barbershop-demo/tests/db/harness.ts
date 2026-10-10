@@ -92,7 +92,11 @@ export async function startTestDatabase(): Promise<TestDatabase> {
   const stop = async () => {
     await Promise.allSettled(clients.map((client) => client.end()));
     await postgres.stop();
-    rmSync(databaseDir, { recursive: true, force: true });
+    // On Windows the server can still be letting go of its files for a moment.
+    // A leftover folder is harmless: .tmp is ignored and each run uses a new one.
+    try {
+      rmSync(databaseDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
+    } catch {}
   };
 
   return { db, connect, as, seed, stop };

@@ -4,7 +4,7 @@ The decisions behind the foundation, in the order the brief asks for them.
 `docs/brief.md` is the specification; where this document and the brief
 disagree, the brief wins and this document is wrong.
 
-Status: Phase 01 (foundation). Sections marked **Phase 03** or **Phase 04**
+Status: Phase 02 (public site and booking interface on a mock). Sections marked **Phase 03** or **Phase 04**
 describe an agreed design that is not implemented yet.
 
 ## 1. Information architecture
@@ -26,7 +26,8 @@ for a year in the `NEXT_LOCALE` cookie and, for registered users, in
 | Public demo | `/demo/admin` | Everyone, against a separate demo database |
 | Machine endpoints | `/api/cron/*` | The scheduler, with `CRON_SECRET` |
 
-Only the language shell and a placeholder home page exist after Phase 01.
+After Phase 02 the public site and `/book` exist. `/book` runs on a mock (see
+section 10); the routes below it in the table are not built yet.
 
 ## 2. Technology
 
@@ -242,3 +243,31 @@ the implementation in Phase 03.
 Open questions for Phase 03, none of which change the schema: the exact
 throttling limits, and whether a registered client must also verify by email
 for each booking (the brief makes verification mandatory for guests).
+
+## 10. The booking interface and its mock — Phase 02
+
+The interface talks to the booking engine through one contract,
+`lib/booking/gateway.ts`: `getAvailability` and `createHold`, with typed
+refusals (`slot_taken`, `invalid`, `unavailable`). In Phase 02 the contract is
+answered by `lib/booking/mock-gateway.ts`, in the browser. Phase 03 answers it
+with server actions and the database; the interface does not change.
+
+| Part | Real in Phase 02 | Mocked in Phase 02 |
+|---|---|---|
+| Catalog | Same content as the seed, checked by a test | Served from a constant, not from the database |
+| Slot rules | 30-minute grid, any duration, lunch gaps, 2-hour lead, 30-day horizon, London time across clock changes (`lib/booking/slots.ts`, tested) | — |
+| Existing bookings | — | Invented from the date, so a calendar looks used and stays stable |
+| Eligibility | Only barbers who deliver every chosen service | — |
+| Any Available | — | Takes the first free barber; the real rule is in section 5 |
+| Holding a slot | — | Nothing is stored; the reference is invented |
+| Email | — | Nothing is sent |
+
+The wizard itself is a state machine without React (`lib/booking/wizard.ts`,
+tested): each choice clears what it makes stale, a step cannot be skipped, a
+submission cannot be doubled, and a slot that has gone sends the customer back
+to choose another time with their details kept.
+
+The mock is labelled in the interface (a notice on `/book` and on the final
+screen) and in the code. Nothing outside `lib/booking/mock-gateway.ts`,
+`lib/catalog/mock.ts` and the one line that creates the gateway in
+`components/booking/BookingWizard.tsx` knows it exists.

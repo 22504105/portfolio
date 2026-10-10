@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatDateTime, formatDuration, formatMoney } from "./format";
+import { formatDateTime, formatDuration, formatMoney, formatWeekday, formatWeekdays } from "./format";
 
 // Intl separates with no-break spaces; compare on plain ones.
 const plain = (text: string) => text.replace(/[  ]/g, " ");
@@ -72,5 +72,18 @@ describe("formatDateTime", () => {
   it("puts a late evening in London on the London date", () => {
     // 23:30 UTC on 9 July is already 00:30 on the 10th in London.
     expect(formatDateTime("2030-07-09T23:30:00Z", "en", { day: "numeric", month: "long" })).toBe("10 July");
+  });
+});
+
+describe("formatWeekday", () => {
+  it("names ISO weekdays, Monday first", () => {
+    expect(formatWeekday(1, "en")).toBe("Monday");
+    expect(formatWeekday(7, "en")).toBe("Sunday");
+    expect(formatWeekday(1, "ru")).toBe("Понедельник");
+  });
+
+  it("lists working days in short form", () => {
+    expect(formatWeekdays([2, 3, 6], "en")).toBe("Tue, Wed, Sat");
+    expect(formatWeekdays([2, 3, 6], "ru")).toBe("Вт, Ср, Сб");
   });
 });

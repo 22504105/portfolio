@@ -8,7 +8,31 @@
   },
   "meta": {
     "title": "CUT&CO — Barbershop, London",
-    "description": "A barbershop in East London with online booking. A concept portfolio project — not a real business."
+    "description": "A barbershop in East London with online booking. A concept portfolio project — not a real business.",
+    "services": {
+      "title": "Services and prices",
+      "description": "Haircuts, fades, beard work and hot towel shaves at CUT&CO, with durations and prices in US dollars."
+    },
+    "barbers": {
+      "title": "Barbers",
+      "description": "The four barbers of CUT&CO: what each of them does and when they are in the shop."
+    },
+    "gallery": {
+      "title": "Gallery",
+      "description": "Inside CUT&CO: the shop, the tools and the work."
+    },
+    "about": {
+      "title": "About",
+      "description": "How CUT&CO works, and why it is a concept rather than a real shop."
+    },
+    "contact": {
+      "title": "Contact and hours",
+      "description": "Where CUT&CO is, when it is open and how to book."
+    },
+    "book": {
+      "title": "Book an appointment",
+      "description": "Choose services, a barber and a time at CUT&CO."
+    }
   },
   "locale": {
     "en": "English",
@@ -21,14 +45,235 @@
   },
   "nav": {
     "skipToContent": "Skip to content",
-    "home": "CUT&CO, home"
+    "home": "CUT&CO, home",
+    "primary": "Main",
+    "footer": "Footer",
+    "services": "Services",
+    "barbers": "Barbers",
+    "gallery": "Gallery",
+    "about": "About",
+    "contact": "Contact",
+    "book": "Book",
+    "bookAppointment": "Book an appointment",
+    "menu": "Menu",
+    "close": "Close"
+  },
+  "common": {
+    "closed": "Closed",
+    "londonTime": "All times are London time.",
+    "pricesNote": "All prices are in US dollars.",
+    "payInShop": "Payment is taken in the shop.",
+    "allServices": "All services and prices",
+    "meetBarbers": "Meet the barbers",
+    "hours": "Opening hours",
+    "address": "Address",
+    "phone": "Phone",
+    "email": "Email"
+  },
+  "images": {
+    "pending": "Photograph to come",
+    "heroDesktop": "The shop in the evening: two oxblood barber chairs facing the mirrors",
+    "heroMobile": "An oxblood leather barber chair under a brass lamp",
+    "marcusHale": "Marcus Hale standing beside his chair",
+    "daniyarAkhmetov": "Daniyar Akhmetov at the counter, clippers in hand",
+    "theoOkafor": "Theo Okafor sitting on the arm of a barber chair",
+    "leonFischer": "Leon Fischer in front of a mirror, holding a razor",
+    "skinFade": "A finished skin fade, seen from behind",
+    "beardTrim": "A beard being shaped with scissors and a comb",
+    "hotTowel": "A hot towel held over a client's face before a shave",
+    "tools": "Clippers, scissors, a comb and a razor laid out on a black towel",
+    "chair": "The headrest of a worn leather barber chair",
+    "shopfront": "The shopfront from across a wet street at dusk",
+    "wash": "A client's hair being washed at a black basin",
+    "finish": "A client checking a finished haircut in the mirror",
+    "team": "The four barbers in the shop after closing",
+    "clippers": "Clippers cutting a clean line at the temple"
   },
   "home": {
     "eyebrow": "Barbershop · East London",
     "headline": "Good hair is a decision.",
     "lead": "Four barbers, eight services and a booking system that respects your time. Pick the cut, pick the chair, turn up.",
-    "foundationTitle": "In the build",
-    "foundationBody": "This is the foundation of the project: languages, design tokens and the database are in place. The site and the booking flow come next."
+    "list": {
+      "eyebrow": "The list",
+      "title": "What we do, what it costs.",
+      "note": "No packages, no upsell. Services can be combined in one visit."
+    },
+    "barbers": {
+      "eyebrow": "The chairs",
+      "title": "Four people who are good at this.",
+      "lead": "Each has a subject. Book the one who does yours, or take whoever is free."
+    },
+    "how": {
+      "eyebrow": "Booking",
+      "title": "Three steps, then a chair.",
+      "step1Title": "Pick the work",
+      "step1Body": "One service or several in a row. You see the total time and price before anything else.",
+      "step2Title": "Pick the chair",
+      "step2Body": "Choose a barber who does what you asked for, or let us give you the first one free.",
+      "step3Title": "Confirm by email",
+      "step3Body": "We hold the slot for {holdMinutes} minutes while you confirm. Change or cancel free of charge up to {cutoffHours} hours before."
+    },
+    "visit": {
+      "eyebrow": "The shop",
+      "title": "Find us off Calvert Yard.",
+      "body": "Ground floor, black front, no sign to speak of. Look for the window that is still lit at seven."
+    }
+  },
+  "services": {
+    "eyebrow": "Services",
+    "title": "The whole list.",
+    "lead": "Every price is the price. Durations are honest: a sixty-five minute appointment takes sixty-five minutes.",
+    "book": "Book",
+    "bookService": "Book {service}",
+    "duration": "Duration",
+    "price": "Price",
+    "notesTitle": "Good to know",
+    "note1": "Services can be combined in one appointment with the same barber.",
+    "note2": "Not every barber does everything. The booking shows who does what you chose.",
+    "note3": "You pay in the shop, after the cut. Prices are in US dollars."
+  },
+  "barbers": {
+    "eyebrow": "Barbers",
+    "title": "Who holds the scissors.",
+    "lead": "Four barbers, four subjects. The list under each name is what they do; the days are when they are in.",
+    "does": "Does",
+    "days": "In the shop",
+    "bookWith": "Book with {name}"
+  },
+  "gallery": {
+    "eyebrow": "Gallery",
+    "title": "The shop, the tools, the work.",
+    "lead": "Black walls, two chairs, one long counter. Nothing in the room that does not get used."
+  },
+  "about": {
+    "eyebrow": "About",
+    "title": "A small shop with a short list.",
+    "lead": "CUT&CO is two chairs in East London and four barbers who share them. It does a few things and tries to do them properly.",
+    "storyTitle": "How it works",
+    "story1": "There is no walk-in queue and no waiting on a bench. Every chair is booked, every appointment has a length, and the next person does not sit down until yours is finished.",
+    "story2": "The list of services is short on purpose. Each barber offers only the work they would be happy to be judged on, which is why you will not find every name next to every service.",
+    "story3": "Booking is online because the phone is always engaged when you need it. Pick a time, confirm it from your email, and change your mind up to twelve hours before without explaining yourself.",
+    "principlesTitle": "House rules",
+    "principle1Title": "On time",
+    "principle1Body": "Appointments start when they say they start. If we are running late, that is our problem, not yours.",
+    "principle2Title": "Said plainly",
+    "principle2Body": "If a cut will not suit your hair, you will hear it before the clippers come out.",
+    "principle3Title": "No extras",
+    "principle3Body": "Nobody will try to sell you a product at the till. The price on the list is the price.",
+    "conceptTitle": "About this site",
+    "conceptBody": "CUT&CO does not exist. It is a concept built for a portfolio: the shop, the barbers, the address and the prices are invented, and the photographs were generated for the project. The booking system behind it is real software, built the way a working shop would need it."
+  },
+  "contact": {
+    "eyebrow": "Contact",
+    "title": "Where and when.",
+    "lead": "The quickest way to reach us is to book. For anything else, the details are below.",
+    "findTitle": "Getting here",
+    "findBody": "Five minutes on foot from Shoreditch High Street station. Calvert Yard is a cobbled lane; the shop is the black front halfway down, on the left.",
+    "bookTitle": "Want a chair?",
+    "bookBody": "Booking takes about a minute and needs only a name, an email address and a phone number.",
+    "fictionNote": "The address, phone number and email belong to a fictional shop. Please do not try to use them."
+  },
+  "booking": {
+    "eyebrow": "Booking",
+    "title": "Book an appointment",
+    "demoNotice": "Preview of the booking flow. Times shown are examples; nothing is stored and no email is sent yet.",
+    "stepsLabel": "Booking steps",
+    "stepOf": "Step {current} of {total}",
+    "steps": {
+      "services": "Services",
+      "barber": "Barber",
+      "time": "Date and time",
+      "details": "Your details",
+      "review": "Review"
+    },
+    "continue": "Continue",
+    "back": "Back",
+    "edit": "Change",
+    "services": {
+      "title": "What are we doing?",
+      "lead": "Choose one service or several. They are done one after another by the same barber.",
+      "noBarber": "No single barber does all of these in one visit. Remove a service, or book them as separate appointments.",
+      "chooseOne": "Choose at least one service to continue."
+    },
+    "barber": {
+      "title": "Who is cutting?",
+      "lead": "These barbers do everything you chose.",
+      "any": "Any available",
+      "anyNote": "We pick whoever is free at your time.",
+      "choose": "Choose a barber to continue."
+    },
+    "time": {
+      "title": "When?",
+      "lead": "Appointments open {horizonDays} days ahead and at least two hours from now.",
+      "dateLabel": "Date",
+      "timeLabel": "Start time",
+      "today": "Today",
+      "loading": "Looking for free times…",
+      "empty": "Nothing free on this day.",
+      "emptyHint": "Try another date, or choose “Any available” to see every barber's times.",
+      "error": "The times could not be loaded.",
+      "retry": "Try again",
+      "choose": "Choose a start time to continue.",
+      "ends": "Ends at {time}",
+      "zone": "All times are London time."
+    },
+    "details": {
+      "title": "Who is it for?",
+      "lead": "We send a link to this email to confirm the booking, and reminders the day before and two hours before.",
+      "name": "Name",
+      "email": "Email",
+      "phone": "Phone",
+      "privacy": "We use these details only for this booking. You do not need an account.",
+      "errors": {
+        "name": {
+          "required": "Enter your name.",
+          "invalid": "Enter your full name.",
+          "tooLong": "That name is too long."
+        },
+        "email": {
+          "required": "Enter your email address.",
+          "invalid": "This email address looks incomplete, for example name@example.com.",
+          "tooLong": "That email address is too long."
+        },
+        "phone": {
+          "required": "Enter a phone number.",
+          "invalid": "Enter a phone number with 7 to 15 digits.",
+          "tooLong": "That phone number is too long."
+        }
+      },
+      "fix": "Check the marked fields to continue."
+    },
+    "review": {
+      "title": "Check it over.",
+      "lead": "Nothing is booked until you confirm from your email.",
+      "submit": "Hold my slot",
+      "submitting": "Holding…",
+      "terms1": "We hold this time for {holdMinutes} minutes while you confirm by email.",
+      "terms2": "You can change or cancel free of charge up to {cutoffHours} hours before the appointment.",
+      "terms3": "Payment is taken in the shop, in US dollars.",
+      "slotTaken": "That time has just been taken. Choose another one — your details are kept.",
+      "failed": "Something went wrong and nothing was booked. Please try again."
+    },
+    "summary": {
+      "title": "Your appointment",
+      "empty": "Nothing chosen yet.",
+      "services": "Services",
+      "barber": "Barber",
+      "when": "When",
+      "contact": "Details",
+      "duration": "Total time",
+      "total": "Total",
+      "notChosen": "Not chosen"
+    },
+    "held": {
+      "title": "Check your email.",
+      "body": "We are holding your slot until {time}. Open the link we sent to {email} to confirm the booking.",
+      "demo": "This is a preview: no email was sent and no slot was held.",
+      "reference": "Reference",
+      "assigned": "Your barber",
+      "another": "Book another appointment",
+      "home": "Back to the front page"
+    }
   },
   "footer": {
     "rights": "© {year} CUT&CO",

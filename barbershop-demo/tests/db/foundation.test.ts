@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { mockCatalog } from "@/lib/catalog/mock";
 import { startTestDatabase, type TestDatabase } from "./harness";
 
 // PostgreSQL error codes.
@@ -140,6 +141,70 @@ describe("migrations and seed", () => {
       min_lead_minutes: 120,
       horizon_days: 30,
       change_cutoff_hours: 12,
+    });
+  });
+
+  // Phase 02 serves the catalog from a constant; it has to say what the seed says.
+  it("matches the catalog the site is built from", async () => {
+    const services = await t.db.query(
+      `select slug, name_en, name_ru, description_en, description_ru, price_cents, duration_minutes
+       from public.services order by sort_order`,
+    );
+    expect(services.rows).toEqual(
+      mockCatalog.services.map((service) => ({
+        slug: service.slug,
+        name_en: service.name.en,
+        name_ru: service.name.ru,
+        description_en: service.description.en,
+        description_ru: service.description.ru,
+        price_cents: service.priceCents,
+        duration_minutes: service.durationMinutes,
+      })),
+    );
+
+    const seeded = await t.db.query(
+      `select b.slug, b.name, b.title_en, b.title_ru, b.bio_en, b.bio_ru,
+              (select array_agg(s.slug order by s.sort_order)
+                 from public.barber_services bs join public.services s on s.id = bs.service_id
+                where bs.barber_id = b.id) as services,
+              (select array_agg(h.weekday || ' ' || to_char(h.start_time, 'HH24:MI') || '-' || to_char(h.end_time, 'HH24:MI')
+                                order by h.weekday, h.start_time)
+                 from public.working_hours h where h.barber_id = b.id) as hours
+       from public.barbers b order by b.sort_order`,
+    );
+    const order = mockCatalog.services.map((service) => service.id);
+    expect(seeded.rows).toEqual(
+      mockCatalog.barbers.map((barber) => ({
+        slug: barber.slug,
+        name: barber.name,
+        title_en: barber.title.en,
+        title_ru: barber.title.ru,
+        bio_en: barber.bio.en,
+        bio_ru: barber.bio.ru,
+        services: [...barber.serviceIds].sort((a, b) => order.indexOf(a) - order.indexOf(b)),
+        hours: [...barber.hours]
+          .sort((a, b) => a.weekday - b.weekday || a.start.localeCompare(b.start))
+          .map((range) => `${range.weekday} ${range.start}-${range.end}`),
+      })),
+    );
+
+    const shop = await t.db.query(
+      `select name, address_line1, city, postcode, phone, email, hold_minutes, slot_interval_minutes,
+              min_lead_minutes, horizon_days, change_cutoff_hours from public.shop_settings`,
+    );
+    const { policy, ...address } = mockCatalog.shop;
+    expect(shop.rows[0]).toEqual({
+      name: address.name,
+      address_line1: address.addressLine1,
+      city: address.city,
+      postcode: address.postcode,
+      phone: address.phone,
+      email: address.email,
+      hold_minutes: policy.holdMinutes,
+      slot_interval_minutes: policy.slotIntervalMinutes,
+      min_lead_minutes: policy.minLeadMinutes,
+      horizon_days: policy.horizonDays,
+      change_cutoff_hours: policy.changeCutoffHours,
     });
   });
 

@@ -96,6 +96,20 @@
 }
 
 /*
+  The place of a photograph that has not been supplied yet: a dark plate with
+  one hairline from corner to corner, the way a layout marks a picture box.
+*/
+.photo-pending {
+  background-image: linear-gradient(
+    to top right,
+    transparent calc(50% - 0.5px),
+    rgb(242 238 229 / 0.14) calc(50% - 0.5px),
+    rgb(242 238 229 / 0.14) calc(50% + 0.5px),
+    transparent calc(50% + 0.5px)
+  );
+}
+
+/*
   Type scale. Display and headings are condensed capitals; long Russian words
   are allowed to break rather than push the page sideways.
 */

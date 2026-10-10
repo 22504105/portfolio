@@ -9,15 +9,20 @@ nothing here can be booked, bought or visited.**
 
 ## Status
 
-**Phase 01 of 05 — architecture and foundation.** In place: the bilingual
-application shell, the design tokens, the database schema with row level
-security and seed data, and the test setup. The public site, the booking flow,
-accounts, the admin panel and email are not built yet.
+**Phase 02 of 05 — public website and booking interface.** In place: the
+bilingual public site (home, services, barbers, gallery, about, contact), the
+booking wizard, the design system, the database schema with row level security
+and seed data, and the tests.
+
+**Booking is not operational yet.** The wizard runs on a mock in the browser:
+the working hours and slot rules are real, the "existing bookings" are invented,
+nothing is stored and no email is sent. The pages say so. The booking engine,
+email, accounts and the admin panel come in the next phases.
 
 | Phase | Scope | State |
 |---|---|---|
 | 01 | Architecture and foundation | Done |
-| 02 | Public website and booking interface | Not started |
+| 02 | Public website and booking interface | Done, awaiting visual review |
 | 03 | Booking engine, email and accounts | Not started |
 | 04 | Admin panel, analytics and public demo | Not started |
 | 05 | Final QA, security and deployment | Not started |
@@ -49,6 +54,7 @@ variables. For later phases, copy `.env.example` to `.env.local`.
 | `npm run lint` | ESLint |
 | `npm run typecheck` | TypeScript check |
 | `npm test` | Unit tests and database tests |
+| `npm run images -- <folder>` | Rebuild `public/images` from the raw photographs |
 
 The database tests start a real PostgreSQL from the `embedded-postgres`
 package (no Docker), apply the migrations and the seed, and run against it.
@@ -79,9 +85,19 @@ lib/            Configuration, formatting, environment, Supabase clients
 messages/       Interface text: en.json and ru.json
 supabase/       Migrations and seed
 tests/          Database tests and catalog checks
-docs/           Brief, architecture, design system
+data/           Image registry
+scripts/        Image processing
+docs/           Brief, architecture, design system, image brief
 ```
 
 - [`docs/architecture.md`](docs/architecture.md) — data model, concurrency
   strategy, permission matrix, security review.
 - [`docs/design-system.md`](docs/design-system.md) — colour, type, layout.
+- [`docs/image-brief.md`](docs/image-brief.md) — the photographs the site needs.
+
+## Photographs
+
+The photographs are generated for the project and supplied separately
+(`docs/image-brief.md`). Until one is supplied, its place shows an empty frame
+with a caption. `npm run images -- <folder>` processes whatever is in the
+folder and can be run again as more arrive.
