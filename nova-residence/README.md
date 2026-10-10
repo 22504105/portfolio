@@ -4,7 +4,7 @@ A concept website for a fictional premium residential development in Istanbul.
 
 **This is a concept portfolio project and is not affiliated with a real property development.**
 
-**Live demo:** _to be added after deployment_
+**Live demo:** https://nova-residence-five.vercel.app
 
 ## Overview
 
