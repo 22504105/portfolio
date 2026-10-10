@@ -37,6 +37,12 @@ export function SiteFooter({ shop, year }: SiteFooterProps) {
                 {t("nav.bookAppointment")}
               </Link>
             </li>
+            <li>
+              {/* Leads to the sign-in page for anyone not signed in. */}
+              <Link href="/account" className={LINK}>
+                {t("nav.account")}
+              </Link>
+            </li>
           </ul>
         </nav>
 

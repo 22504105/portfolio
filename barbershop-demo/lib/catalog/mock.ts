@@ -166,6 +166,7 @@ export const mockCatalog: Catalog = {
       minLeadMinutes: 120,
       horizonDays: 30,
       changeCutoffHours: 12,
+      maxBreakMinutes: 120,
     },
   },
   services,

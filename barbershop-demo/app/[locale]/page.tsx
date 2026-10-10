@@ -36,12 +36,12 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
       <section aria-labelledby="home-title" className="relative isolate">
         <Photo
           image="heroDesktop"
-          sizes="100vw"
+          sizes="(min-width: 48rem) 100vw, 1px"
           priority
           decorative
           className="absolute inset-0 -z-10 max-md:hidden"
         />
-        <Photo image="heroMobile" sizes="100vw" priority decorative className="absolute inset-0 -z-10 md:hidden" />
+        <Photo image="heroMobile" sizes="(min-width: 48rem) 1px, 100vw" priority decorative className="absolute inset-0 -z-10 md:hidden" />
         <div aria-hidden="true" className="absolute inset-0 -z-10 bg-linear-to-b from-ink/85 via-ink/35 to-ink/90" />
 
         <Container className="flex min-h-[calc(100svh-var(--spacing-header))] flex-col justify-between gap-16 pb-10 pt-14 md:pb-14 md:pt-20">

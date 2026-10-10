@@ -39,6 +39,8 @@ export type BookingPolicy = {
   minLeadMinutes: number;
   horizonDays: number;
   changeCutoffHours: number;
+  /** The longest break a barber may take without asking. */
+  maxBreakMinutes: number;
 };
 
 export type Shop = {

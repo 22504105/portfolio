@@ -9,14 +9,14 @@ nothing here can be booked, bought or visited.**
 
 ## Status
 
-**Phase 03 of 05, part one — the booking engine.** In place: the bilingual
-public site, and real booking for guests: availability from the database, a
-slot held for fifteen minutes, confirmation by email link, a page to view,
-reschedule or cancel a booking, and an email queue with reminders.
+**Phase 03 of 05 — booking engine, email and accounts.** In place: the
+bilingual public site; real booking for guests (availability from the
+database, a slot held for fifteen minutes, confirmation by email link, a page
+to view, reschedule or cancel, an email queue with reminders); optional client
+accounts with their bookings and profile; and the barber's workspace
+(appointments, outcomes, breaks, requests for time off).
 
-**Not built yet:** accounts and sign-in for clients and staff, the barber
-workspace (the rest of Phase 03, which needs a Supabase project), the admin
-panel and the public demo (Phase 04).
+**Not built yet:** the admin panel, analytics and the public demo (Phase 04).
 
 Without a database configured the site still runs: it serves its built-in
 catalog, and the booking page shows the same wizard on a mock, labelled as a
@@ -26,7 +26,7 @@ preview.
 |---|---|---|
 | 01 | Architecture and foundation | Done |
 | 02 | Public website and booking interface | Done |
-| 03 | Booking engine, email and accounts | Engine, email and guest management done; accounts and barber workspace to do |
+| 03 | Booking engine, email and accounts | Done, awaiting review |
 | 04 | Admin panel, analytics and public demo | Not started |
 | 05 | Final QA, security and deployment | Not started |
 
@@ -65,6 +65,8 @@ is due on the queue, the way the scheduler does in production.
 | `npm run typecheck` | TypeScript check |
 | `npm run db:dev` | Local PostgreSQL for development (`-- --reset` to start over) |
 | `npm run jobs` | Run the email queue once against the local server |
+| `npm run db:migrate` | Apply pending migrations to the database in `.env.local` (`-- --seed` adds the seed) |
+| `npm run user:create -- <email> <role> [barber-slug] ["Name"]` | Create a staff or demo account |
 | `npm test` | Unit tests and database tests |
 | `npm run images -- <folder>` | Rebuild `public/images` from the raw photographs |
 
@@ -84,8 +86,25 @@ npx supabase link --project-ref <ref>
 npx supabase db push
 ```
 
-Staff accounts are not seeded. An account becomes a barber or an admin when
-its `profiles.role` is set by someone with database access.
+### Accounts
+
+Sign-in is by email and password, through Supabase Auth. Signing up on the
+site always creates a client; the address must be confirmed from an email that
+Supabase sends. In the Supabase dashboard, under Authentication -> URL
+Configuration, add the site's address followed by `/**` to the redirect URLs
+(for local work: `http://localhost:3000/**`), or the links in those emails
+will not come back to the right page.
+
+Staff accounts are made from the command line, by someone who holds the
+database connection string:
+
+```bash
+npm run user:create -- marcus@example.com barber marcus-hale "Marcus Hale"
+npm run user:create -- owner@example.com admin
+```
+
+The password is generated and printed once. The local database from
+`npm run db:dev` has no Supabase Auth: accounts need a real Supabase project.
 
 The application reaches the database directly, with `DATABASE_URL`, for
 everything to do with bookings. See `.env.example` for every variable.

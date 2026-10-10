@@ -1,4 +1,4 @@
-import { Pool } from "pg";
+import { Pool, type PoolClient } from "pg";
 import { getServerEnv } from "./env";
 
 // The server's own connection to PostgreSQL. It connects as the database
@@ -31,4 +31,28 @@ export function db(): Pool {
 export async function closeDb(): Promise<void> {
   await holder.cutcoPool?.end();
   holder.cutcoPool = undefined;
+}
+
+/**
+ * Runs queries as a signed-in user would see the database: under the
+ * `authenticated` role with the user's id in the JWT claims, so row level
+ * security applies on top of whatever the code itself checks. For reads on
+ * behalf of a client or a barber. Everything happens in one transaction.
+ */
+export async function asUser<T>(userId: string, run: (query: PoolClient["query"]) => Promise<T>): Promise<T> {
+  const client = await db().connect();
+  try {
+    await client.query("begin");
+    await client.query("select set_config('request.jwt.claims', $1, true), set_config('role', 'authenticated', true)", [
+      JSON.stringify({ sub: userId, role: "authenticated" }),
+    ]);
+    const result = await run(client.query.bind(client) as PoolClient["query"]);
+    await client.query("commit");
+    return result;
+  } catch (error) {
+    await client.query("rollback");
+    throw error;
+  } finally {
+    client.release();
+  }
 }

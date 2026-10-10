@@ -41,7 +41,7 @@ export type WizardAction =
   | { type: "submitted"; result: HoldResult }
   | { type: "startOver" };
 
-type Preselection = { serviceId?: string; barberId?: string };
+type Preselection = { serviceId?: string; barberId?: string; contact?: Contact };
 
 /** A fresh wizard, optionally with a service or a barber chosen by the link that opened it. */
 export function initialState(catalog: Catalog, preselection: Preselection = {}): WizardState {
@@ -57,7 +57,7 @@ export function initialState(catalog: Catalog, preselection: Preselection = {}):
     barber: eligible ? barber.id : null,
     date: null,
     startsAt: null,
-    contact: EMPTY_CONTACT,
+    contact: preselection.contact ?? EMPTY_CONTACT,
     status: "editing",
     result: null,
   };

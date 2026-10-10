@@ -4,7 +4,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { totals, type Catalog } from "@/lib/catalog";
-import { normalizeContact } from "@/lib/booking/contact";
+import { normalizeContact, type Contact } from "@/lib/booking/contact";
 import { liveGateway } from "@/lib/booking/live-gateway";
 import { createMockGateway } from "@/lib/booking/mock-gateway";
 import { bookableDates } from "@/lib/booking/slots";
@@ -23,7 +23,7 @@ import { TimeStep } from "./TimeStep";
 type BookingWizardProps = {
   catalog: Catalog;
   /** A service or barber named by the link that opened the page. */
-  preselection: { serviceId?: string; barberId?: string };
+  preselection: { serviceId?: string; barberId?: string; contact?: Contact };
   /**
    * True when a database is configured: the wizard then talks to the booking
    * engine. False shows the same interface on a mock, as a preview.

@@ -13,7 +13,8 @@
     "images": "node scripts/process-images.mjs",
     "db:dev": "node scripts/dev-db.mjs",
     "jobs": "node scripts/run-jobs.mjs",
-    "db:migrate": "node scripts/migrate.mjs"
+    "db:migrate": "node scripts/migrate.mjs",
+    "user:create": "node scripts/create-user.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",

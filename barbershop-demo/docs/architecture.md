@@ -4,8 +4,9 @@ The decisions behind the foundation, in the order the brief asks for them.
 `docs/brief.md` is the specification; where this document and the brief
 disagree, the brief wins and this document is wrong.
 
-Status: Phase 03, part one. The booking engine, email and guest management are
-implemented and tested; accounts and the barber workspace are not. Sections marked **Phase 03** or **Phase 04**
+Status: Phase 03. The booking engine, email, guest management, client accounts
+and the barber workspace are implemented and tested. Admin, analytics and the
+demo are Phase 04. Sections marked **Phase 03** or **Phase 04**
 describe an agreed design that is not implemented yet.
 
 ## 1. Information architecture
@@ -27,9 +28,10 @@ for a year in the `NEXT_LOCALE` cookie and, for registered users, in
 | Public demo | `/demo/admin` | Everyone, against a separate demo database |
 | Machine endpoints | `/api/cron/*` | The scheduler, with `CRON_SECRET` |
 
-Built so far: the public site, `/book`, `/booking/confirm`, `/booking/manage`
-and `/api/cron/notifications`. Accounts, the barber workspace, admin and the
-demo are not built yet.
+Built so far: the public site, `/book`, `/booking/confirm`, `/booking/manage`,
+`/login`, `/register`, `/forgot-password`, `/account`, `/barber`,
+`/barber/calendar` and `/api/cron/notifications`. Admin and the demo are not
+built yet.
 
 ## 2. Technology
 
@@ -168,10 +170,8 @@ connections racing each other):
 - a reschedule racing a new booking for the same time: exactly one wins;
 - one link opened three times at once: confirmed once.
 
-Differences from the plan above, decided while building: rescheduling keeps
-the same barber (so it needs one lock, and the brief does not ask for more),
-and time off does not take the lock yet because nothing writes time off until
-the barber workspace exists.
+One difference from the plan above, decided while building: rescheduling keeps
+the same barber, so it needs one lock, and the brief does not ask for more.
 
 ## 6. Roles and permissions
 
@@ -266,9 +266,10 @@ the implementation in Phase 03.
 | The demo reaches real data | High | Separate project and keys |
 | Cancelling past the cutoff by rescheduling first | Medium | One cutoff rule shared by both operations |
 
-Still open: whether a registered client must also verify by email for each
-booking (the brief makes verification mandatory for guests). To be decided
-with accounts.
+Decided with accounts: a signed-in client still confirms each booking from an
+email link, like a guest. Their details are filled in for them, and the
+booking appears in their account once confirmed. One rule for everyone, and
+"email verification is mandatory" holds without exceptions.
 
 ## 10. The booking interface and its two back ends
 
@@ -325,3 +326,44 @@ Consequences to keep in mind:
 - On Supabase use the transaction pooler. The connection is encrypted; its
   certificate is verified only when `DATABASE_CA_CERT` is set.
 
+
+## 12. Accounts and staff
+
+- **Sign-in** is email and password through Supabase Auth, with the session in
+  cookies (`@supabase/ssr`). Every request that needs a user asks the auth
+  server to verify the session (`getUser`), and reads the role from
+  `profiles` in the database. A role is never taken from the session or the
+  form, and a demotion takes effect on the next request.
+- **Sign-up** always creates a client. Supabase sends the confirmation email;
+  the link lands on `/auth/callback`, which opens the session.
+- **Linking bookings to an account** happens by email address, and only once
+  the address is confirmed (`link_customer_account`). Otherwise registering
+  with someone else's address would hand over their bookings.
+- **One general answer** for a wrong password, an unknown address and an
+  unconfirmed one; sign-up and password reset answer the same whether or not
+  the address has an account.
+- **A client changing a booking** from the account goes through the same
+  management page as a guest: the server checks the booking is theirs and
+  opens the management session, with no email link needed.
+- **Reads on behalf of a user** (`lib/account.ts`) run in a transaction under
+  the `authenticated` role with the user's id in the JWT claims, so row level
+  security applies on top of the code's own filter.
+- **A barber** sees their own appointments with the client's name and phone,
+  never the email address or the takings; records whether a client came, once
+  the appointment has started; takes a break of up to `max_break_minutes` at
+  once; and requests whole days off, which block nothing until an admin
+  approves them (Phase 04). A break cannot be placed on top of an appointment.
+  All of it is refused by the database functions, not only by the pages.
+- **Staff accounts** are created with `npm run user:create`, which writes to
+  the auth tables with the database owner's connection. There is no way to
+  become staff through the site.
+- **Throttling** covers sign-in (by address and by account), sign-up and
+  password reset.
+
+Checked in a browser against a real Supabase project: redirect to sign-in and
+back, refusal of a wrong password, a client's booking appearing in the
+account, opening it for changes, refusal of another customer's booking id,
+profile changes that cannot touch the role, a client turned away from the
+barber's pages, a barber recording an outcome and adding and withdrawing a
+break. Not checked: the emails Supabase itself sends (address confirmation and
+password reset), which need a real inbox.

@@ -1,6 +1,7 @@
 import { getTranslations } from "next-intl/server";
 import { BookingWizard } from "@/components/booking/BookingWizard";
 import { Container } from "@/components/layout/Container";
+import { getSessionUser } from "@/lib/auth";
 import { getCatalog } from "@/lib/catalog/server";
 import { isDatabaseConfigured } from "@/lib/env";
 import { pageLocale, pageMetadata } from "@/lib/page";
@@ -14,6 +15,7 @@ export default async function BookPage({ params, searchParams }: PageProps<"/[lo
   const t = await getTranslations("booking");
   const catalog = await getCatalog();
   const live = isDatabaseConfigured();
+  const user = await getSessionUser();
 
   // Links from the price list and the barbers' page name a service or a barber
   // by slug. Anything unknown is simply ignored.
@@ -21,6 +23,8 @@ export default async function BookPage({ params, searchParams }: PageProps<"/[lo
   const preselection = {
     serviceId: catalog.services.find((service) => service.slug === first(query.service))?.id,
     barberId: catalog.barbers.find((barber) => barber.slug === first(query.barber))?.id,
+    // A signed-in client does not type their details again. They can still change them.
+    contact: user ? { name: user.name ?? "", email: user.email, phone: user.phone ?? "" } : undefined,
   };
 
   return (

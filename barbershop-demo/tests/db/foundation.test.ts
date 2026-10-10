@@ -190,7 +190,7 @@ describe("migrations and seed", () => {
 
     const shop = await t.db.query(
       `select name, address_line1, city, postcode, phone, email, hold_minutes, slot_interval_minutes,
-              min_lead_minutes, horizon_days, change_cutoff_hours from public.shop_settings`,
+              min_lead_minutes, horizon_days, change_cutoff_hours, max_break_minutes from public.shop_settings`,
     );
     const { policy, ...address } = mockCatalog.shop;
     expect(shop.rows[0]).toEqual({
@@ -205,6 +205,7 @@ describe("migrations and seed", () => {
       min_lead_minutes: policy.minLeadMinutes,
       horizon_days: policy.horizonDays,
       change_cutoff_hours: policy.changeCutoffHours,
+      max_break_minutes: policy.maxBreakMinutes,
     });
   });
 

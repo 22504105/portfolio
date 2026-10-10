@@ -29,6 +29,7 @@ export async function loadCatalog(): Promise<Catalog> {
       minLeadMinutes: s.min_lead_minutes,
       horizonDays: s.horizon_days,
       changeCutoffHours: s.change_cutoff_hours,
+      maxBreakMinutes: s.max_break_minutes,
     },
   };
 

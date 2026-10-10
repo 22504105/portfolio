@@ -56,6 +56,11 @@ export function isDatabaseConfigured(): boolean {
   return Boolean(process.env.DATABASE_URL);
 }
 
+/** Whether Supabase Auth is configured. Without it there are no accounts; guest booking still works. */
+export function isAuthConfigured(): boolean {
+  return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY);
+}
+
 /** Supabase Auth variables, safe in the browser. Each must be named in full for Next.js to inline it. */
 export function getPublicEnv(): PublicEnv {
   publicEnv ??= parse(publicSchema, {
