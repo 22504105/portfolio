@@ -37,16 +37,20 @@ function stillWanted(job: Job, booking: BookingView, now: Date): boolean {
   }
 }
 
-/** The link an email carries, with a token made for this email alone. */
+/**
+ * The link an email carries, with a token made for this email alone. The token
+ * goes after the "#": that part of an address is never sent to a server, so
+ * it reaches no access log and no Referer header.
+ */
 async function linkFor(type: EmailType, booking: BookingView, appUrl: string): Promise<string | undefined> {
   if (type === "cancellation") return undefined;
   if (type === "verification") {
     const token = await issueToken(booking.id, "verify", booking.holdExpiresAt!);
-    return `${appUrl}/${booking.locale}/booking/confirm?token=${token}`;
+    return `${appUrl}/${booking.locale}/booking/confirm#token=${token}`;
   }
   // A management link works until the appointment is over.
   const token = await issueToken(booking.id, "manage", booking.endsAt);
-  return `${appUrl}/${booking.locale}/booking/manage/open?token=${token}`;
+  return `${appUrl}/${booking.locale}/booking/manage/open#token=${token}`;
 }
 
 export async function processDueJobs(limit = 10, transport: EmailTransport = defaultTransport()): Promise<WorkerReport> {

@@ -292,7 +292,8 @@
       "expiredBody": "A slot is held for a short time only, and this one was not confirmed in time. Nothing was booked. Choose a time again and it will take a minute.",
       "invalidTitle": "This link does not work",
       "invalidBody": "It may have been used up, mistyped or cut short by your mail program. Open the link from the most recent email, or book again.",
-      "bookAgain": "Book an appointment"
+      "bookAgain": "Book an appointment",
+      "needsScript": "This page needs JavaScript to read the link from your email. Turn it on, or open the link in another browser."
     },
     "manage": {
       "eyebrow": "Your booking",
@@ -331,7 +332,8 @@
         "not_changeable": "This booking can no longer be changed. Open the link from your email again if you think that is wrong.",
         "unavailable": "Something went wrong and nothing was changed. Please try again."
       },
-      "bookAgainLabel": "Book an appointment"
+      "bookAgainLabel": "Book an appointment",
+      "opening": "Opening your booking…"
     },
     "status": {
       "pending": "Waiting for confirmation",
@@ -730,5 +732,12 @@
       "reason": "Reason (optional)",
       "addClosure": "Add closure"
     }
+  },
+  "error": {
+    "title": "Something went wrong",
+    "body": "The page could not be shown. Nothing you entered was lost on our side; try again, and if it keeps happening, come back a little later.",
+    "retry": "Try again",
+    "home": "Back to the front page",
+    "reference": "Reference: {code}"
   }
 }

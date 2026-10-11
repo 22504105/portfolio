@@ -15,6 +15,8 @@ type PriceListProps = {
 export function PriceList({ services, detailed = false }: PriceListProps) {
   const t = useTranslations("services");
   const locale = useLocale();
+  // The full list sits straight under the title of its page; the preview sits under a section heading.
+  const Heading = detailed ? "h2" : "h3";
 
   return (
     <ul className="border-t border-line">
@@ -24,7 +26,7 @@ export function PriceList({ services, detailed = false }: PriceListProps) {
           className="grid grid-cols-[1fr_auto] items-baseline gap-x-6 gap-y-2 border-b border-line py-5 md:grid-cols-12 md:py-6"
         >
           <div className="md:col-span-6">
-            <h3 className="type-h3">{service.name[locale]}</h3>
+            <Heading className="type-h3">{service.name[locale]}</Heading>
             {detailed && <p className="type-body mt-2 max-w-md text-muted">{service.description[locale]}</p>}
           </div>
 

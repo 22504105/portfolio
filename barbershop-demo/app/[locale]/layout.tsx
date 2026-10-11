@@ -3,6 +3,7 @@ import { hasLocale, NextIntlClientProvider } from "next-intl";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { SiteFooter } from "@/components/layout/SiteFooter";
+import { ServiceWorker } from "@/components/layout/ServiceWorker";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { routing } from "@/i18n/routing";
 import { getCatalog } from "@/lib/catalog/server";
@@ -21,6 +22,8 @@ export async function generateMetadata({ params }: LayoutProps<"/[locale]">): Pr
   return {
     title: { default: t("title"), template: "%s — CUT&CO" },
     description: t("description"),
+    applicationName: "CUT&CO",
+    appleWebApp: { capable: true, title: "CUT&CO", statusBarStyle: "black-translucent" },
     alternates: {
       languages: Object.fromEntries(routing.locales.map((language) => [language, `/${language}`])),
     },
@@ -54,6 +57,7 @@ export default async function LocaleLayout({ children, params }: LayoutProps<"/[
             {children}
           </main>
           <SiteFooter shop={shop} year={new Date().getFullYear()} />
+          <ServiceWorker />
         </NextIntlClientProvider>
       </body>
     </html>

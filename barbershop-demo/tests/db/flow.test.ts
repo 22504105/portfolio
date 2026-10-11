@@ -26,7 +26,8 @@ const services: Record<string, string> = {};
 const barbers: Record<string, string> = {};
 let people = 0;
 
-const tokenIn = (email: Sent) => new URL(email.text.match(/https?:\/\/\S+/)![0]).searchParams.get("token")!;
+// The token travels after the "#", where no server sees it.
+const tokenIn = (email: Sent) => new URLSearchParams(new URL(email.text.match(/https?:\/\/\S+/)![0]).hash.slice(1)).get("token")!;
 
 async function freeSlot(serviceSlugs: string[], barber: string) {
   for (let day = 3; day <= 28; day++) {
@@ -90,7 +91,9 @@ describe("from hold to confirmation", () => {
     expect(email.text).toContain("for 15 minutes");
     expect(email.text).toContain("Haircut");
     expect(email.text).toContain("$45");
-    expect(email.text).toMatch(/https:\/\/cutco\.test\/en\/booking\/confirm\?token=[A-Za-z0-9_-]{43}/);
+    expect(email.text).toMatch(/https:\/\/cutco\.test\/en\/booking\/confirm#token=[A-Za-z0-9_-]{43}/);
+    // Nothing secret in the part of the address a server would log.
+    expect(new URL(email.text.match(/https?:\/\/\S+/)![0]).search).toBe("");
     expect(email.text).toContain("not a real barbershop");
 
     expect(await store.confirmByToken(tokenIn(email))).toEqual({ ok: true, bookingId: held.id, alreadyConfirmed: false });
@@ -114,7 +117,7 @@ describe("from hold to confirmation", () => {
     const { sent } = await deliver();
     const mine = sent.filter((email) => email.to === held.email);
     expect(mine.map((email) => email.subject)).toEqual([expect.stringMatching(/^Booked: .+ at CUT&CO$/)]);
-    expect(mine[0].text).toMatch(/https:\/\/cutco\.test\/en\/booking\/manage\/open\?token=/);
+    expect(mine[0].text).toMatch(/https:\/\/cutco\.test\/en\/booking\/manage\/open#token=/);
     // Nothing more goes out however often the worker runs.
     expect((await deliver()).sent.filter((email) => email.to === held.email)).toEqual([]);
   });
@@ -126,14 +129,14 @@ describe("from hold to confirmation", () => {
     expect(verification.text).toContain("Здравствуйте, Иван Петров.");
     expect(verification.text).toContain("Стрижка");
     expect(verification.text).toMatch(/45\s\$/);
-    expect(verification.text).toContain("/ru/booking/confirm?token=");
+    expect(verification.text).toContain("/ru/booking/confirm#token=");
     expect(verification.html).toContain('<html lang="ru">');
     expect(verification.text).not.toMatch(/Hello|Barber:|Haircut/);
 
     await store.confirmByToken(tokenIn(verification));
     const confirmation = (await deliver()).sent.find((email) => email.to === held.email)!;
     expect(confirmation.subject).toMatch(/^Вы записаны: /);
-    expect(confirmation.text).toContain("/ru/booking/manage/open?token=");
+    expect(confirmation.text).toContain("/ru/booking/manage/open#token=");
   });
 
   it("escapes what the customer typed", async () => {

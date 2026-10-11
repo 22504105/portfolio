@@ -104,3 +104,12 @@ Patterns that hold across pages:
 - Lists are ruled rows with hairlines, not grids of boxes.
 - A page alternates dark and light sections; a light section is `data-tone="light"`.
 - A visually hidden input needs a positioned parent (`relative`), or it widens the page.
+
+## Offline page and application icons
+
+`public/offline-en.html` and `public/offline-ru.html` are self-contained: they
+cannot count on any file of the site, so they use system typefaces and repeat
+the palette (ink, bone, signal) and the uppercase heading by hand. Change the
+palette here too if it changes. The icons (`public/icons`, `app/apple-icon.png`)
+are drawn from one shape by `scripts/make-icons.mjs`; the maskable icon keeps
+the mark inside the central three fifths.

@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#0c0c0b">
+<title>You are offline — CUT&amp;CO</title>
+<style>
+  /* Self-contained on purpose: no file of the site can be counted on offline. */
+  html { background: #0c0c0b; color: #f2eee5; font-family: system-ui, -apple-system, "Segoe UI", Arial, sans-serif; -webkit-text-size-adjust: 100%; }
+  body { margin: 0; min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; }
+  header { height: 4.5rem; display: flex; align-items: center; padding: 0 clamp(1.25rem, 4vw, 3rem); border-bottom: 1px solid rgb(242 238 229 / 0.18); font-family: "Arial Narrow", Arial, sans-serif; font-size: 1.5rem; font-weight: 700; letter-spacing: 0.04em; }
+  main { flex: 1; padding: clamp(4.5rem, 11vw, 10rem) clamp(1.25rem, 4vw, 3rem); max-width: 40rem; }
+  .eyebrow { margin: 0; font-size: 0.75rem; letter-spacing: 0.16em; text-transform: uppercase; color: #a19d93; }
+  h1 { margin: 1.25rem 0 0; font-family: "Arial Narrow", Arial, sans-serif; font-size: clamp(2.125rem, 5.4vw, 4.25rem); font-weight: 600; line-height: 0.98; text-transform: uppercase; }
+  p { margin: 1.5rem 0 0; font-size: 1.125rem; line-height: 1.5; color: #a19d93; }
+  p.plain { font-size: 1rem; color: #f2eee5; }
+  button { margin-top: 2.5rem; min-height: 3.5rem; padding: 1rem 2rem; border: 0; background: #e5532b; color: #0c0c0b; font: inherit; font-size: 0.8125rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer; }
+  button:focus-visible { outline: 2px solid #f2eee5; outline-offset: 3px; }
+  footer { padding: 2rem clamp(1.25rem, 4vw, 3rem); border-top: 1px solid rgb(242 238 229 / 0.18); font-size: 0.875rem; line-height: 1.5; }
+</style>
+</head>
+<body>
+<header>CUT&amp;CO</header>
+<main>
+  <p class="eyebrow">No connection</p>
+  <h1>You are offline</h1>
+  <p>This page needs a connection. Booking, your bookings and the calendar are always shown live, so none of them is available right now.</p>
+  <p class="plain">If you were in the middle of booking, nothing was booked. Try again once you are back online.</p>
+  <button type="button" onclick="location.reload()">Try again</button>
+</main>
+<footer>CUT&amp;CO is a concept portfolio project, not a real barbershop.</footer>
+</body>
+</html>

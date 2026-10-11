@@ -2,7 +2,6 @@
 
 import { hasLocale } from "next-intl";
 import { revalidatePath } from "next/cache";
-import { headers } from "next/headers";
 import { z } from "zod";
 import { redirect } from "@/i18n/navigation";
 import { routing, type Locale } from "@/i18n/routing";
@@ -11,6 +10,7 @@ import { allowed } from "@/lib/booking/store";
 import { throttleKey } from "@/lib/booking/tokens";
 import { db } from "@/lib/db";
 import { getServerEnv } from "@/lib/env";
+import { clientAddress } from "@/lib/request";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 // Sign-in, sign-up and profile. Forms post here; each action answers with a
@@ -21,10 +21,6 @@ export type AuthState = { error?: "invalid" | "credentials" | "throttled" | "wea
 const email = z.string().trim().toLowerCase().max(254).pipe(z.email());
 const password = z.string().min(8).max(200);
 const localeOf = (value: FormDataEntryValue | null): Locale => (hasLocale(routing.locales, value) ? value : routing.defaultLocale);
-
-async function clientAddress(): Promise<string> {
-  return (await headers()).get("x-forwarded-for")?.split(",")[0].trim() || "unknown";
-}
 
 export async function signIn(_: AuthState, form: FormData): Promise<AuthState> {
   const locale = localeOf(form.get("locale"));

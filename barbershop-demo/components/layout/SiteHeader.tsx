@@ -13,7 +13,7 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-ink">
       <Container className="flex h-header items-center justify-between gap-6">
-        <Link href="/" aria-label={t("nav.home")} className="font-display text-2xl font-semibold tracking-wide">
+        <Link href="/" aria-label={t("nav.home")} className="inline-flex min-h-11 items-center font-display text-2xl font-semibold tracking-wide">
           {t("brand.name")}
         </Link>
 

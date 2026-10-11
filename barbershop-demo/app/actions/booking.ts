@@ -1,7 +1,6 @@
 "use server";
 
 import { hasLocale } from "next-intl";
-import { headers } from "next/headers";
 import { after } from "next/server";
 import { z } from "zod";
 import { routing } from "@/i18n/routing";
@@ -11,6 +10,7 @@ import { openSession, sessionBookingId } from "@/lib/booking/session";
 import * as store from "@/lib/booking/store";
 import { looksLikeToken, throttleKey } from "@/lib/booking/tokens";
 import { processDueJobs } from "@/lib/email/worker";
+import { clientAddress } from "@/lib/request";
 
 // Everything the browser can ask of the booking engine. Each action checks
 // what it is given as if it came from a stranger, because it does: prices,
@@ -34,12 +34,6 @@ const holdRequest = z.object({
   contact: z.object({ name: z.string().max(200), email: z.string().max(320), phone: z.string().max(60) }),
   locale: z.string(),
 });
-
-/** The address the request came from, as far as the platform tells us. */
-async function clientAddress(): Promise<string> {
-  const forwarded = (await headers()).get("x-forwarded-for");
-  return forwarded?.split(",")[0].trim() || "unknown";
-}
 
 /** Emails queued by an action leave as soon as the response has been sent. */
 function sendQueuedEmails() {
@@ -104,6 +98,19 @@ export async function confirmBooking(token: string): Promise<ConfirmOutcome> {
   await openSession(result.bookingId);
   if (!result.alreadyConfirmed) sendQueuedEmails();
   return "confirmed";
+}
+
+/**
+ * Trades the token of a "view or change my booking" link for the management
+ * session. One answer for every kind of bad link: unknown, expired, malformed.
+ */
+export async function openManageLink(token: string): Promise<boolean> {
+  if (!looksLikeToken(token)) return false;
+  if (!(await store.allowed(throttleKey("manage:ip", await clientAddress()), 30, 600))) return false;
+  const bookingId = await store.openManageToken(token);
+  if (!bookingId) return false;
+  await openSession(bookingId);
+  return true;
 }
 
 export async function fetchRescheduleAvailability(day: string): Promise<Slot[]> {

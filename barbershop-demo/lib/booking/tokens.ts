@@ -18,10 +18,7 @@ export function hashToken(token: string): Buffer {
   return createHash("sha256").update(token).digest();
 }
 
-/** Whether a string has the shape of a token at all, before it is looked up. */
-export function looksLikeToken(value: unknown): value is string {
-  return typeof value === "string" && /^[A-Za-z0-9_-]{43}$/.test(value);
-}
+export { looksLikeToken } from "./link-token";
 
 // The management session: a signed note saying "the holder opened a valid
 // link for this booking, until this time". It lives in an HTTP-only cookie so

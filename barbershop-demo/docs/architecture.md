@@ -212,7 +212,12 @@ Points the tests pin down:
   the raw value exists only in that email. A verification token lives as long
   as the hold. A management token lives until the appointment ends; opening it
   sets a signed, HTTP-only session for that booking for thirty minutes and
-  redirects to a clean address, and cancelling or rescheduling needs that session.
+  moves on to a clean address, and cancelling or rescheduling needs that session.
+- **Tokens travel after the `#`** (`/booking/confirm#token=…`). That part of
+  an address is never sent to a server, so a token reaches no access log and
+  no Referer header. The page reads it in the browser (`lib/use-link-token.ts`),
+  removes it from the address bar and sends it to a server action in the body
+  of a POST. These two pages therefore need JavaScript, and say so without it.
 - **Confirmation takes a button.** Opening the link shows a page with a button;
   only pressing it confirms. Mail scanners that follow links confirm nothing.
 - **No enumeration.** Responses to "resend my link" and to bad or expired
@@ -434,3 +439,29 @@ The page prints these definitions under the numbers.
 The same definitions exist in TypeScript (`lib/admin/analytics.ts`) for the
 demo, which has no database. Both are tested against the same week of
 bookings with the same expected figures.
+
+## 14. Final review: headers, PWA, retention
+
+The findings and the residual risks are in `docs/security.md`. What the review
+added to the design:
+
+- **Headers** for every response, in `next.config.ts`: a content security
+  policy (own origin only; Supabase Auth for connections; no frames; forms
+  post to the site only), `X-Frame-Options`, `nosniff`, a referrer policy, a
+  permissions policy, HSTS. Inline scripts stay allowed: Next.js needs them
+  unless every page is rendered on demand with a nonce.
+- **Client address** for throttling comes from `lib/request.ts`, which prefers
+  the headers the platform sets itself.
+- **PWA.** `app/manifest.ts`, icons drawn by `scripts/make-icons.mjs`, and
+  `public/sw.js`. The service worker keeps only files whose address changes
+  with their content (`/_next/static`, icons, images) and the two offline
+  pages. It never keeps a page: a cached booking page would offer times that
+  are gone, and a cached account would show one person's bookings to the next.
+  Offline, any navigation gets `public/offline-<locale>.html`.
+- **The offline page is a plain file, not a route.** Served in place of
+  another address, an application page starts its router, which fetches that
+  address again, fails, and replaces the message with the error screen.
+- **Retention** (`20261013000100_retention.sql`): `purge_stale_data(30)` runs
+  with the scheduler; `erase_customer(email)` is run by hand on request.
+- **Errors.** `app/[locale]/error.tsx` shows a plain message and a reference
+  code, never the failure itself.
