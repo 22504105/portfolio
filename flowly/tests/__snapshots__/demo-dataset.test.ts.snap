@@ -1,0 +1,9 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`the demo dataset > is pinned: these figures change only if the generator does 1`] = `
+{
+  "customers": 1180,
+  "orders": 5559,
+  "revenue": 26637955,
+}
+`;

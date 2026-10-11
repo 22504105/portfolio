@@ -1,0 +1,222 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "./shadcn.css";
+
+/*
+ * Flowly design tokens. docs/design-system.md explains each one and records
+ * the contrast it was checked for. Components use the names, never the values.
+ * Light is the only theme: a dark one comes after everything else, if at all.
+ */
+
+:root {
+  /* Surfaces */
+  --canvas: #f7f7f4;
+  --surface: #ffffff;
+  --surface-2: #f1f2ef;
+  --line: #e5e7e4;
+
+  /* Text */
+  --ink: #20242d;
+  /* The brief's #737A86 is 4.0:1 on the canvas; this is 5.0:1. */
+  --ink-muted: #646b77;
+
+  /* Accent */
+  --accent-base: #6959d9;
+  --accent-hover: #5747c2;
+  --accent-tint: #f0eeff;
+
+  /* Meaning. Never the only signal: always with a word, a sign or an icon. */
+  --positive: #15846b;
+  --negative: #c24f5a;
+  /* The brief's #A66A20 is 4.5:1 on white; this is 5.1:1. */
+  --warning: #9a6119;
+
+  /* Navigation */
+  --nav: #171a20;
+  --nav-raised: #222630;
+  --nav-ink: #e9eaf0;
+  --nav-ink-muted: #a3a8b5;
+
+  /* Chart series, in the order they are used. */
+  --series-1: #6959d9;
+  --series-2: #1f8a8a;
+  --series-3: #b8862b;
+  --series-4: #5b7ba6;
+  --series-5: #d0766a;
+
+  /* Shape */
+  --card-radius: 14px;
+  --input-radius: 10px;
+
+  /* What the shadcn components read. */
+  --radius: 0.625rem;
+  --background: var(--canvas);
+  --foreground: var(--ink);
+  --card: var(--surface);
+  --card-foreground: var(--ink);
+  --popover: var(--surface);
+  --popover-foreground: var(--ink);
+  --primary: var(--accent-base);
+  --primary-foreground: #ffffff;
+  --secondary: var(--surface-2);
+  --secondary-foreground: var(--ink);
+  --muted: var(--surface-2);
+  --muted-foreground: var(--ink-muted);
+  --accent: var(--accent-tint);
+  --accent-foreground: var(--accent-hover);
+  --destructive: var(--negative);
+  --border: var(--line);
+  --input: #d5d8d3;
+  --ring: var(--accent-base);
+}
+
+@theme inline {
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-brand: var(--accent-base);
+  --color-brand-hover: var(--accent-hover);
+  --color-brand-tint: var(--accent-tint);
+  --color-positive: var(--positive);
+  --color-negative: var(--negative);
+  --color-warning: var(--warning);
+  --color-nav: var(--nav);
+  --color-nav-raised: var(--nav-raised);
+  --color-nav-ink: var(--nav-ink);
+  --color-nav-ink-muted: var(--nav-ink-muted);
+  --color-series-1: var(--series-1);
+  --color-series-2: var(--series-2);
+  --color-series-3: var(--series-3);
+  --color-series-4: var(--series-4);
+  --color-series-5: var(--series-5);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --radius-card: var(--card-radius);
+  --radius-input: var(--input-radius);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+
+  --spacing-sidebar: 244px;
+  --spacing-rail: 68px;
+  --spacing-topbar: 72px;
+
+  --shadow-card: 0 1px 2px rgb(32 36 45 / 0.04);
+  --shadow-raised: 0 12px 32px -12px rgb(32 36 45 / 0.18), 0 2px 6px rgb(32 36 45 / 0.05);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html {
+    @apply font-sans;
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-size: 0.875rem;
+    line-height: 1.5;
+  }
+  /* One focus ring everywhere, visible on light and on dark. */
+  :focus-visible {
+    outline: 2px solid var(--accent-base);
+    outline-offset: 2px;
+  }
+  .on-nav :focus-visible {
+    outline-color: #b9b0ff;
+  }
+  ::selection {
+    background: var(--accent-tint);
+  }
+}
+
+@layer components {
+  /* Type roles. Sizes follow the brief: 14 body, 12 meta, 28–34 page title, 16–18 card title, 30–38 figure. */
+  .type-display {
+    font-size: clamp(2.25rem, 4.6vw, 3.75rem);
+    line-height: 1.04;
+    font-weight: 600;
+    letter-spacing: -0.035em;
+  }
+  .type-page {
+    font-size: clamp(1.75rem, 2.4vw, 2.125rem);
+    line-height: 1.15;
+    font-weight: 600;
+    letter-spacing: -0.025em;
+  }
+  .type-section {
+    font-size: clamp(1.5rem, 2.6vw, 2.25rem);
+    line-height: 1.12;
+    font-weight: 600;
+    letter-spacing: -0.03em;
+  }
+  .type-card {
+    font-size: 1rem;
+    line-height: 1.35;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  .type-figure {
+    font-size: clamp(1.875rem, 2.3vw, 2.25rem);
+    line-height: 1.1;
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    font-variant-numeric: tabular-nums;
+  }
+  .type-lead {
+    font-size: clamp(1rem, 1.3vw, 1.1875rem);
+    line-height: 1.55;
+  }
+  .type-meta {
+    font-size: 0.75rem;
+    line-height: 1.4;
+  }
+  .type-label {
+    font-size: 0.75rem;
+    line-height: 1.4;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .card {
+    @apply rounded-card border-line bg-surface shadow-card border;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

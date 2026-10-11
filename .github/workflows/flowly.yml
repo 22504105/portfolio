@@ -1,0 +1,37 @@
+name: Flowly
+
+on:
+  push:
+    branches: [main]
+    paths: ["flowly/**", ".github/workflows/flowly.yml"]
+  pull_request:
+    paths: ["flowly/**", ".github/workflows/flowly.yml"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: flowly-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: flowly
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: flowly/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm run format:check
+      - run: npm test
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
