@@ -23,7 +23,7 @@ export function AuthForm({ mode, labels, next, initialError }: AuthFormProps) {
   );
   const error = state.error ?? (initialError && !state.notice ? initialError : undefined);
   const submit = { login: labels.signIn, signup: labels.signUp, reset: labels.sendReset, update: labels.savePassword }[mode];
-  const link = "font-medium text-brand-hover underline-offset-4 hover:underline";
+  const link = "inline-flex min-h-8 items-center font-medium text-brand-hover underline-offset-4 hover:underline";
 
   if (state.notice) {
     return (

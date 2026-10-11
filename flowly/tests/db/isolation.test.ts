@@ -355,3 +355,80 @@ describe("leaving", () => {
     ]);
   });
 });
+
+describe("hardening", () => {
+  it("lets nobody write orders, lines or customers except through the import function, not even into their own workspace", async () => {
+    const own = (await t.db.query("select id from public.orders where workspace_id = $1 limit 1", [annWorkspace])).rows[0].id;
+    const attempts: [string, unknown[]][] = [
+      ["insert into public.customers (workspace_id, identity_key) values ($1, 'id:direct')", [annWorkspace]],
+      [
+        "insert into public.orders (workspace_id, import_batch_id, external_order_id, order_date, status, currency_code, gross_amount, net_amount) values ($1, $2, 'DIRECT-1', now(), 'completed', 'USD', 1000000, 1000000)",
+        [annWorkspace, annBatch],
+      ],
+      [
+        "insert into public.order_lines (order_id, workspace_id, position, quantity, unit_price, gross_amount, net_amount) values ($1, $2, 99, 1, 5, 5, 5)",
+        [own, annWorkspace],
+      ],
+    ];
+    for (const [sql, params] of attempts)
+      expect([sql.slice(0, 40), await codeOf(() => t.as(ann, (db) => db.query(sql, params)))]).toEqual([sql.slice(0, 40), "42501"]);
+  });
+
+  it("still imports for the owner, and still finds nothing for anyone else, now that the function checks ownership itself", async () => {
+    const fresh = await batch(bob, bobWorkspace);
+    expect(await importOrders(bob, fresh, [order("H-1", "2.00")])).toEqual({ inserted: 1, skipped: 0, replaced: 0 });
+    expect(await codeOf(() => importOrders(ann, fresh, [order("H-2", "2.00")]))).toBe("P0002");
+    expect(await codeOf(() => importOrders(ann, fresh, [order("H-1", "9.00")], true))).toBe("P0002");
+    // Bob's order is as he imported it.
+    expect((await t.db.query("select net_amount::text from public.orders where external_order_id = 'H-1'")).rows).toEqual([
+      { net_amount: "2.0000" },
+    ]);
+    expect(await count("orders", "external_order_id = 'H-2'")).toBe(0);
+  });
+
+  it("refuses a time zone the database does not know, on creating and on changing", async () => {
+    const hal = await t.user("hal@example.com");
+    expect(
+      await codeOf(() =>
+        t.as(hal, (db) =>
+          db.query("insert into public.workspaces (owner_user_id, name, currency_code, timezone) values ($1, 'x', 'USD', 'Mars/Olympus')", [
+            hal,
+          ]),
+        ),
+      ),
+    ).toBe("22023");
+    expect(
+      await codeOf(() => t.as(bob, (db) => db.query("update public.workspaces set timezone = 'Nowhere' where id = $1", [bobWorkspace]))),
+    ).toBe("22023");
+  });
+
+  it("knows every time zone the application offers", async () => {
+    const { timezones } = await import("@/lib/settings/options");
+    const known = new Set((await t.db.query("select name from pg_catalog.pg_timezone_names")).rows.map((row) => row.name as string));
+    expect(timezones().filter((zone) => !known.has(zone))).toEqual([]);
+  });
+
+  it("refuses an oversized mapping or log on a batch", async () => {
+    const huge = JSON.stringify({ note: "x".repeat(300_000) });
+    expect(
+      await codeOf(() =>
+        t.as(bob, (db) =>
+          db.query(
+            "insert into public.import_batches (workspace_id, filename, file_type, interpretation, row_count, mapping_json) values ($1, 'x.csv', 'csv', 'order_per_row', 1, $2::jsonb)",
+            [bobWorkspace, huge],
+          ),
+        ),
+      ),
+    ).toBe("23514");
+  });
+
+  it("caps the number of imports a workspace can hold", async () => {
+    const ivy = await t.user("ivy@example.com");
+    const ivyWorkspace = await workspace(ivy, "Ivy's shop");
+    await t.db.query(
+      "insert into public.import_batches (workspace_id, filename, file_type, interpretation, row_count) select $1, 'f' || n || '.csv', 'csv', 'order_per_row', 1 from generate_series(1, 500) n",
+      [ivyWorkspace],
+    );
+    expect(await codeOf(() => batch(ivy, ivyWorkspace))).toBe("54000");
+  });
+});

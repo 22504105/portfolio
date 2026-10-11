@@ -209,7 +209,7 @@ export function CustomersPage({ page, messages }: { page: PageData; messages: Me
                         href={hrefWith(pathname, params, { customer: row.customer.id })}
                         scroll={false}
                         aria-label={fill(t.open, { name: customerLabel(row.customer) })}
-                        className="text-brand-hover block truncate font-medium underline-offset-4 hover:underline"
+                        className="text-brand-hover -my-1 block truncate py-1.5 font-medium underline-offset-4 hover:underline"
                       >
                         {customerLabel(row.customer)}
                       </Link>

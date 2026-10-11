@@ -39,7 +39,7 @@ export function Card({ title, titleId, action, className, children }: CardProps)
   );
 }
 
-export const textLink = "font-medium text-brand-hover underline-offset-4 hover:underline";
+export const textLink = "inline-flex min-h-8 items-center font-medium text-brand-hover underline-offset-4 hover:underline";
 
 const percent = new Intl.NumberFormat("en-US", { style: "percent", minimumFractionDigits: 1, maximumFractionDigits: 1 });
 export const formatShare = (share: number | null) => (share === null ? "–" : percent.format(share));
@@ -67,7 +67,7 @@ export function BarList({ rows, currency, hrefFor, linkLabel, series = 1 }: BarL
                 href={hrefFor(row.key)}
                 scroll={false}
                 aria-label={linkLabel?.(row.key)}
-                className="min-w-0 truncate font-medium underline-offset-4 hover:underline"
+                className="-my-1.5 block min-w-0 truncate py-1.5 font-medium underline-offset-4 hover:underline"
               >
                 {row.key}
               </Link>

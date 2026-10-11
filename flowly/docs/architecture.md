@@ -270,3 +270,23 @@ typed out first.
 **States.** `loading.tsx` shows a skeleton shaped like the page that is
 coming; `error.tsx` shows a plain message and a reference, never the failure
 itself. An opened drawer puts focus on its title.
+
+## 11. Hardening and deployment (Phase 5)
+
+The review, its findings and what remains are in `docs/security.md`. What it
+changed in the design:
+
+- **Imported rows have one writer.** Direct insert into `orders`,
+  `order_lines` and `customers` is revoked. `import_orders` now runs with its
+  owner's rights and checks for itself that the batch belongs to the caller,
+  so its checks (an order adds up to its lines, the request and workspace
+  limits) cannot be skipped by calling the API directly.
+- **Bounds on what a client can still write**: 500 batches per workspace, a
+  size limit on a batch's JSON, and a time zone the database knows.
+- **Targets** of at least 32 px for stand-alone links and controls.
+- **Each wizard step starts at its top**, with focus moved there.
+
+**Deployment.** Vercel, project `flowly`, with the two public Supabase
+variables. The database connection string is used only by `npm run
+db:migrate` on a developer's machine and is not deployed. `.vercelignore`
+keeps `.env*`, tests and scratch files out of the upload.

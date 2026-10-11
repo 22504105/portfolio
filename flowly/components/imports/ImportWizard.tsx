@@ -3,7 +3,7 @@
 import { AlertTriangle, Check, CheckCircle2, Download, FileSpreadsheet, Upload } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useId, useMemo, useRef, useState, type DragEvent } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type DragEvent } from "react";
 import type { OrderStatus } from "@/lib/domain/types";
 import { ORDER_STATUSES } from "@/lib/domain/types";
 import { toCsv } from "@/lib/export/csv";
@@ -47,6 +47,8 @@ export function ImportWizard({ messages, workspace, existingIds, demo, overviewH
   const router = useRouter();
   const inputId = useId();
   const fileInput = useRef<HTMLInputElement>(null);
+  const frame = useRef<HTMLDivElement>(null);
+  const firstStep = useRef(true);
 
   const [step, setStep] = useState<Step>("upload");
   const [file, setFile] = useState<ReadResult | null>(null);
@@ -58,6 +60,17 @@ export function ImportWizard({ messages, workspace, existingIds, demo, overviewH
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const [result, setResult] = useState<PersistResult | null>(null);
   const [failure, setFailure] = useState<"limit" | "failed" | "partial" | null>(null);
+
+  // A new step starts at its top: the button that led here was at the bottom of the last one.
+  // Focus moves with it, so a keyboard or screen-reader user is not left behind on a button that is gone.
+  useEffect(() => {
+    if (firstStep.current) {
+      firstStep.current = false;
+      return;
+    }
+    frame.current?.scrollIntoView({ block: "start" });
+    frame.current?.focus({ preventScroll: true });
+  }, [step]);
 
   const existing = useMemo(() => new Set(existingIds), [existingIds]);
   const table = file?.table ?? null;
@@ -190,7 +203,7 @@ export function ImportWizard({ messages, workspace, existingIds, demo, overviewH
   const current = step === "done" ? 4 : STEPS.indexOf(step);
 
   return (
-    <div className="card min-w-0 p-5 lg:p-7">
+    <div ref={frame} tabIndex={-1} className="card min-w-0 scroll-mt-36 p-5 outline-none lg:scroll-mt-24 lg:p-7">
       {/* Progress: four numbered steps, the current one named for screen readers. */}
       <ol aria-label={fill(t.stepOf, { step: Math.min(current + 1, 4) })} className="flex items-center gap-2 sm:gap-3">
         {STEPS.map((name, index) => {

@@ -16,6 +16,14 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"], channel: process.env.CI ? undefined : "chrome", viewport: { width: 1440, height: 900 } },
     },
     { name: "mobile", use: { ...devices["Pixel 7"], channel: process.env.CI ? undefined : "chrome" } },
+    // Firefox and WebKit (Safari's engine) on request: CROSS_BROWSER=1 npm run test:e2e, after `npx playwright install firefox webkit`.
+    ...(process.env.CROSS_BROWSER
+      ? [
+          { name: "firefox", use: { ...devices["Desktop Firefox"], viewport: { width: 1440, height: 900 } } },
+          { name: "webkit", use: { ...devices["Desktop Safari"], viewport: { width: 1440, height: 900 } } },
+          { name: "iphone", use: { ...devices["iPhone 14"] } },
+        ]
+      : []),
   ],
   webServer: {
     command: `npm run build && npx next start -p ${PORT}`,
