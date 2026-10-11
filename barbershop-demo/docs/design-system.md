@@ -39,8 +39,12 @@ section flips it, and everything inside follows without further classes.
 
 | Role | Family | Notes |
 |---|---|---|
-| Display, headings | Oswald | Condensed, uppercase, weights 500–600 |
+| Display, headings | Oswald | Condensed, uppercase, weight 500 |
 | Text, labels | Onest | Weights 400–600 |
+
+Headings carry no closing full stop: a title is not a sentence. Question marks
+stay. The scale was brought down a step after review (2026-10-11): at its
+first size the type read as shouting.
 
 Both carry Cyrillic, so Russian is set in the same faces as English. Russian
 runs about a fifth longer and has longer words: headings use balanced wrapping
@@ -49,10 +53,10 @@ a heading fitting on one line.
 
 | Utility | Size | Use |
 |---|---|---|
-| `type-display` | 52–200px | One per page |
-| `type-h1` | 40–88px | Page titles |
-| `type-h2` | 28–48px | Section titles |
-| `type-h3` | 20–26px | Item titles |
+| `type-display` | 44–144px | One per page |
+| `type-h1` | 34–68px | Page titles |
+| `type-h2` | 24–38px | Section titles |
+| `type-h3` | 18–22px | Item titles |
 | `type-lead` | 18–22px | Introductions |
 | `type-body` | 16px | Text |
 | `type-small` | 14px | Notes, footer |

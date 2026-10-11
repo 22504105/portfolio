@@ -1,7 +1,7 @@
 {
   "brand": {
     "name": "CUT&CO",
-    "tagline": "Sharp cuts. No small talk required.",
+    "tagline": "Sharp cuts. No small talk required",
     "location": "Shoreditch, London",
     "conceptShort": "Concept project",
     "conceptLong": "CUT&CO is a concept portfolio project, not a real barbershop. Nothing here can be booked, bought or visited."
@@ -96,21 +96,21 @@
   },
   "home": {
     "eyebrow": "Barbershop · East London",
-    "headline": "Good hair is a decision.",
+    "headline": "Good hair is a decision",
     "lead": "Four barbers, eight services and a booking system that respects your time. Pick the cut, pick the chair, turn up.",
     "list": {
       "eyebrow": "The list",
-      "title": "What we do, what it costs.",
+      "title": "What we do, what it costs",
       "note": "No packages, no upsell. Services can be combined in one visit."
     },
     "barbers": {
       "eyebrow": "The chairs",
-      "title": "Four people who are good at this.",
+      "title": "Four people who are good at this",
       "lead": "Each has a subject. Book the one who does yours, or take whoever is free."
     },
     "how": {
       "eyebrow": "Booking",
-      "title": "Three steps, then a chair.",
+      "title": "Three steps, then a chair",
       "step1Title": "Pick the work",
       "step1Body": "One service or several in a row. You see the total time and price before anything else.",
       "step2Title": "Pick the chair",
@@ -120,13 +120,13 @@
     },
     "visit": {
       "eyebrow": "The shop",
-      "title": "Find us off Calvert Yard.",
+      "title": "Find us off Calvert Yard",
       "body": "Ground floor, black front, no sign to speak of. Look for the window that is still lit at seven."
     }
   },
   "services": {
     "eyebrow": "Services",
-    "title": "The whole list.",
+    "title": "The whole list",
     "lead": "Every price is the price. Durations are honest: a sixty-five minute appointment takes sixty-five minutes.",
     "book": "Book",
     "bookService": "Book {service}",
@@ -139,7 +139,7 @@
   },
   "barbers": {
     "eyebrow": "Barbers",
-    "title": "Who holds the scissors.",
+    "title": "Who holds the scissors",
     "lead": "Four barbers, four subjects. The list under each name is what they do; the days are when they are in.",
     "does": "Does",
     "days": "In the shop",
@@ -147,12 +147,12 @@
   },
   "gallery": {
     "eyebrow": "Gallery",
-    "title": "The shop, the tools, the work.",
+    "title": "The shop, the tools, the work",
     "lead": "Black walls, two chairs, one long counter. Nothing in the room that does not get used."
   },
   "about": {
     "eyebrow": "About",
-    "title": "A small shop with a short list.",
+    "title": "A small shop with a short list",
     "lead": "CUT&CO is two chairs in East London and four barbers who share them. It does a few things and tries to do them properly.",
     "storyTitle": "How it works",
     "story1": "There is no walk-in queue and no waiting on a bench. Every chair is booked, every appointment has a length, and the next person does not sit down until yours is finished.",
@@ -170,7 +170,7 @@
   },
   "contact": {
     "eyebrow": "Contact",
-    "title": "Where and when.",
+    "title": "Where and when",
     "lead": "The quickest way to reach us is to book. For anything else, the details are below.",
     "findTitle": "Getting here",
     "findBody": "Five minutes on foot from Shoreditch High Street station. Calvert Yard is a cobbled lane; the shop is the black front halfway down, on the left.",
@@ -249,7 +249,7 @@
       "fix": "Check the marked fields to continue."
     },
     "review": {
-      "title": "Check it over.",
+      "title": "Check it over",
       "lead": "Nothing is booked until you confirm from your email.",
       "submit": "Hold my slot",
       "submitting": "Holding…",
@@ -273,7 +273,7 @@
       "notChosen": "Not chosen"
     },
     "held": {
-      "title": "Check your email.",
+      "title": "Check your email",
       "body": "We are holding your slot until {time}. Open the link we sent to {email} to confirm the booking.",
       "demo": "This is a preview: no email was sent and no slot was held.",
       "reference": "Reference",
@@ -288,25 +288,25 @@
       "lead": "Press the button to confirm. Until you do, the time is only held for you.",
       "button": "Confirm my booking",
       "working": "Confirming…",
-      "expiredTitle": "That hold has run out.",
+      "expiredTitle": "That hold has run out",
       "expiredBody": "A slot is held for a short time only, and this one was not confirmed in time. Nothing was booked. Choose a time again and it will take a minute.",
-      "invalidTitle": "This link does not work.",
+      "invalidTitle": "This link does not work",
       "invalidBody": "It may have been used up, mistyped or cut short by your mail program. Open the link from the most recent email, or book again.",
       "bookAgain": "Book an appointment"
     },
     "manage": {
       "eyebrow": "Your booking",
-      "confirmedTitle": "You are booked.",
+      "confirmedTitle": "You are booked",
       "justConfirmed": "Confirmed. A confirmation email is on its way.",
-      "cancelledTitle": "This booking is cancelled.",
+      "cancelledTitle": "This booking is cancelled",
       "cancelledBody": "The time has been released. You are welcome to book again whenever suits.",
-      "closedTitle": "This appointment is over.",
+      "closedTitle": "This appointment is over",
       "closedBody": "There is nothing left to change here. We hope to see you again.",
-      "pendingTitle": "This booking is not confirmed yet.",
+      "pendingTitle": "This booking is not confirmed yet",
       "pendingBody": "Open the confirmation email we sent you and press the button in it.",
-      "noSessionTitle": "Open the link from your email.",
+      "noSessionTitle": "Open the link from your email",
       "noSessionBody": "To show a booking we need to know it is yours. Open the link in your confirmation or reminder email; for your security it keeps this page open for thirty minutes at a time.",
-      "invalidLinkTitle": "This link does not work.",
+      "invalidLinkTitle": "This link does not work",
       "invalidLinkBody": "It may be out of date or cut short by your mail program. Use the link from your most recent email.",
       "status": "Status",
       "changeTitle": "Need to change it?",
@@ -374,12 +374,12 @@
     "haveAccount": "Already have an account?",
     "forgot": "Forgot your password?",
     "backToSignIn": "Back to sign in",
-    "checkEmailTitle": "Check your email.",
+    "checkEmailTitle": "Check your email",
     "checkEmailBody": "We sent a link to confirm your address. Open it on this device to finish creating the account. If an account with this address already exists, sign in instead.",
     "resetSentBody": "If that address has an account, a link to choose a new password is on its way. Open it on this device.",
     "passwordSaved": "Password saved.",
     "linkInvalid": "That link did not work: it may have been used already or opened on another device. Sign in, or ask for a new one.",
-    "unavailableTitle": "Accounts are not set up here.",
+    "unavailableTitle": "Accounts are not set up here",
     "unavailableBody": "This copy of the site runs without an account service. Booking as a guest works as usual.",
     "errors": {
       "credentials": "The email or the password is not right, or the address has not been confirmed yet.",
