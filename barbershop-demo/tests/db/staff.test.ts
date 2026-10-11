@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { addDays, businessDate, zonedInstant } from "@/lib/business-time";
 import { startTestDatabase, type TestDatabase } from "./harness";
 
 let t: TestDatabase;
@@ -38,6 +39,13 @@ async function booking(barber: string, hoursFromNow: number, email = `staff-test
 
 const status = async (id: string) => (await t.db.query("select status from public.bookings where id = $1", [id])).rows[0].status;
 const hours = (n: number) => new Date(Date.now() + n * 3_600_000).toISOString();
+/**
+ * A London clock time some days from today. Breaks must fall inside one London
+ * day, so their tests name a time of day: "so many hours from now" lands on
+ * midnight at some hour of the night the tests are run.
+ */
+const at = (days: number, time: string) => zonedInstant(addDays(businessDate(new Date()), days), time).toISOString();
+const hoursUntil = (instant: string) => (new Date(instant).getTime() - Date.now()) / 3_600_000;
 
 beforeAll(async () => {
   t = await startTestDatabase();
@@ -177,8 +185,9 @@ describe("breaks and time off", () => {
   });
 
   it("refuses a break longer than the shop allows, or one that runs into another day", async () => {
-    expect((await add("leon-fischer", "break", hours(30), hours(33))).code).toBe("break_too_long");
-    expect((await add("leon-fischer", "break", hours(30), hours(30.5))).ok).toBe(true);
+    expect((await add("leon-fischer", "break", at(2, "12:00"), at(2, "15:00"))).code).toBe("break_too_long");
+    expect((await add("leon-fischer", "break", at(2, "23:30"), at(3, "00:30"))).code).toBe("break_too_long");
+    expect((await add("leon-fischer", "break", at(2, "12:00"), at(2, "12:30"))).ok).toBe(true);
   });
 
   it("makes longer time off a request for an admin, which blocks nothing until approved", async () => {
@@ -190,7 +199,7 @@ describe("breaks and time off", () => {
   });
 
   it("refuses a break on top of an appointment", async () => {
-    const id = await booking("daniyar-akhmetov", 40);
+    const id = await booking("daniyar-akhmetov", hoursUntil(at(2, "11:00")));
     const row = (await t.db.query("select starts_at, ends_at from public.bookings where id = $1", [id])).rows[0];
     expect((await add("daniyar-akhmetov", "break", row.starts_at.toISOString(), row.ends_at.toISOString())).code).toBe("has_bookings");
     // After it is fine. (A minute after: this test's booking ends on a fraction
@@ -201,7 +210,7 @@ describe("breaks and time off", () => {
   });
 
   it("refuses the past, nonsense ranges and holidays from a barber", async () => {
-    expect((await add("marcus-hale", "break", hours(-2), hours(-1))).code).toBe("in_the_past");
+    expect((await add("marcus-hale", "break", at(-1, "12:00"), at(-1, "13:00"))).code).toBe("in_the_past");
     expect((await add("marcus-hale", "break", hours(5), hours(4))).code).toBe("invalid");
     expect((await add("marcus-hale", "holiday", hours(100), hours(124))).code).toBe("forbidden");
     expect((await add(null, "break", hours(100), hours(101))).code).toBe("invalid");
@@ -217,8 +226,8 @@ describe("breaks and time off", () => {
   });
 
   it("lets a barber withdraw their own future break, and nothing else", async () => {
-    const mine = await add("marcus-hale", "break", hours(60), hours(61));
-    const theirs = await add("leon-fischer", "break", hours(62), hours(63));
+    const mine = await add("marcus-hale", "break", at(3, "12:00"), at(3, "13:00"));
+    const theirs = await add("leon-fischer", "break", at(3, "14:00"), at(3, "15:00"));
     const remove = (id: unknown, barber: string) => call("public.remove_time_off($1, $2)", [id, barbers[barber]]);
 
     expect((await remove(theirs.id, "marcus-hale")).code).toBe("not_found");
