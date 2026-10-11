@@ -16,9 +16,9 @@ nothing here can be booked, bought or visited.**
 
 ## Status
 
-**Live: https://barbershop-demo-sable.vercel.app** — deployed as a showcase
-without a database: the site, both languages, the admin demo and the PWA work;
-booking is the labelled preview and accounts are switched off.
+**Live: https://barbershop-demo-sable.vercel.app** — deployed with its
+database and accounts. Booking emails are not configured yet (no Resend key),
+so a booking made there stops at "check your email".
 
 **All five phases are built.** In place: the
 bilingual public site; real booking with email confirmation, rescheduling and
@@ -38,7 +38,7 @@ preview.
 | 02 | Public website and booking interface | Done |
 | 03 | Booking engine, email and accounts | Done |
 | 04 | Admin panel, analytics and public demo | Done |
-| 05 | Final QA, security and PWA | Done; deployed as a showcase |
+| 05 | Final QA, security and PWA | Done; deployed, email delivery pending |
 
 **Known limits**, in full in [`docs/security.md`](docs/security.md): the
 security review was a self-review, not an independent one; real email delivery
@@ -174,7 +174,8 @@ application; their templates and sender are set in the Supabase dashboard.
 
 ## Deployment (Vercel and Supabase)
 
-The live site runs without a database. To turn real booking on:
+The live site has steps 1, 2, 4 and 6 done; Resend and the scheduler are not
+set up. The full list:
 
 1. **Supabase.** Create a project. Apply the migrations and the seed:
    put the pooler connection string in `.env.local` as `DATABASE_URL` and run

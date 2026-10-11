@@ -37,10 +37,12 @@
   README, `docs/security.md`, `docs/case-study.md`. Ждёт ревью владельца; ветки `cutco/*` в
   `main` смержены 2026-10-11 по разрешению владельца.
 - **Деплой CUT&CO**: https://barbershop-demo-sable.vercel.app (Vercel, команда `riddle6`, проект
-  `barbershop-demo`, 2026-10-11). Это витрина **без переменных окружения**: базы нет, запись —
-  помеченный предпросмотр, аккаунты выключены. Обновление вручную:
-  `cd barbershop-demo && npx vercel deploy --prod --yes --scope riddle6`. Полную версию
-  (база, Resend, планировщик) включать только по решению владельца — шаги в README.
+  `barbershop-demo`, 2026-10-11). Владелец 2026-10-11 задал в Vercel `DATABASE_URL`, ключи Supabase,
+  `SESSION_SECRET`, `CRON_SECRET`, `APP_URL`: база и аккаунты работают. **Resend и планировщик
+  не настроены** — письмо подтверждения брони не уходит, запись обрывается на «проверьте почту».
+  Живой сайт пишет в рабочую базу: браузерные проверки с бронями на нём не гонять. Обновление вручную:
+  `cd barbershop-demo && npx vercel deploy --prod --yes --scope riddle6`. Осталось: Resend, планировщик,
+  Site URL и Redirect URLs в Supabase — шаги в README.
   `.vercelignore` обязателен: без него CLI загружает `.tmp` (20 тысяч файлов) и падает.
 - **Аудит Фазы 05 — самопроверка Lead**, не независимая (субагенты не запускались). Что не
   проверено — `docs/security.md`, «Residual risks».
