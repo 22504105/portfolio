@@ -6,16 +6,16 @@ authority: brief → this document → `metrics.md` → `design-system.md`.
 
 ## 1. Decisions that depart from the brief
 
-| Brief                                                        | Decision                          | Why                                                                                                                                                |
-| ------------------------------------------------------------ | --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Hosting on Cloudflare Workers Free; adapter spike in Phase 1 | **Vercel (Hobby)**                | Owner's decision, 2026-10-11. No adapter, no 10 ms CPU limit, the same free host as the other portfolio projects. The Cloudflare spike was not run |
-| Exactly three subagents                                      | Roles simulated by the lead agent | The brief allows it when stated honestly. Subagents are used only if a task warrants it; each phase report says which                              |
-| Email verification on sign-up                                | **Off**                           | Owner's decision. Supabase's built-in mailer sends a few emails an hour; password reset still uses it                                              |
-| Russian localisation                                         | Architecture only                 | Owner's decision. All interface text is in `lib/i18n/en.ts`; a second language is one more file of the same type                                   |
-| One `Transaction/Order` table                                | `orders` + `order_lines`          | See section 4                                                                                                                                      |
-| `Customer.first_order_at` stored                             | Derived when read                 | A stored copy goes stale when an import is deleted                                                                                                 |
-| TanStack Table, date-fns, React Hook Form in the demo | Not installed | Sorting, paging and filtering are done on the server from the address, and dates by `Intl`; the libraries would have nothing to do. They are added if a later phase needs them (forms in Phase 3) |
-| Muted text `#737A86`, warning `#A66A20`                      | `#646B77`, `#9A6119`              | Contrast: see `design-system.md`                                                                                                                   |
+| Brief                                                        | Decision                          | Why                                                                                                                                                                                               |
+| ------------------------------------------------------------ | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Hosting on Cloudflare Workers Free; adapter spike in Phase 1 | **Vercel (Hobby)**                | Owner's decision, 2026-10-11. No adapter, no 10 ms CPU limit, the same free host as the other portfolio projects. The Cloudflare spike was not run                                                |
+| Exactly three subagents                                      | Roles simulated by the lead agent | The brief allows it when stated honestly. Subagents are used only if a task warrants it; each phase report says which                                                                             |
+| Email verification on sign-up                                | **Off**                           | Owner's decision. Supabase's built-in mailer sends a few emails an hour; password reset still uses it                                                                                             |
+| Russian localisation                                         | Architecture only                 | Owner's decision. All interface text is in `lib/i18n/en.ts`; a second language is one more file of the same type                                                                                  |
+| One `Transaction/Order` table                                | `orders` + `order_lines`          | See section 4                                                                                                                                                                                     |
+| `Customer.first_order_at` stored                             | Derived when read                 | A stored copy goes stale when an import is deleted                                                                                                                                                |
+| TanStack Table, date-fns, React Hook Form in the demo        | Not installed                     | Sorting, paging and filtering are done on the server from the address, and dates by `Intl`; the libraries would have nothing to do. They are added if a later phase needs them (forms in Phase 3) |
+| Muted text `#737A86`, warning `#A66A20`                      | `#646B77`, `#9A6119`              | Contrast: see `design-system.md`                                                                                                                                                                  |
 
 ## 2. Technology
 
@@ -40,6 +40,7 @@ Production dependencies have no known vulnerabilities (`npm audit --omit=dev`).
 | `/`                                    | Landing page; its preview is the product's own KPI component on demo data                 | 1                  |
 | `/demo`                                | Redirects to `/demo/overview`                                                             | 1                  |
 | `/demo/<section>`                      | The public demo: overview, analytics, customers, transactions, imports, reports, settings | 1 shell, 2–4 pages |
+| `/demo/export/<kind>`                  | CSV downloads: transactions, customers, breakdown, series                                 | 2                  |
 | `/app/<section>`                       | The same sections for a signed-in workspace                                               | 3                  |
 | `/login`, `/signup`, `/reset-password` | Accounts                                                                                  | 3                  |
 | `/privacy`                             | Data handling                                                                             | 4                  |

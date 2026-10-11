@@ -18,13 +18,13 @@ settings (Phase 4); hardening and deployment (Phase 5). The Imports, Reports
 and Settings pages say that they are not written yet; sign-in pages say that
 accounts open later.
 
-| Phase | Scope | State |
+| Phase | Scope                                  | State                 |
 | ----- | -------------------------------------- | --------------------- |
-| 1 | Foundation and architecture | Done |
-| 2 | Demo dashboard and analytics | Done, awaiting review |
-| 3 | Accounts, persistence, CSV/XLSX import | Not started |
-| 4 | Reports, settings, polish | Not started |
-| 5 | Hardening, QA, deployment | Not started |
+| 1     | Foundation and architecture            | Done                  |
+| 2     | Demo dashboard and analytics           | Done, awaiting review |
+| 3     | Accounts, persistence, CSV/XLSX import | Not started           |
+| 4     | Reports, settings, polish              | Not started           |
+| 5     | Hardening, QA, deployment              | Not started           |
 
 ## What the demo does
 

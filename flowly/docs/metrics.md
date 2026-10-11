@@ -62,9 +62,42 @@ map them explicitly.
   currency, is half-up at import.
 - Changing a workspace's currency is not possible while it has orders.
 
-## Breakdowns (Phase 2)
+## Filters
 
-Revenue by channel, category and product; orders by status; revenue over time
-by day, week or month. A line's revenue is its net, less a share of any
-partial refund in proportion to the line's net. Orders with no channel,
-category or product are grouped as "Not provided", not dropped.
+- **Status** and **channel** keep or drop whole orders.
+- **Category** and **product** work on lines: an order that matches keeps only
+  its matching lines, and its amounts are those of the lines that remain.
+- A partial refund is shared between an order's lines in proportion to their
+  net, in whole minor units, the remainder on the last line, so the shares
+  always add up to the refund.
+- The comparison period is seen through the same filters as the period.
+
+## Breakdowns
+
+Revenue by channel, category and product, from completed orders only, so the
+rows of any breakdown add up to net revenue exactly (tested).
+
+- By channel, an order is in one row. By category or product, a line's revenue
+  is its net less its share of any refund, and an order with several products
+  is counted in each of their rows; that column therefore does not add up to
+  the order count, and the page says so.
+- A missing channel, category or product is grouped as "Not provided", never
+  dropped.
+
+## Over time
+
+A bucket is a day, a week (Monday to Sunday) or a calendar month, cut off at
+the ends of the period, so the buckets add up to the period's totals
+(tested). The default is days up to 45 days, weeks up to 200, months beyond.
+
+## Customers
+
+- Listed: identified customers with a completed order in the period, under
+  the filters. Their number is the headline "Identified customers" (tested).
+- **Orders** and **Spend** are for the period; **Lifetime spend**, **Last
+  order** and the order history are for all time, unfiltered.
+- **New**: the customer's first completed order ever falls inside the period.
+  **Returning**: it came before. **Repeat buyer**: two or more completed
+  orders ever.
+- Spend of the listed customers plus revenue from guest orders equals net
+  revenue (tested).

@@ -86,3 +86,20 @@ for every amount.
 tokens. `LinkButton` is a link that looks like a button (for going somewhere);
 `Button` is for actions. `KpiCards` is the one implementation of the headline
 figures, used by the overview and by the landing preview.
+
+## Tables and charts
+
+- **Tables** are real tables from 1024 px. Below that each row becomes a card
+  (identity on the left, money and status on the right) and the sortable
+  column headings become a row of sort chips: a seven-column table on a phone
+  is a strip to drag about, not a table.
+- Small tables inside cards and drawers scroll sideways inside their own
+  frame; the page itself never does.
+- **The revenue chart** is an area for the period and a dashed line for the
+  period before, told apart by line style as well as colour, with a legend in
+  words. It is hidden from screen readers, which get a sentence summing it up
+  and the same numbers as a table.
+- **Breakdowns** are ranked bars with every value written out, not pies.
+- **Status** is a word in a pill with a dot; pending has a hollow dot.
+- **Drawers** show one order or one customer. They are part of the address,
+  so a drawer can be linked to and the back button closes it.
