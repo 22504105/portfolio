@@ -3,3 +3,6 @@ nova-images-inbox/
 
 # Visual Studio workspace cache
 .vs/
+
+# Raw generated images for CUT&CO, processed into barbershop-demo/public/images
+barbershop-images-inbox/

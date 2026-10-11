@@ -1,0 +1,18 @@
+{
+  "heroDesktop": { "source": "01", "file": "hero/shop-desktop", "width": 2400 },
+  "heroMobile": { "source": "02", "file": "hero/shop-mobile", "width": 1440 },
+  "marcusHale": { "source": "03", "file": "barbers/marcus-hale" },
+  "daniyarAkhmetov": { "source": "04", "file": "barbers/daniyar-akhmetov" },
+  "theoOkafor": { "source": "05", "file": "barbers/theo-okafor" },
+  "leonFischer": { "source": "06", "file": "barbers/leon-fischer" },
+  "skinFade": { "source": "07", "file": "gallery/skin-fade" },
+  "beardTrim": { "source": "08", "file": "gallery/beard-trim" },
+  "hotTowel": { "source": "09", "file": "gallery/hot-towel" },
+  "tools": { "source": "10", "file": "gallery/tools" },
+  "chair": { "source": "11", "file": "gallery/chair" },
+  "shopfront": { "source": "12", "file": "gallery/shopfront" },
+  "wash": { "source": "13", "file": "gallery/wash" },
+  "finish": { "source": "14", "file": "gallery/finish" },
+  "team": { "source": "15", "file": "about/team" },
+  "clippers": { "source": "16", "file": "services/clippers" }
+}
