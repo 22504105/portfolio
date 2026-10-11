@@ -109,7 +109,7 @@ function Picker({ calendar, labels }: PeriodPickerProps) {
           </p>
           <button
             type="submit"
-            className="rounded-input bg-brand hover:bg-brand-hover mt-3 inline-flex h-10 w-full items-center justify-center font-medium text-white transition-colors"
+            className="rounded-input bg-brand hover:bg-brand-strong mt-3 inline-flex h-10 w-full items-center justify-center font-medium text-white transition-colors"
           >
             {labels.apply}
           </button>

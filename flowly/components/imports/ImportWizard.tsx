@@ -37,7 +37,7 @@ type ImportWizardProps = {
 };
 
 const button = "inline-flex h-11 items-center justify-center gap-2 rounded-input px-5 font-medium transition-colors";
-const primary = cn(button, "bg-brand text-white hover:bg-brand-hover aria-disabled:opacity-50");
+const primary = cn(button, "bg-brand text-white hover:bg-brand-strong aria-disabled:opacity-50");
 const secondary = cn(button, "border border-input bg-surface hover:bg-surface-2");
 const select = "h-10 w-full rounded-input border border-input bg-surface px-3 text-ink";
 const whole = new Intl.NumberFormat("en-US");

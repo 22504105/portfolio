@@ -2,6 +2,7 @@ import { ArrowRight, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { Logo } from "@/components/brand/Logo";
 import { KpiCards } from "@/components/dashboard/KpiCards";
+import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { LinkButton } from "@/components/ui/link-button";
 import { demoOverview } from "@/lib/demo/view";
 import { getMessages } from "@/lib/i18n";
@@ -29,6 +30,7 @@ export default function LandingPage() {
             <Logo />
           </Link>
           <nav aria-label="Site" className="flex items-center gap-2">
+            <ThemeToggle labels={messages.theme} />
             <LinkButton href="/login" variant="ghost">
               {t.signIn}
             </LinkButton>

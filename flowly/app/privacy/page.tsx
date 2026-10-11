@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Logo } from "@/components/brand/Logo";
+import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { LinkButton } from "@/components/ui/link-button";
 import { getMessages } from "@/lib/i18n";
 
@@ -17,9 +18,12 @@ export default function PrivacyPage() {
           <Link href="/" aria-label={messages.nav.home} className="text-ink inline-flex h-11 items-center">
             <Logo />
           </Link>
-          <LinkButton href="/demo" variant="ghost">
-            {messages.auth.toDemo}
-          </LinkButton>
+          <div className="flex items-center gap-2">
+            <ThemeToggle labels={messages.theme} />
+            <LinkButton href="/demo" variant="ghost">
+              {messages.auth.toDemo}
+            </LinkButton>
+          </div>
         </div>
       </header>
       <main id="main" className="mx-auto w-full max-w-[44rem] flex-1 px-5 py-14 md:px-8 md:py-20">

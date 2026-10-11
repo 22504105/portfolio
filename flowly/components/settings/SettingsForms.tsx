@@ -95,7 +95,7 @@ export function WorkspaceForm({ labels, workspace, hasOrders, currencies, timezo
           type="submit"
           aria-disabled={pending || undefined}
           onClick={(event) => pending && event.preventDefault()}
-          className={cn(button, "bg-brand hover:bg-brand-hover text-white")}
+          className={cn(button, "bg-brand hover:bg-brand-strong text-white")}
         >
           {pending ? labels.saving : labels.save}
         </button>
@@ -124,7 +124,7 @@ export function DangerForm({ labels, kind, expected, nothingToDelete = false }: 
   const [state, action, pending] = useActionState<SettingsState, FormData>(kind === "data" ? deleteWorkspaceData : deleteAccount, {});
   const title = kind === "data" ? labels.deleteData : labels.deleteAccount;
   const prompt = kind === "data" ? labels.deleteDataConfirm : labels.deleteAccountConfirm;
-  const danger = cn(button, "bg-negative text-white");
+  const danger = cn(button, "bg-negative-fill text-white");
 
   if (state.done === "data_deleted") {
     return (

@@ -605,6 +605,15 @@ export const en = {
       "Up to 50,000 orders per workspace; files up to 5 MB and 10,000 rows. The database behind Flowly is on a free plan and may be paused when unused.",
     privacy: "How data is handled",
   },
+  theme: {
+    label: "Theme",
+    light: "Light",
+    dark: "Dark",
+    system: "Same as device",
+    current: "Switch to",
+    appearance: "Appearance",
+    appearanceBody: "Kept in this browser only. A printed report is always light.",
+  },
   loading: "Loading…",
   failed: {
     title: "This page could not be shown",

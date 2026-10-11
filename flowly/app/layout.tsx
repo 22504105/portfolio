@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { THEME_SCRIPT, ThemeKeeper } from "@/components/theme/ThemeToggle";
 import { defaultLocale, getMessages } from "@/lib/i18n";
 import "./globals.css";
 
@@ -15,12 +16,24 @@ export const metadata: Metadata = {
   description: messages.landing.heroBody,
 };
 
-export const viewport: Viewport = { themeColor: "#171a20" };
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#171a20" },
+    { media: "(prefers-color-scheme: dark)", color: "#0d0f12" },
+  ],
+};
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang={defaultLocale} className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-      <body>{children}</body>
+    // The theme is set by a script before the first paint, so the attribute differs from what the server sent.
+    <html lang={defaultLocale} className={`${geistSans.variable} ${geistMono.variable} antialiased`} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+      </head>
+      <body>
+        <ThemeKeeper />
+        {children}
+      </body>
     </html>
   );
 }

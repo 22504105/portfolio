@@ -11,7 +11,7 @@ const ACTIONS = { login: signIn, signup: signUp, reset: requestReset, update: up
 
 export const fieldClass = "mt-1.5 h-11 w-full rounded-input border border-input bg-surface px-3.5 text-[0.9375rem] text-ink";
 export const submitClass =
-  "inline-flex h-11 w-full items-center justify-center rounded-input bg-brand px-5 text-[0.9375rem] font-medium text-white transition-colors hover:bg-brand-hover aria-disabled:opacity-60";
+  "inline-flex h-11 w-full items-center justify-center rounded-input bg-brand px-5 text-[0.9375rem] font-medium text-white transition-colors hover:bg-brand-strong aria-disabled:opacity-60";
 
 type AuthFormProps = { mode: Mode; labels: Messages["auth"]; next?: string; initialError?: keyof Messages["auth"]["errors"] };
 

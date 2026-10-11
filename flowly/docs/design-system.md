@@ -3,7 +3,7 @@
 Direction: a thoughtful analytics tool for independent operators. Editorial
 type, a charcoal sidebar against warm near-white content, one restrained
 violet. Data first; no glass, no big gradients, no decoration that is not
-information. Light theme only.
+information. Two themes: light, and a dark one of greys and near-black.
 
 All values live in `app/globals.css` as tokens. Components use the names.
 
@@ -117,3 +117,45 @@ Fields are 44 px high with the label above and the explanation below, tied to
 the field for screen readers. A locked field says why it is locked. Anything
 that cannot be undone is a quiet outlined button that opens a red-tinted form
 asking for the name to be typed; the confirming button repeats what it does.
+
+## Dark theme
+
+Greys and near-black with the same violet. Chosen with the switch in the top
+bar (it cycles light, dark, same as device) or under Settings → Appearance;
+kept in the browser's local storage; applied to `<html data-theme>` by a
+script in the document head before the first paint, so a dark page never
+flashes white.
+
+| Token                               | Light                             | Dark                              |
+| ----------------------------------- | --------------------------------- | --------------------------------- |
+| `canvas`                            | `#F7F7F4`                         | `#121418`                         |
+| `surface`                           | `#FFFFFF`                         | `#1B1E24`                         |
+| `surface-2`                         | `#F1F2EF`                         | `#252930`                         |
+| `line`                              | `#E5E7E4`                         | `#2F343D`                         |
+| `ink`                               | `#20242D`                         | `#E9EBEF`                         |
+| `ink-muted`                         | `#646B77`                         | `#A3A9B5`                         |
+| `brand` (button fill)               | `#6959D9`                         | `#6959D9`                         |
+| `brand-hover` (violet text)         | `#5747C2`                         | `#B7AEFF`                         |
+| `brand-tint`                        | `#F0EEFF`                         | `#2A2748`                         |
+| `brand-strong` (button hover fill)  | `#5747C2`                         | `#5747C2`                         |
+| `positive` / `negative` / `warning` | `#15846B` / `#C24F5A` / `#9A6119` | `#4FC4A6` / `#F2909A` / `#E3AD62` |
+| `negative-fill` (delete buttons)    | `#C24F5A`                         | `#B3434F`                         |
+| `nav`                               | `#171A20`                         | `#0D0F12`                         |
+
+- **Text gets lighter, fills stay deep.** A colour used for text must be light
+  on dark; a fill that carries white text must not be. That is why the dark
+  theme splits them: `brand-hover` is for violet text, `brand-strong` and
+  `negative-fill` are for fills.
+- **Surfaces are layered by lightness**, not by shadow: page, card, raised
+  each a step lighter; the sidebar a step darker than the page, with a
+  hairline between them.
+- **Chart colours are lighter** in the dark theme so lines stand out from the
+  card (at least 3:1).
+- **Print is always light**: a report printed from the dark theme is black on
+  white.
+- `tests/theme.test.ts` reads both palettes from the stylesheet and checks
+  every text pair for 4.5:1 and every white-on-fill pair too.
+- React owns `<html>` and clears attributes it did not set when it has to
+  redraw the page in the browser; `ThemeKeeper` puts the theme back, and the
+  switch sits in a boundary of its own so pressing it early redraws only the
+  switch.
