@@ -183,10 +183,10 @@ both. What each figure means: [`docs/metrics.md`](docs/metrics.md).
 ## Known limits
 
 - **The security review was a self-review**, not an independent audit.
-- **The sign-up call and the reset email were not exercised**: the test
-  project still had email confirmation switched on and had used up its email
-  allowance. Test accounts were created already confirmed and signed in
-  through the real sign-in page.
+- **The reset email was not followed end to end.** Sign-up through the site,
+  changing a password and the reset form's answer were checked on the deployed
+  site; receiving the email and opening its link needs a real inbox and was
+  left to a manual try.
 - **Not tested on physical phones or real Safari**; WebKit and device
   emulation stand in for them.
 - **The PDF** was checked for format and page size, not read by eye.

@@ -149,6 +149,10 @@
   кладётся. Обновление: `cd flowly && npx vercel deploy --prod --yes --scope riddle6`.
   `vercel link` дописывает в `.env.local` свой токен и портит `.gitignore` — после него
   `git checkout -- .gitignore` и убрать `VERCEL_OIDC_TOKEN`.
+- **2026-10-11 владелец выключил Confirm email** в проекте Flowly; регистрация через сайт,
+  смена пароля и ответ формы сброса проверены на проде (`flowly/.tmp/signup.mjs`, 12 пунктов).
+  Не пройдено только письмо сброса до конца — нужен настоящий почтовый ящик. Flowly смержен в
+  `main` (1d1fa98), CI на GitHub зелёный.
 - **Проверка задеплоенного сайта**: `ORIGIN=https://flowly-nine-ochre.vercel.app node
   .tmp/live.mjs` (43 пункта) и `ORIGIN=… node .tmp/a11y.mjs`.
 - **Это рабочая база владельца**: после проверок чистить (`delete from auth.users where email
