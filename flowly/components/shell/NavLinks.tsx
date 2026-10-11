@@ -2,10 +2,12 @@
 
 import { ChartLine, FileText, LayoutDashboard, Receipt, Settings, Upload, Users, type LucideIcon } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 import type { Messages } from "@/lib/i18n";
 import { PRIMARY_SECTIONS, sectionHref, type Section, type WorkspaceRoot } from "@/lib/routes";
 import { cn } from "@/lib/utils";
+import { sharedQuery } from "@/lib/view/state";
 
 const ICONS: Record<Section, LucideIcon> = {
   overview: LayoutDashboard,
@@ -25,7 +27,7 @@ type NavLinksProps = {
   onNavigate?: () => void;
 };
 
-export function NavLinks({ root, labels, collapsible = false, onNavigate }: NavLinksProps) {
+function NavList({ root, labels, collapsible = false, onNavigate, query }: NavLinksProps & { query: string }) {
   const pathname = usePathname();
 
   const item = (section: Section) => {
@@ -35,7 +37,7 @@ export function NavLinks({ root, labels, collapsible = false, onNavigate }: NavL
     return (
       <li key={section}>
         <Link
-          href={href}
+          href={href + query}
           onClick={onNavigate}
           aria-current={active ? "page" : undefined}
           title={collapsible ? labels[section] : undefined}
@@ -59,5 +61,18 @@ export function NavLinks({ root, labels, collapsible = false, onNavigate }: NavL
       <ul className="flex flex-col gap-1">{PRIMARY_SECTIONS.map(item)}</ul>
       <ul className="flex flex-col gap-1 border-t border-white/10 pt-3">{item("settings")}</ul>
     </nav>
+  );
+}
+
+/** Reads the period and the filters from the address, so they come along to the next section. */
+function NavListWithQuery(props: NavLinksProps) {
+  return <NavList {...props} query={sharedQuery(useSearchParams())} />;
+}
+
+export function NavLinks(props: NavLinksProps) {
+  return (
+    <Suspense fallback={<NavList {...props} query="" />}>
+      <NavListWithQuery {...props} />
+    </Suspense>
   );
 }

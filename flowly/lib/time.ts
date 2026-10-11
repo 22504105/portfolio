@@ -57,3 +57,29 @@ export function formatRange(range: DayRange, locale = "en-US"): string {
   const sameYear = range.from.slice(0, 4) === range.to.slice(0, 4);
   return `${format(range.from, !sameYear)} – ${format(range.to, true)}`;
 }
+
+const instantFormatters = new Map<string, Intl.DateTimeFormat>();
+
+/** An instant as a date in a time zone: "Sep 14, 2026"; with the time: "Sep 14, 2026, 3:42 PM". */
+export function formatInstant(utcMs: number, timezone: string, withTime = false, locale = "en-US"): string {
+  const key = `${locale}|${timezone}|${withTime}`;
+  let formatter = instantFormatters.get(key);
+  if (!formatter) {
+    formatter = new Intl.DateTimeFormat(locale, {
+      timeZone: timezone,
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      ...(withTime ? { hour: "numeric", minute: "2-digit" } : {}),
+    });
+    instantFormatters.set(key, formatter);
+  }
+  return formatter.format(utcMs);
+}
+
+/** A calendar day for reading: "Sep 14, 2026". */
+export function formatDay(day: string, locale = "en-US"): string {
+  return new Intl.DateTimeFormat(locale, { timeZone: "UTC", year: "numeric", month: "short", day: "numeric" }).format(
+    Date.parse(`${day}T00:00:00Z`),
+  );
+}

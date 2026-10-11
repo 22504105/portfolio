@@ -1,10 +1,12 @@
-import { CalendarDays, FlaskConical } from "lucide-react";
+import { FlaskConical } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { Logo, LogoMark } from "@/components/brand/Logo";
+import { PeriodPicker } from "@/components/controls/PeriodPicker";
 import { LinkButton } from "@/components/ui/link-button";
 import type { Messages } from "@/lib/i18n";
 import type { WorkspaceRoot } from "@/lib/routes";
+import type { Calendar } from "@/lib/view/state";
 import { Breadcrumb } from "./Breadcrumb";
 import { MobileNav } from "./MobileNav";
 import { NavLinks } from "./NavLinks";
@@ -12,8 +14,8 @@ import { NavLinks } from "./NavLinks";
 type AppShellProps = {
   root: WorkspaceRoot;
   workspaceName: string;
-  /** The period the pages are showing, already written out. */
-  periodLabel: string;
+  /** The days the workspace has data for: what the period picker offers. */
+  calendar: Calendar;
   messages: Messages;
   children: ReactNode;
 };
@@ -21,17 +23,9 @@ type AppShellProps = {
 // The frame around every workspace page: a dark sidebar (a rail of icons on a
 // tablet, a drawer on a phone), a top bar that says where you are and which
 // period you are looking at, and the page itself.
-export function AppShell({ root, workspaceName, periodLabel, messages, children }: AppShellProps) {
+export function AppShell({ root, workspaceName, calendar, messages, children }: AppShellProps) {
   const demo = root === "/demo";
   const { nav, shell } = messages;
-
-  const period = (
-    <p className="rounded-input border-line bg-surface text-ink inline-flex h-10 shrink-0 items-center gap-2 border px-3 whitespace-nowrap">
-      <CalendarDays aria-hidden="true" className="text-ink-muted size-4" />
-      <span className="sr-only">{shell.period}: </span>
-      <span className="tabular-nums">{periodLabel}</span>
-    </p>
-  );
 
   const demoBadge = demo && (
     <p className="border-brand/25 bg-brand-tint text-brand-hover inline-flex h-10 shrink-0 items-center gap-2 rounded-full border px-3.5 font-medium whitespace-nowrap">
@@ -42,7 +36,7 @@ export function AppShell({ root, workspaceName, periodLabel, messages, children 
   );
 
   return (
-    <div className="md:pl-rail lg:pl-sidebar min-h-dvh">
+    <div className="md:pl-rail lg:pl-sidebar min-h-dvh print:pl-0">
       <a
         href="#main"
         className="rounded-input bg-brand fixed top-4 left-4 z-[60] -translate-y-24 px-4 py-2.5 font-medium text-white transition-transform focus:translate-y-0"
@@ -50,7 +44,7 @@ export function AppShell({ root, workspaceName, periodLabel, messages, children 
         {nav.skip}
       </a>
 
-      <aside className="on-nav w-rail bg-nav text-nav-ink lg:w-sidebar fixed inset-y-0 left-0 z-30 hidden flex-col px-3 pb-4 md:flex lg:px-4">
+      <aside className="on-nav w-rail bg-nav text-nav-ink lg:w-sidebar fixed inset-y-0 left-0 z-30 hidden flex-col px-3 pb-4 md:flex lg:px-4 print:hidden">
         <Link href="/" aria-label={nav.home} className="h-topbar flex shrink-0 items-center text-white md:max-lg:justify-center lg:px-2">
           <Logo className="max-lg:hidden" />
           <LogoMark className="size-7 lg:hidden" />
@@ -59,13 +53,13 @@ export function AppShell({ root, workspaceName, periodLabel, messages, children 
       </aside>
 
       <div className="flex min-h-dvh flex-col">
-        <header className="border-line bg-canvas/95 sticky top-0 z-20 border-b backdrop-blur-sm">
+        <header className="border-line bg-canvas/95 sticky top-0 z-20 border-b backdrop-blur-sm print:hidden">
           <div className="h-topbar mx-auto flex w-full max-w-[1440px] items-center gap-3 px-5 md:px-7 lg:px-9">
             <MobileNav root={root} labels={nav} workspaceName={workspaceName} />
             <Breadcrumb workspaceName={workspaceName} labels={nav} />
             <div className="ml-auto flex items-center gap-2.5">
               <div className="flex items-center gap-2.5 max-lg:hidden">
-                {period}
+                <PeriodPicker calendar={calendar} labels={messages.period} />
                 {demoBadge}
               </div>
               {demo && (
@@ -77,7 +71,7 @@ export function AppShell({ root, workspaceName, periodLabel, messages, children 
           </div>
           {/* Below the desktop width the period and the demo label take a row of their own, always in view. */}
           <div className="border-line flex items-center gap-2.5 overflow-x-auto border-t px-5 py-2.5 md:px-7 lg:hidden">
-            {period}
+            <PeriodPicker calendar={calendar} labels={messages.period} />
             {demoBadge}
           </div>
         </header>

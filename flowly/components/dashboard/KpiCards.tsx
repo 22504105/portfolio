@@ -13,7 +13,12 @@ type KpiCardsProps = {
   compact?: boolean;
 };
 
-const percent = new Intl.NumberFormat("en-US", { style: "percent", maximumFractionDigits: 1, signDisplay: "exceptZero" });
+const percent = new Intl.NumberFormat("en-US", {
+  style: "percent",
+  minimumFractionDigits: 1,
+  maximumFractionDigits: 1,
+  signDisplay: "exceptZero",
+});
 const whole = new Intl.NumberFormat("en-US");
 
 function Change({ change, labels, days }: { change: Delta | null; labels: Messages["kpi"]; days: number }) {

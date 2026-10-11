@@ -14,6 +14,7 @@ authority: brief → this document → `metrics.md` → `design-system.md`.
 | Russian localisation                                         | Architecture only                 | Owner's decision. All interface text is in `lib/i18n/en.ts`; a second language is one more file of the same type                                   |
 | One `Transaction/Order` table                                | `orders` + `order_lines`          | See section 4                                                                                                                                      |
 | `Customer.first_order_at` stored                             | Derived when read                 | A stored copy goes stale when an import is deleted                                                                                                 |
+| TanStack Table, date-fns, React Hook Form in the demo | Not installed | Sorting, paging and filtering are done on the server from the address, and dates by `Intl`; the libraries would have nothing to do. They are added if a later phase needs them (forms in Phase 3) |
 | Muted text `#737A86`, warning `#A66A20`                      | `#646B77`, `#9A6119`              | Contrast: see `design-system.md`                                                                                                                   |
 
 ## 2. Technology
@@ -102,11 +103,31 @@ to a `Dataset`. There are two producers of a `Dataset`:
 Because pages never calculate anything themselves, the demo and a real
 workspace cannot diverge, and two pages cannot disagree.
 
-**State.** The period and filters live in the address (search parameters), so
-a view can be linked to and the back button works. No state library, no
-TanStack Query: data is loaded once per workspace and calculated in memory.
-This bounds a workspace to what a browser holds comfortably; the limit
-(orders per workspace) is set and enforced in Phase 3.
+**State lives in the address.** The period (`from`, `to`), the filters
+(`status`, `channel`, `category`, `product`), the chart's grouping (`g`), the
+breakdown's dimension (`by`), search (`q`), sort (`sort`, `dir`), the page
+number and the open drawer (`order`, `customer`) are search parameters.
+`lib/view/state.ts` reads them and validates every one; anything unrecognised
+is ignored. Controls are links, a plain GET form (search) and three menus that
+change the address. There is no client-side store and no data-fetching library.
+
+**Pages are rendered on the server.** A page reads its address, narrows the
+orders (`loadPage` in `lib/workspace.ts`), calls the metric functions and
+sends HTML. Only the chart, the period picker, the menus, the drawer and the
+navigation are client components. The demo's 5,559 orders are generated once
+per server process and each request is a few milliseconds of arithmetic.
+
+**Filters by line.** Status and channel keep or drop whole orders. Category
+and product narrow an order to its matching lines, with the amounts and the
+share of any refund that belong to those lines, so "revenue for Coffee" is the
+revenue of coffee lines.
+
+**Downloads** (`/demo/export/<kind>`) are built from the same page data as the
+screen they are offered on, so a file cannot disagree with the page.
+
+**Page components are shared.** `components/pages/*` take a `PageData` and
+know nothing about where it came from; `app/demo/*` are a few lines each. The
+signed-in workspace (Phase 3) will reuse them with its own data.
 
 ## 6. Security plan
 

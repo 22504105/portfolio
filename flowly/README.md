@@ -8,22 +8,44 @@ Portfolio project #03. Everything runs on free tiers.
 
 ## Status
 
-**Phase 1 of 5 — foundation.** In place: the application shell (sidebar, rail,
-drawer), the landing page, the seeded demo dataset, the core of the metric
-engine with the four headline figures on the demo overview, the database
-schema and row level security policies, unit and end-to-end tests, CI.
+**Phase 2 of 5 — the demo dashboard.** The public demo is complete for its
+four data pages: Overview, Analytics, Customers and Transactions, with a
+period picker, filters, sorting, search, paging, detail drawers and CSV
+downloads, all calculated from one seeded dataset.
 
-Not built yet: charts, filters and the other demo pages (Phase 2); accounts,
-persistence and imports (Phase 3); reports and settings (Phase 4); hardening
-and deployment (Phase 5). Pages that are not written say so.
+Not built yet: accounts, persistence and imports (Phase 3); reports and
+settings (Phase 4); hardening and deployment (Phase 5). The Imports, Reports
+and Settings pages say that they are not written yet; sign-in pages say that
+accounts open later.
 
-| Phase | Scope                                  | State                 |
+| Phase | Scope | State |
 | ----- | -------------------------------------- | --------------------- |
-| 1     | Foundation and architecture            | Done, awaiting review |
-| 2     | Demo dashboard and analytics           | Not started           |
-| 3     | Accounts, persistence, CSV/XLSX import | Not started           |
-| 4     | Reports, settings, polish              | Not started           |
-| 5     | Hardening, QA, deployment              | Not started           |
+| 1 | Foundation and architecture | Done |
+| 2 | Demo dashboard and analytics | Done, awaiting review |
+| 3 | Accounts, persistence, CSV/XLSX import | Not started |
+| 4 | Reports, settings, polish | Not started |
+| 5 | Hardening, QA, deployment | Not started |
+
+## What the demo does
+
+- **Period**: seven ready-made periods or any custom range; every figure is
+  compared with the same number of days just before.
+- **Filters**: status, channel, category, product. They act the same on every
+  page, and the period and filters follow you from one page to the next.
+- **Overview**: four headline figures, repeat rate, refunds, revenue over
+  time against the previous period, revenue by channel, top products, recent
+  transactions. Conversion rate is shown as unavailable: there is no traffic
+  data, and none is invented.
+- **Analytics**: revenue by day, week or month; breakdown by channel,
+  category or product as bars and as a table; the chart's numbers as a table.
+- **Customers**: who bought in the period, what they spent then and in all,
+  new or returning, with each customer's full order history.
+- **Transactions**: every order, searchable and sortable, with its lines.
+- **Downloads**: transactions, customers, the breakdown and the time series
+  as CSV, holding exactly what the page shows. Cells that a spreadsheet would
+  run as a formula are neutralised.
+- Everything a page shows is in its address, so any view can be bookmarked or
+  shared, and the back button undoes a filter.
 
 ## Running locally
 
