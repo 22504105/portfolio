@@ -27,7 +27,7 @@ export default async function PasswordPage({ params }: PageProps<"/[locale]/acco
         <p>
           <Link href={homeFor(user)} className="text-fg underline underline-offset-4 transition-colors duration-(--duration-fast) hover:text-signal">
             <span aria-hidden="true">← </span>
-            {user.role === "barber" && user.barberId ? nav("workspace") : nav("account")}
+            {user.role === "admin" ? nav("admin") : user.role === "barber" && user.barberId ? nav("workspace") : nav("account")}
           </Link>
         </p>
       }

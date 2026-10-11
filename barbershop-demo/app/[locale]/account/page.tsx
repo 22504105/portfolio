@@ -39,7 +39,11 @@ export default async function AccountPage({ params }: PageProps<"/[locale]/accou
           {t("nav.workspace")}
         </ButtonLink>
       )}
-      {user.role === "admin" && <p className="type-body mt-3 max-w-xl border border-line p-4">{t("account.staffNote")}</p>}
+      {user.role === "admin" && (
+        <ButtonLink href="/admin" variant="solid" size="lg" className="mt-6">
+          {t("nav.admin")}
+        </ButtonLink>
+      )}
 
       <div className="mt-12 grid gap-x-8 gap-y-16 lg:grid-cols-12">
         <div className="min-w-0 lg:col-span-8">

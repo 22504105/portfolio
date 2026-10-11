@@ -4,9 +4,9 @@ The decisions behind the foundation, in the order the brief asks for them.
 `docs/brief.md` is the specification; where this document and the brief
 disagree, the brief wins and this document is wrong.
 
-Status: Phase 03. The booking engine, email, guest management, client accounts
-and the barber workspace are implemented and tested. Admin, analytics and the
-demo are Phase 04. Sections marked **Phase 03** or **Phase 04**
+Status: Phase 04. Everything below is implemented and tested except where a
+section says otherwise. Phase 05 is the independent review, the PWA and
+deployment. Sections marked **Phase 03** or **Phase 04**
 describe an agreed design that is not implemented yet.
 
 ## 1. Information architecture
@@ -30,8 +30,8 @@ for a year in the `NEXT_LOCALE` cookie and, for registered users, in
 
 Built so far: the public site, `/book`, `/booking/confirm`, `/booking/manage`,
 `/login`, `/register`, `/forgot-password`, `/account`, `/barber`,
-`/barber/calendar` and `/api/cron/notifications`. Admin and the demo are not
-built yet.
+`/barber/calendar`, `/admin` with its sections, `/demo/admin` with the same
+sections, and `/api/cron/notifications`.
 
 ## 2. Technology
 
@@ -239,12 +239,37 @@ Points the tests pin down:
   scheduler. Vercel's free plan cannot call it often enough (once a day); the
   call has to come from Supabase `pg_cron` or another scheduler.
 
-## 8. Public demo — Phase 04
+## 8. Public demo
 
-A second Supabase project with synthetic data only, its own keys, no email
-provider key and no path to the application database. Demo sessions get a
-limited role; writes, if enabled, are isolated per session and reset on a
-schedule. The demo is labelled as a demo on every screen.
+`/demo/admin` shows the admin workspace to anyone, read-only.
+
+The brief prefers a separate demo database and accepts a read-only demo. What
+was built is stricter than a separate database: **the demo has no database at
+all.** The admin pages read through one interface (`lib/admin/types.ts`,
+`AdminSource`) with two implementations. The real admin gets `live.ts`, which
+queries PostgreSQL. The demo gets `demo.ts`, which builds invented bookings in
+memory from the date, the same for every visitor.
+
+What that gives:
+
+- **No real data can leak**, because none is read. Names are invented, email
+  addresses end in `@demo.example`, phone numbers are from the range reserved
+  for drama.
+- **Nothing can be changed.** The source is marked read-only, and the shared
+  pages then render no form with an action; settings are shown switched off.
+  A browser check counts the forms and the editable fields on every demo page
+  and expects none.
+- **No email can be sent**: nothing in the demo enqueues or sends.
+- **The admin actions are unreachable in effect.** They live in the same
+  application, and each begins by requiring an admin session, so a visitor
+  cannot use them by posting from anywhere.
+- **Demo figures are labelled.** The analytics page says in the demo that its
+  numbers come from invented data and are not the results of a business.
+
+The cost: the demo cannot show what happens when an admin changes something.
+A writable demo would need the separate project the brief describes, with
+per-session isolation and a reset; that is a possible later step, not a gap in
+safety.
 
 ## 9. Security review of the booking strategy
 
@@ -263,7 +288,7 @@ the implementation in Phase 03.
 | A barber reads other barbers' clients or the takings | Medium | Row level security — tested |
 | "Resend link" reveals who has a booking | Medium | Uniform responses and throttling |
 | Duplicate or late reminder emails | Medium | Idempotency key, re-check before sending |
-| The demo reaches real data | High | Separate project and keys |
+| The demo reaches real data | High | The demo reads no database (section 8) |
 | Cancelling past the cutoff by rescheduling first | Medium | One cutoff rule shared by both operations |
 
 Decided with accounts: a signed-in client still confirms each booking from an
@@ -367,3 +392,45 @@ profile changes that cannot touch the role, a client turned away from the
 barber's pages, a barber recording an outcome and adding and withdrawing a
 break. Not checked: the emails Supabase itself sends (address confirmation and
 password reset), which need a real inbox.
+
+## 13. Admin
+
+- **Access.** Every page under `/admin` requires the admin role before any
+  data is read; every admin action checks it again from the session and the
+  database. A client or a barber who asks for an admin page is sent to their
+  own, with no hint of what is there.
+- **Bookings made by staff** (`create_admin_booking`) are confirmed at once and
+  send a confirmation, not a verification. The two-hour lead does not apply; the
+  grid, the horizon, working hours, time off and other bookings do.
+- **Staff are not bound by the twelve-hour rule** when cancelling or moving a
+  booking. The customer is told by email either way.
+- **Outcomes.** An appointment can be marked completed or missed once it has
+  started. An admin can correct an outcome; a barber cannot.
+- **Payment is separate from outcome.** `record_payment` writes what was taken
+  at the counter for a completed visit; nothing marks a visit paid by itself.
+  Correcting a completed visit to missed removes its payment.
+- **Catalog edits** change the catalog, not history: bookings keep the names,
+  prices and durations they were made with. Services and barbers are retired,
+  not deleted. Changing a barber's hours does not move existing appointments.
+- **Settings** hold the numbers of the booking policy. Currency, time zone and
+  the thirty-minute grid are not settings.
+- **Forms work without JavaScript.** Each action answers by redirecting back
+  with a notice in the address, which the page turns into a message.
+
+### Analytics: what each figure means
+
+`admin_analytics(from, to)` computes everything from stored rows when asked.
+The page prints these definitions under the numbers.
+
+| Figure | Definition |
+|---|---|
+| Bookings | Those that start on a London date in the range |
+| Paid revenue | Sum of `payment_records` for completed visits in the range. A completed visit with no payment adds nothing; so does a booking that was only made |
+| Top services | Services of completed visits, with their value at list price (not what was paid) |
+| Booked time | Service minutes of completed and still-confirmed visits. Cancelled, missed and expired add nothing |
+| Available time | Working hours on the dates of the range, less approved time off and shop closures |
+| Utilisation | Booked time divided by available time |
+
+The same definitions exist in TypeScript (`lib/admin/analytics.ts`) for the
+demo, which has no database. Both are tested against the same week of
+bookings with the same expected figures.

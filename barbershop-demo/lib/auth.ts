@@ -58,6 +58,7 @@ export const getSessionUser = cache(async (): Promise<SessionUser | null> => {
 
 /** Where each role lands after signing in. */
 export function homeFor(user: SessionUser): string {
+  if (user.role === "admin") return "/admin";
   return user.role === "barber" && user.barberId ? "/barber" : "/account";
 }
 

@@ -9,14 +9,15 @@ nothing here can be booked, bought or visited.**
 
 ## Status
 
-**Phase 03 of 05 — booking engine, email and accounts.** In place: the
-bilingual public site; real booking for guests (availability from the
-database, a slot held for fifteen minutes, confirmation by email link, a page
-to view, reschedule or cancel, an email queue with reminders); optional client
-accounts with their bookings and profile; and the barber's workspace
-(appointments, outcomes, breaks, requests for time off).
+**Phase 04 of 05 — admin panel, analytics and public demo.** In place: the
+bilingual public site; real booking with email confirmation, rescheduling and
+cancelling; client accounts; the barber's workspace; the admin workspace
+(calendar, bookings made by staff, outcomes, payments at the counter,
+services, barbers and their hours, clients, settings, analytics); and a public
+read-only demo of that workspace on invented data.
 
-**Not built yet:** the admin panel, analytics and the public demo (Phase 04).
+**Still to do (Phase 05):** an independent QA and security review, the PWA,
+performance and accessibility passes, and deployment.
 
 Without a database configured the site still runs: it serves its built-in
 catalog, and the booking page shows the same wizard on a mock, labelled as a
@@ -26,8 +27,8 @@ preview.
 |---|---|---|
 | 01 | Architecture and foundation | Done |
 | 02 | Public website and booking interface | Done |
-| 03 | Booking engine, email and accounts | Done, awaiting review |
-| 04 | Admin panel, analytics and public demo | Not started |
+| 03 | Booking engine, email and accounts | Done |
+| 04 | Admin panel, analytics and public demo | Done, awaiting review |
 | 05 | Final QA, security and deployment | Not started |
 
 ## Technology
@@ -105,6 +106,13 @@ npm run user:create -- owner@example.com admin
 
 The password is generated and printed once. The local database from
 `npm run db:dev` has no Supabase Auth: accounts need a real Supabase project.
+
+### Admin and demo
+
+`/admin` is the admin workspace, for accounts with the admin role only.
+`/demo/admin` shows the same pages to anyone, read-only, on invented data that
+is built in memory: it reads no database, shows no real person, has no form
+that changes anything and sends no email. Every page of it says it is a demo.
 
 The application reaches the database directly, with `DATABASE_URL`, for
 everything to do with bookings. See `.env.example` for every variable.

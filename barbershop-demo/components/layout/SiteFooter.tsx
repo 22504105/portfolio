@@ -43,6 +43,11 @@ export function SiteFooter({ shop, year }: SiteFooterProps) {
                 {t("nav.account")}
               </Link>
             </li>
+            <li>
+              <Link href="/demo/admin" className={LINK}>
+                {t("nav.demo")}
+              </Link>
+            </li>
           </ul>
         </nav>
 
