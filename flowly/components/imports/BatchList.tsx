@@ -35,10 +35,12 @@ export function BatchList({ batches, timezone, labels }: { batches: ImportBatch[
     setNotice(null);
     // The database removes the batch, its orders and their lines, and the customers left with no order.
     const { error } = await supabaseBrowser().rpc("delete_import", { p_batch: batch.id });
+    // "Not found" means it is already gone (a second press, or another tab): that is what was asked for.
+    const failed = error !== null && error.code !== "P0002";
     setBusy(false);
     setConfirming(null);
-    setNotice(error ? { tone: "error", text: labels.failed } : { tone: "ok", text: labels.deleted });
-    if (!error) router.refresh();
+    setNotice(failed ? { tone: "error", text: labels.failed } : { tone: "ok", text: labels.deleted });
+    if (!failed) router.refresh();
   };
 
   if (batches.length === 0) return <p className="card text-ink-muted px-5 py-6">{labels.none}</p>;

@@ -8,19 +8,17 @@ Portfolio project #03. Everything runs on free tiers.
 
 ## Status
 
-**Phase 3 of 5 — accounts, persistence and imports.** Built and tested as far
-as it can be without a live Supabase project:
+**Phase 3 of 5 — accounts, persistence and imports.** Done and checked
+against a live Supabase project (2026-10-11): setting up a workspace,
+importing the sample file, the figures on every page to the cent, the CSV
+download, importing the same file again (skipped, then replaced), signing out
+and in, a second account seeing none of the first one's data through the
+pages or through the database API directly, and deleting an import.
 
-- the import pipeline (CSV and XLSX, mapping, validation, duplicate handling),
-  tested with unit tests and in a browser through the demo's Imports page;
-- the database: schema, row level security and the import functions, tested
-  on a real PostgreSQL, including that one account cannot reach another's data;
-- sign-up, sign-in, sign-out, password reset, the private workspace and its
-  pages: written, type-checked and built.
-
-**Not yet verified:** anything that needs a real Supabase project — signing
-up, storing an import, reading it back, deleting it. That needs the two
-values in `.env.local` (see "Accounts and your own data").
+**Not verified:** the sign-up call itself and the password-reset email. The
+test project still had email confirmation switched on and had used up its
+email allowance, so the test accounts were created already confirmed and
+signed in through the real sign-in page. Only Chrome was used.
 
 Not built yet: reports and settings (Phase 4); hardening and deployment
 (Phase 5).
@@ -29,7 +27,7 @@ Not built yet: reports and settings (Phase 4); hardening and deployment
 | ----- | -------------------------------------- | ---------------------------------------------- |
 | 1     | Foundation and architecture            | Done                                           |
 | 2     | Demo dashboard and analytics           | Done                                           |
-| 3     | Accounts, persistence, CSV/XLSX import | Built; live Supabase check pending credentials |
+| 3     | Accounts, persistence, CSV/XLSX import | Done; sign-up and reset email not yet verified |
 | 4     | Reports, settings, polish              | Not started                                    |
 | 5     | Hardening, QA, deployment              | Not started                                    |
 

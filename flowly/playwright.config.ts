@@ -20,7 +20,10 @@ export default defineConfig({
   webServer: {
     command: `npm run build && npx next start -p ${PORT}`,
     url: `http://localhost:${PORT}`,
-    reuseExistingServer: !process.env.CI,
+    // These tests are about the site with no backend, whatever .env.local holds on this machine.
+    // Variables that are already set, even to nothing, are not overwritten by the file.
+    env: { NEXT_PUBLIC_SUPABASE_URL: "", NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "", NEXT_PUBLIC_SUPABASE_ANON_KEY: "" },
+    reuseExistingServer: false,
     timeout: 180_000,
   },
 });

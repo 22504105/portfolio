@@ -13,7 +13,12 @@ import { safeNext } from "@/lib/safe-next";
 export type AuthState = {
   error?: "invalid" | "credentials" | "weak" | "unavailable" | "rate" | "mismatch";
   notice?: "check_email" | "reset_sent" | "updated";
+  /** The address that was typed, handed back so the form can keep it after an error. Never the password. */
+  email?: string;
 };
+
+/** What was typed in the email field, to give back with an error. */
+const typed = (form: FormData) => String(form.get("email") ?? "").slice(0, 320);
 
 const email = z.string().trim().toLowerCase().pipe(z.email().max(320));
 const password = z.string().min(8).max(200);
@@ -30,12 +35,12 @@ const failure = (status: number | undefined): AuthState => ({ error: status === 
 
 export async function signIn(_: AuthState, form: FormData): Promise<AuthState> {
   const parsed = z.object({ email, password: z.string().min(1).max(200) }).safeParse(Object.fromEntries(form));
-  if (!parsed.success) return { error: "invalid" };
+  if (!parsed.success) return { error: "invalid", email: typed(form) };
   const supabase = await createSupabaseServerClient();
-  if (!supabase) return { error: "unavailable" };
+  if (!supabase) return { error: "unavailable", email: typed(form) };
 
   const { error } = await supabase.auth.signInWithPassword(parsed.data);
-  if (error) return error.status === 400 ? { error: "credentials" } : failure(error.status);
+  if (error) return { ...(error.status === 400 ? { error: "credentials" as const } : failure(error.status)), email: typed(form) };
 
   revalidatePath("/app", "layout");
   redirect(safeNext(form.get("next")));
@@ -43,15 +48,18 @@ export async function signIn(_: AuthState, form: FormData): Promise<AuthState> {
 
 export async function signUp(_: AuthState, form: FormData): Promise<AuthState> {
   const parsed = z.object({ email, password }).safeParse(Object.fromEntries(form));
-  if (!parsed.success) return { error: form.get("password") && String(form.get("password")).length < 8 ? "weak" : "invalid" };
+  if (!parsed.success)
+    return { error: form.get("password") && String(form.get("password")).length < 8 ? "weak" : "invalid", email: typed(form) };
   const supabase = await createSupabaseServerClient();
-  if (!supabase) return { error: "unavailable" };
+  if (!supabase) return { error: "unavailable", email: typed(form) };
 
   const { data, error } = await supabase.auth.signUp({ ...parsed.data, options: { emailRedirectTo: `${await origin()}/auth/callback` } });
   if (error) {
-    if (error.code === "weak_password") return { error: "weak" };
+    if (error.code === "weak_password") return { error: "weak", email: typed(form) };
+    // Supabase refuses addresses it can tell are not real (a domain with no mail server, for one).
+    if (error.code === "email_address_invalid") return { error: "invalid", email: typed(form) };
     // An address that is already registered gets the same answer as a new one.
-    if (error.code !== "user_already_exists") return failure(error.status);
+    if (error.code !== "user_already_exists") return { ...failure(error.status), email: typed(form) };
   }
   // With email confirmation switched off there is a session at once. With it
   // on, or for an address that already has an account, there is none: the

@@ -2,7 +2,7 @@ import "server-only";
 import { cache } from "react";
 import type { Customer, Dataset, Order, OrderLine, OrderStatus, Workspace } from "@/lib/domain/types";
 import { toMinor } from "@/lib/money";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseServerClient, currentUser } from "@/lib/supabase/server";
 import { dayKey } from "@/lib/time";
 import type { Calendar } from "@/lib/view/state";
 import type { WorkspaceContext } from "@/lib/workspace";
@@ -30,6 +30,9 @@ export type ImportBatch = {
 
 /** The signed-in user's workspace, or null if they have not made one yet. Once per request. */
 export const loadWorkspace = cache(async (): Promise<WorkspaceRow | null> => {
+  // A page and its layout render side by side, so this can be reached before the layout has turned a
+  // visitor away. Nobody signed in means no workspace: say so here instead of asking the database as a stranger.
+  if (!(await currentUser())) return null;
   const supabase = await createSupabaseServerClient();
   if (!supabase) return null;
   const { data, error } = await supabase.from("workspaces").select("id, name, currency_code, timezone, created_at").maybeSingle();
@@ -163,7 +166,7 @@ export async function appWorkspace(): Promise<WorkspaceContext | null> {
 
 export const loadBatches = cache(async (): Promise<ImportBatch[]> => {
   const supabase = await createSupabaseServerClient();
-  if (!supabase) return [];
+  if (!supabase || !(await currentUser())) return [];
   const { data, error } = await supabase
     .from("import_batches")
     .select("id, filename, file_type, interpretation, row_count, accepted_count, rejected_count, status, imported_at, warnings_json")

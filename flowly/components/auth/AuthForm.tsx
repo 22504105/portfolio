@@ -46,6 +46,9 @@ export function AuthForm({ mode, labels, next, initialError }: AuthFormProps) {
           <input
             type="email"
             name="email"
+            // React clears a form after its action; the address typed comes back with the answer.
+            key={state.email ?? ""}
+            defaultValue={state.email ?? ""}
             autoComplete="email"
             required
             maxLength={320}
