@@ -1,0 +1,6 @@
+# Text files are LF in the repository and in every working copy, on Windows too:
+# Prettier checks line endings, and a CRLF checkout would fail the format check.
+* text=auto eol=lf
+*.xlsx binary
+*.jpg binary
+*.png binary
