@@ -1,19 +1,28 @@
 import type { Metadata } from "next";
-import { SimplePage } from "@/components/landing/SimplePage";
-import { LinkButton } from "@/components/ui/link-button";
+import { redirect } from "next/navigation";
+import { AuthForm } from "@/components/auth/AuthForm";
+import { AuthPage } from "@/components/auth/AuthPage";
 import { getMessages } from "@/lib/i18n";
+import { safeNext } from "@/lib/safe-next";
+import { currentUser } from "@/lib/supabase/server";
 
-export const metadata: Metadata = { title: "Reset password" };
+export const metadata: Metadata = { title: "Reset password", robots: { index: false } };
 
-// Accounts are built in Phase 3. Until then this page says so and points to the demo.
-export default function Page() {
+export default async function Page({ searchParams }: PageProps<"/reset-password">) {
   const { auth } = getMessages();
+  const params = await searchParams;
+  const user = await currentUser();
+  // Someone already signed in has no use for this page.
+  if (user) redirect("/app/overview");
+
   return (
-    <SimplePage title={auth.resetTitle}>
-      <p>{auth.notYet}</p>
-      <LinkButton href="/demo" className="mt-7">
-        {auth.toDemo}
-      </LinkButton>
-    </SimplePage>
+    <AuthPage title={auth.resetTitle}>
+      <AuthForm
+        mode="reset"
+        labels={auth}
+        next={typeof params.next === "string" ? safeNext(params.next) : undefined}
+        initialError={params.error === "link" ? "link" : undefined}
+      />
+    </AuthPage>
   );
 }

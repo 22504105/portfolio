@@ -12,7 +12,9 @@
     "format:check": "prettier --check .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "db:migrate": "node scripts/migrate.mjs",
+    "samples": "node scripts/make-samples.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",

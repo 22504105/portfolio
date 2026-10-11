@@ -8,23 +8,30 @@ Portfolio project #03. Everything runs on free tiers.
 
 ## Status
 
-**Phase 2 of 5 — the demo dashboard.** The public demo is complete for its
-four data pages: Overview, Analytics, Customers and Transactions, with a
-period picker, filters, sorting, search, paging, detail drawers and CSV
-downloads, all calculated from one seeded dataset.
+**Phase 3 of 5 — accounts, persistence and imports.** Built and tested as far
+as it can be without a live Supabase project:
 
-Not built yet: accounts, persistence and imports (Phase 3); reports and
-settings (Phase 4); hardening and deployment (Phase 5). The Imports, Reports
-and Settings pages say that they are not written yet; sign-in pages say that
-accounts open later.
+- the import pipeline (CSV and XLSX, mapping, validation, duplicate handling),
+  tested with unit tests and in a browser through the demo's Imports page;
+- the database: schema, row level security and the import functions, tested
+  on a real PostgreSQL, including that one account cannot reach another's data;
+- sign-up, sign-in, sign-out, password reset, the private workspace and its
+  pages: written, type-checked and built.
 
-| Phase | Scope                                  | State                 |
-| ----- | -------------------------------------- | --------------------- |
-| 1     | Foundation and architecture            | Done                  |
-| 2     | Demo dashboard and analytics           | Done, awaiting review |
-| 3     | Accounts, persistence, CSV/XLSX import | Not started           |
-| 4     | Reports, settings, polish              | Not started           |
-| 5     | Hardening, QA, deployment              | Not started           |
+**Not yet verified:** anything that needs a real Supabase project — signing
+up, storing an import, reading it back, deleting it. That needs the two
+values in `.env.local` (see "Accounts and your own data").
+
+Not built yet: reports and settings (Phase 4); hardening and deployment
+(Phase 5).
+
+| Phase | Scope                                  | State                                          |
+| ----- | -------------------------------------- | ---------------------------------------------- |
+| 1     | Foundation and architecture            | Done                                           |
+| 2     | Demo dashboard and analytics           | Done                                           |
+| 3     | Accounts, persistence, CSV/XLSX import | Built; live Supabase check pending credentials |
+| 4     | Reports, settings, polish              | Not started                                    |
+| 5     | Hardening, QA, deployment              | Not started                                    |
 
 ## What the demo does
 
@@ -56,7 +63,35 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:3000. The demo is at `/demo`.
+Open http://localhost:3000. The demo is at `/demo`. Without Supabase
+configured, the account pages say that accounts are not set up.
+
+## Accounts and your own data
+
+1. Create a Supabase project (free tier).
+2. Authentication → Sign In / Providers → Email: switch **Confirm email** off.
+   (With it on, sign-up still works but asks the user to confirm first, and
+   Supabase's built-in mailer sends only a few emails an hour.)
+3. Authentication → URL Configuration: set the site URL and add
+   `http://localhost:3000/**` (and the deployed address) to the redirect URLs,
+   for password-reset links.
+4. Copy `.env.example` to `.env.local` and fill in
+   `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+   (Project Settings → API). **The publishable key only, never a secret key.**
+5. Apply the database migrations: put the pooler connection string in
+   `.env.local` as `DATABASE_URL` and run `npm run db:migrate`, or paste the
+   files of `supabase/migrations` into the SQL editor in name order.
+6. `npm run dev`, open `/signup`.
+
+**Importing.** Imports → drop a `.csv` or `.xlsx` → match the columns →
+review what will be left out and why → confirm. Files are read in the browser
+and never uploaded; only confirmed orders are stored. Limits: 5 MB and 10,000
+rows per file, 50,000 orders per workspace. Sample files are on the Imports
+page. Deleting an import removes its orders; figures are always calculated
+from what is stored, so nothing needs recomputing.
+
+**Email verification.** Off by design for this project: an account works as
+soon as it is made. The reset link is the only email Flowly depends on.
 
 ## Scripts
 
@@ -67,7 +102,8 @@ Open http://localhost:3000. The demo is at `/demo`.
 | `npm run typecheck`               | TypeScript                                                             |
 | `npm run lint`                    | ESLint                                                                 |
 | `npm run format` / `format:check` | Prettier                                                               |
-| `npm test`                        | Unit tests (Vitest)                                                    |
+| `npm run db:migrate`              | Apply `supabase/migrations` to the database in `DATABASE_URL`          |
+| `npm test`                        | Unit and database tests (Vitest; starts a real PostgreSQL)             |
 | `npm run test:e2e`                | End-to-end tests (Playwright; builds first, uses the installed Chrome) |
 
 ## Documents

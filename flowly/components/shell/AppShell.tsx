@@ -1,6 +1,7 @@
-import { FlaskConical } from "lucide-react";
+import { FlaskConical, LogOut } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { signOut } from "@/app/actions/auth";
 import { Logo, LogoMark } from "@/components/brand/Logo";
 import { PeriodPicker } from "@/components/controls/PeriodPicker";
 import { LinkButton } from "@/components/ui/link-button";
@@ -17,13 +18,15 @@ type AppShellProps = {
   /** The days the workspace has data for: what the period picker offers. */
   calendar: Calendar;
   messages: Messages;
+  /** Who is signed in. Absent in the demo. */
+  account?: { email: string };
   children: ReactNode;
 };
 
 // The frame around every workspace page: a dark sidebar (a rail of icons on a
 // tablet, a drawer on a phone), a top bar that says where you are and which
 // period you are looking at, and the page itself.
-export function AppShell({ root, workspaceName, calendar, messages, children }: AppShellProps) {
+export function AppShell({ root, workspaceName, calendar, messages, account, children }: AppShellProps) {
   const demo = root === "/demo";
   const { nav, shell } = messages;
 
@@ -66,6 +69,20 @@ export function AppShell({ root, workspaceName, calendar, messages, children }: 
                 <LinkButton href="/signup" size="md">
                   {shell.tryYourData}
                 </LinkButton>
+              )}
+              {account && (
+                <form action={signOut} className="flex items-center gap-3">
+                  <p className="text-ink-muted max-w-52 truncate max-xl:hidden" title={account.email}>
+                    {account.email}
+                  </p>
+                  <button
+                    type="submit"
+                    className="rounded-input border-input bg-surface hover:bg-surface-2 inline-flex h-10 items-center gap-2 border px-3.5 font-medium transition-colors"
+                  >
+                    <LogOut aria-hidden="true" className="size-4" />
+                    {messages.auth.signOut}
+                  </button>
+                </form>
               )}
             </div>
           </div>

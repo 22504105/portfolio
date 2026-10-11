@@ -22,6 +22,12 @@ An order has one status:
 | cancelled | Never went through            | No                           | No             |
 | pending   | Not settled yet               | No                           | No             |
 
+**In an import** the amount column is what was charged: the net. With quantity
+and unit price as well, gross is their product and the discount is the
+difference; with only quantity and unit price, net is gross less the discount
+column. A file is either one order per row or one order line per row; in the
+second case rows with the same order number are added up into one order.
+
 **Refunds.** A full refund is the status `refunded`. A partial refund is a
 `refund_amount` on a completed order (0 ≤ refund ≤ net). Negative-amount rows
 are not used to represent refunds; an import that contains them is asked to

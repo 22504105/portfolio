@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
-import { BuildingPage } from "@/components/pages/BuildingPage";
+import { ImportsPage } from "@/components/pages/ImportsPage";
 import { getMessages } from "@/lib/i18n";
+import { demoWorkspace } from "@/lib/workspace";
 
 export const metadata: Metadata = { title: "Imports" };
 
 export default function Page() {
-  return <BuildingPage root="/demo" section="imports" messages={getMessages()} />;
+  return <ImportsPage context={demoWorkspace()} messages={getMessages()} />;
 }

@@ -178,3 +178,64 @@ docs/           Brief, architecture, metrics, design system
   phone: demo entry, navigation, no horizontal overflow, 404s, headers.
 - `npm run typecheck`, `npm run lint`, `npm run format:check`.
 - CI: `.github/workflows/flowly.yml` at the repository root runs all of them.
+
+## 9. Accounts, persistence and imports (Phase 3)
+
+**Accounts.** Supabase Auth with email and password, through `@supabase/ssr`.
+Sessions are cookies; `proxy.ts` renews them; every page under `/app` checks
+the user with the auth server (`currentUser`) and the workspace before it
+reads anything. There is no service-role key anywhere in the application.
+Answers never reveal whether an address has an account. After sign-in only
+paths inside the application are followed (`lib/safe-next.ts`).
+
+**One workspace per account**, made on first sign-in (`/app/welcome`): name,
+currency, time zone.
+
+**Reading.** `lib/data/workspace.ts` loads the workspace's orders with their
+lines, and its customers, a thousand rows at a time, and builds the same
+`Dataset` the demo generates. The page components are the demo's. A workspace
+is capped at 50,000 orders so that this stays reasonable.
+
+**Importing** happens in the browser, in four steps:
+
+1. _Upload_ — `lib/import/table.ts` and `read.ts`. The file is checked by
+   name and by content; a workbook's unpacked size is read from its zip
+   directory before anything is unpacked; text is decoded as UTF-8, UTF-16 or,
+   failing that, Windows-1252 with a note; the delimiter is detected. Limits:
+   5 MB, 10,000 rows, 100 columns.
+2. _Map_ — `lib/import/mapping.ts` suggests a column for each field from the
+   headings; the user confirms. They also say what a row is (an order or an
+   order line), how `03/04/2026` should be read if the file does not settle
+   it, and what to do with rows that have no status. Nothing is assumed
+   silently: no default status, no guessed date order, no generated order
+   numbers unless asked for.
+3. _Validate_ — `lib/import/validate.ts` turns rows into orders or into
+   issues with a line number and a reason. Errors keep a row out; warnings
+   say what was adjusted. Lines of one order that contradict each other keep
+   the whole order out. Orders the workspace already has are skipped or
+   replaced, as chosen.
+4. _Confirm_ — `lib/import/persist.ts` creates a batch and sends the orders in
+   chunks of 400 to `import_orders`, then closes the batch with
+   `finish_import`. If anything fails, `delete_import` removes what was
+   written: an import happens or it does not.
+
+**The database checks everything again.** `import_orders` runs with the
+caller's rights, so row level security applies inside it; it refuses orders
+that do not add up to their lines, more than 500 orders per request, a closed
+batch, and a workspace over its limit, and takes each chunk whole or not at
+all. Constraints reject negative amounts, unknown statuses and a second order
+with the same number.
+
+**Untrusted content.** Cells are rendered as text by React, never as markup.
+Formulas are never evaluated: a formula where a number belongs is "not a
+number". Exports neutralise cells that a spreadsheet would run.
+
+**The demo's Imports page** is the real wizard with storing switched off: a
+visitor can take their own file to the last step and see exactly what would
+be imported, and nothing leaves their browser.
+
+**Tests.** `tests/import.test.ts` (dates, money, files, mapping, validation),
+`tests/samples.test.ts` (the sample files import cleanly),
+`tests/db/isolation.test.ts` (a real PostgreSQL: cross-account denial for
+every table and function, atomic chunks, duplicates, limits, cascading
+deletes), `e2e/imports.spec.ts` (the wizard in a browser).

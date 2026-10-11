@@ -117,11 +117,13 @@ export function parseDate(cell: Cell | undefined, timezone: string, order: DateO
   // A spreadsheet date arrives as a Date whose UTC fields are the clock reading in the sheet.
   if (cell instanceof Date) {
     if (Number.isNaN(cell.getTime())) return null;
+    // Spreadsheets keep a time as a fraction of a day, which can land a hair short of the second it means.
+    const exact = new Date(Math.round(cell.getTime() / 1000) * 1000);
     return build(
-      cell.getUTCFullYear(),
-      cell.getUTCMonth() + 1,
-      cell.getUTCDate(),
-      { h: cell.getUTCHours(), m: cell.getUTCMinutes(), s: cell.getUTCSeconds() },
+      exact.getUTCFullYear(),
+      exact.getUTCMonth() + 1,
+      exact.getUTCDate(),
+      { h: exact.getUTCHours(), m: exact.getUTCMinutes(), s: exact.getUTCSeconds() },
       timezone,
     );
   }
