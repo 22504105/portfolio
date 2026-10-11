@@ -5,7 +5,7 @@
 /*
  * Flowly design tokens. docs/design-system.md explains each one and records
  * the contrast it was checked for. Components use the names, never the values.
- * Light is the only theme: a dark one comes after everything else, if at all.
+ * There are two themes, light and dark; the dark one overrides the values below.
  */
 
 :root {
@@ -44,6 +44,18 @@
   --series-4: #5b7ba6;
   --series-5: #d0766a;
 
+  /* Solid fills that carry white text. Separate from the colours used for text,
+     because in the dark theme text gets lighter and fills must not. */
+  --accent-strong: #5747c2;
+  --negative-fill: #c24f5a;
+
+  /* Depth */
+  --card-shadow: 0 1px 2px rgb(32 36 45 / 0.04);
+  --raised-shadow: 0 12px 32px -12px rgb(32 36 45 / 0.18), 0 2px 6px rgb(32 36 45 / 0.05);
+  --field-border: #d5d8d3;
+
+  color-scheme: light;
+
   /* Shape */
   --card-radius: 14px;
   --input-radius: 10px;
@@ -66,9 +78,55 @@
   --accent-foreground: var(--accent-hover);
   --destructive: var(--negative);
   --border: var(--line);
-  --input: #d5d8d3;
+  --input: var(--field-border);
   --ring: var(--accent-base);
 }
+
+/*
+ * The dark theme: greys and near-black, the same violet. Text colours get
+ * lighter; fills that carry white text stay deep. Contrast is recorded in
+ * docs/design-system.md and checked by tests/theme.test.ts.
+ */
+[data-theme="dark"] {
+  --canvas: #121418;
+  --surface: #1b1e24;
+  --surface-2: #252930;
+  --line: #2f343d;
+
+  --ink: #e9ebef;
+  --ink-muted: #a3a9b5;
+
+  /* The fill of primary buttons stays; the violet used for text and tints changes. */
+  --accent-base: #6959d9;
+  --accent-hover: #b7aeff;
+  --accent-tint: #2a2748;
+  --accent-strong: #5747c2;
+
+  --positive: #4fc4a6;
+  --negative: #f2909a;
+  --warning: #e3ad62;
+  --negative-fill: #b3434f;
+
+  --nav: #0d0f12;
+  --nav-raised: #1e2128;
+  --nav-ink: #e9eaf0;
+  --nav-ink-muted: #a3a8b5;
+
+  --series-1: #9388f5;
+  --series-2: #45b8b8;
+  --series-3: #d9a84a;
+  --series-4: #8aa8d4;
+  --series-5: #e59c91;
+
+  --card-shadow: 0 1px 2px rgb(0 0 0 / 0.3);
+  --raised-shadow: 0 16px 40px -12px rgb(0 0 0 / 0.6), 0 2px 8px rgb(0 0 0 / 0.35);
+  --field-border: #3c424d;
+
+  color-scheme: dark;
+}
+
+/* shadcn components carry dark: classes; they follow the theme, not the device. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
 @theme inline {
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
@@ -83,6 +141,8 @@
   --color-brand: var(--accent-base);
   --color-brand-hover: var(--accent-hover);
   --color-brand-tint: var(--accent-tint);
+  --color-brand-strong: var(--accent-strong);
+  --color-negative-fill: var(--negative-fill);
   --color-positive: var(--positive);
   --color-negative: var(--negative);
   --color-warning: var(--warning);
@@ -126,8 +186,8 @@
   --spacing-rail: 68px;
   --spacing-topbar: 72px;
 
-  --shadow-card: 0 1px 2px rgb(32 36 45 / 0.04);
-  --shadow-raised: 0 12px 32px -12px rgb(32 36 45 / 0.18), 0 2px 6px rgb(32 36 45 / 0.05);
+  --shadow-card: var(--card-shadow);
+  --shadow-raised: var(--raised-shadow);
 }
 
 @layer base {
@@ -148,7 +208,8 @@
     outline: 2px solid var(--accent-base);
     outline-offset: 2px;
   }
-  .on-nav :focus-visible {
+  .on-nav :focus-visible,
+  [data-theme="dark"] :focus-visible {
     outline-color: #b9b0ff;
   }
   ::selection {
@@ -229,6 +290,26 @@
 }
 
 @media print {
+  [data-theme="dark"] {
+    --canvas: #ffffff;
+    --surface: #ffffff;
+    --surface-2: #f1f2ef;
+    --line: #e5e7e4;
+    --ink: #20242d;
+    --ink-muted: #646b77;
+    --accent-hover: #5747c2;
+    --accent-tint: #f0eeff;
+    --positive: #15846b;
+    --negative: #c24f5a;
+    --warning: #9a6119;
+    --series-1: #6959d9;
+    --series-2: #1f8a8a;
+    --series-3: #b8862b;
+    --series-4: #5b7ba6;
+    --series-5: #d0766a;
+    --field-border: #d5d8d3;
+    color-scheme: light;
+  }
   html,
   body {
     background: #ffffff !important;

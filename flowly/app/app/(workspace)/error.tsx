@@ -22,7 +22,7 @@ export default function WorkspaceError({ error, reset }: ErrorProps) {
       <button
         type="button"
         onClick={reset}
-        className="rounded-input bg-brand hover:bg-brand-hover mt-6 inline-flex h-11 items-center px-5 font-medium text-white transition-colors"
+        className="rounded-input bg-brand hover:bg-brand-strong mt-6 inline-flex h-11 items-center px-5 font-medium text-white transition-colors"
       >
         {t.retry}
       </button>

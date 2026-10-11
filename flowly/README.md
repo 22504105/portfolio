@@ -48,6 +48,7 @@ was not is stated plainly below and in [`docs/security.md`](docs/security.md).
 | Settings     | Workspace name, currency, time zone; password; delete all data; delete the account                                                                                        |
 | Accounts     | Email and password through Supabase Auth; one private workspace per account                                                                                               |
 | Downloads    | CSV of exactly what is on screen, with spreadsheet-formula injection neutralised                                                                                          |
+| Themes       | Light and dark (greys and near-black), or the device's own setting; remembered in the browser; a printed report is always light                                           |
 
 Deliberately absent, as the brief requires: payments, live integrations,
 teams, billing, a conversion rate (there is no traffic data, and none is

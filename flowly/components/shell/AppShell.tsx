@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { signOut } from "@/app/actions/auth";
 import { Logo, LogoMark } from "@/components/brand/Logo";
 import { PeriodPicker } from "@/components/controls/PeriodPicker";
+import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { LinkButton } from "@/components/ui/link-button";
 import type { Messages } from "@/lib/i18n";
 import type { WorkspaceRoot } from "@/lib/routes";
@@ -47,7 +48,7 @@ export function AppShell({ root, workspaceName, calendar, messages, account, chi
         {nav.skip}
       </a>
 
-      <aside className="on-nav w-rail bg-nav text-nav-ink lg:w-sidebar fixed inset-y-0 left-0 z-30 hidden flex-col px-3 pb-4 md:flex lg:px-4 print:hidden">
+      <aside className="on-nav w-rail bg-nav text-nav-ink lg:w-sidebar fixed inset-y-0 left-0 z-30 hidden flex-col border-r border-white/[0.06] px-3 pb-4 md:flex lg:px-4 print:hidden">
         <Link href="/" aria-label={nav.home} className="h-topbar flex shrink-0 items-center text-white md:max-lg:justify-center lg:px-2">
           <Logo className="max-lg:hidden" />
           <LogoMark className="size-7 lg:hidden" />
@@ -65,6 +66,7 @@ export function AppShell({ root, workspaceName, calendar, messages, account, chi
                 <PeriodPicker calendar={calendar} labels={messages.period} />
                 {demoBadge}
               </div>
+              <ThemeToggle labels={messages.theme} />
               {demo && (
                 <LinkButton href="/signup" size="md">
                   {shell.tryYourData}

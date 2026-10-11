@@ -112,7 +112,7 @@ export function BatchList({ batches, timezone, labels }: { batches: ImportBatch[
                       type="button"
                       onClick={() => remove(batch)}
                       aria-disabled={busy || undefined}
-                      className="rounded-input bg-negative inline-flex h-10 items-center px-4 font-medium text-white aria-disabled:opacity-60"
+                      className="rounded-input bg-negative-fill inline-flex h-10 items-center px-4 font-medium text-white aria-disabled:opacity-60"
                     >
                       {busy ? labels.deleting : labels.deleteConfirm}
                     </button>

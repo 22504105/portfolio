@@ -91,7 +91,9 @@ test("the demo's settings are shown and cannot be changed", async ({ page }) => 
   await expect(page.getByText("This is the demo workspace.")).toBeVisible();
   await expect(page.getByText("Kettle & Kin").filter({ visible: true }).last()).toBeVisible();
   await expect(page.getByText("America/New York")).toBeVisible();
-  expect(await page.locator("main").locator("input, select, textarea, form, button").count()).toBe(0);
+  expect(await page.locator("main").locator("input, select, textarea, form").count()).toBe(0);
+  // The only buttons are the three of the theme switch, which is the visitor's own preference.
+  expect(await page.locator("main button").count()).toBe(await page.getByRole("radiogroup", { name: "Theme" }).getByRole("radio").count());
   await expect(page.getByText("Delete account")).toHaveCount(0);
   await page.getByRole("link", { name: "How data is handled" }).click();
   await expect(page).toHaveURL(/\/privacy$/);

@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { signOut } from "@/app/actions/auth";
 import { PageHeader } from "@/components/dashboard/parts";
 import { DangerForm, WorkspaceForm } from "@/components/settings/SettingsForms";
+import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { fill, type Messages } from "@/lib/i18n";
 import { CURRENCIES, timezones } from "@/lib/settings/options";
 import type { WorkspaceContext } from "@/lib/workspace";
@@ -110,6 +111,11 @@ export function SettingsPage({ context, messages, account, batches = 0 }: Settin
             </Section>
           </>
         )}
+
+        <Section id="settings-appearance" title={messages.theme.appearance}>
+          <ThemeToggle labels={messages.theme} expanded />
+          <p className="type-meta text-ink-muted mt-3">{messages.theme.appearanceBody}</p>
+        </Section>
 
         <Section id="settings-limits" title={t.limits}>
           <p className="text-ink-muted max-w-prose">{t.limitsBody}</p>
