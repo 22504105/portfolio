@@ -16,7 +16,11 @@ nothing here can be booked, bought or visited.**
 
 ## Status
 
-**All five phases are built. The project is not deployed.** In place: the
+**Live: https://barbershop-demo-sable.vercel.app** — deployed as a showcase
+without a database: the site, both languages, the admin demo and the PWA work;
+booking is the labelled preview and accounts are switched off.
+
+**All five phases are built.** In place: the
 bilingual public site; real booking with email confirmation, rescheduling and
 cancelling; client accounts; the barber's workspace; the admin workspace
 (calendar, bookings made by staff, outcomes, payments at the counter,
@@ -34,7 +38,7 @@ preview.
 | 02 | Public website and booking interface | Done |
 | 03 | Booking engine, email and accounts | Done |
 | 04 | Admin panel, analytics and public demo | Done |
-| 05 | Final QA, security and PWA | Done; deployment awaits the owner |
+| 05 | Final QA, security and PWA | Done; deployed as a showcase |
 
 **Known limits**, in full in [`docs/security.md`](docs/security.md): the
 security review was a self-review, not an independent one; real email delivery
@@ -170,7 +174,7 @@ application; their templates and sender are set in the Supabase dashboard.
 
 ## Deployment (Vercel and Supabase)
 
-Not done yet. The steps:
+The live site runs without a database. To turn real booking on:
 
 1. **Supabase.** Create a project. Apply the migrations and the seed:
    put the pooler connection string in `.env.local` as `DATABASE_URL` and run
