@@ -147,3 +147,37 @@ describe("tables and their exports", () => {
     expect(cents).toBe(page.comparison.current.netRevenueMinor);
   });
 });
+
+describe("the report", () => {
+  it("has the dashboard's figures for both periods and the change between them", async () => {
+    const { reportRows } = await import("@/lib/metrics/report");
+    const { getMessages } = await import("@/lib/i18n");
+    const page = loadPage(demoWorkspace(), "reports", {});
+    const rows = reportRows(page.comparison, "USD", getMessages());
+    expect(rows.map((row) => row.label)).toEqual([
+      "Net revenue",
+      "Completed orders",
+      "Average order value",
+      "Identified customers",
+      "Repeat customer rate",
+      "Refunded",
+    ]);
+    expect(rows[0].raw).toEqual({ current: page.comparison.current.netRevenueMinor, previous: page.comparison.previous.netRevenueMinor });
+    expect(rows[0].change).toMatch(/^[+-]\d+\.\d%$/);
+    // A rate changes in percentage points, not in percent of itself.
+    expect(rows[4].change).toMatch(/^[+-]?\d+\.\d pp$/);
+  });
+
+  it("shows no change where there is nothing to compare with", async () => {
+    const { reportRows } = await import("@/lib/metrics/report");
+    const { getMessages } = await import("@/lib/i18n");
+    // The first thirty days of the data: nothing came before.
+    const rows = reportRows(
+      loadPage(demoWorkspace(), "reports", { from: "2025-08-01", to: "2025-08-30" }).comparison,
+      "USD",
+      getMessages(),
+    );
+    expect(rows.map((row) => row.change)).toEqual([null, null, null, null, null, null]);
+    expect(rows[2].previous).toBe("N/A");
+  });
+});

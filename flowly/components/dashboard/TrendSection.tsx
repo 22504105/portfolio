@@ -16,14 +16,20 @@ export function trendBuckets(page: PageData): { current: Bucket[]; previous: Buc
   };
 }
 
-type TrendSectionProps = { page: PageData; messages: Messages; height?: number };
+type TrendSectionProps = {
+  page: PageData;
+  messages: Messages;
+  height?: number;
+  /** Show the sentence that sums the chart up, instead of keeping it for screen readers only: for print. */
+  describe?: boolean;
+};
 
 /**
  * The revenue chart with what a chart alone does not give: a legend that
  * tells the two lines apart by their style, and a sentence that says what
  * the picture shows for anyone who cannot see it.
  */
-export function TrendSection({ page, messages, height }: TrendSectionProps) {
+export function TrendSection({ page, messages, height, describe = false }: TrendSectionProps) {
   const { view, comparison, context } = page;
   const { currency } = context.dataset.workspace;
   const t = messages.chart;
@@ -43,7 +49,7 @@ export function TrendSection({ page, messages, height }: TrendSectionProps) {
 
   return (
     <figure className="min-w-0">
-      <figcaption className="sr-only">
+      <figcaption className={describe ? "mb-3 text-[0.8125rem]" : "sr-only"}>
         {fill(t.summary, {
           from: formatDay(view.range.from),
           to: formatDay(view.range.to),

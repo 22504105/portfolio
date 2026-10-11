@@ -239,3 +239,34 @@ be imported, and nothing leaves their browser.
 `tests/db/isolation.test.ts` (a real PostgreSQL: cross-account denial for
 every table and function, atomic chunks, duplicates, limits, cascading
 deletes), `e2e/imports.spec.ts` (the wizard in a browser).
+
+## 10. Reports, settings and leaving (Phase 4)
+
+**Reports.** `components/pages/ReportsPage.tsx` renders one sheet, 794 px wide
+(A4 at 96 dpi) on screen and full width on paper, so what is seen is what is
+printed. PDF is the browser's own "Save as PDF": no server, no library, no
+cost. Print rules live in `app/globals.css` (`@page` A4, colours kept) and in
+`print:` classes that hide the shell and the controls. The chart keeps its
+size because the sheet does. The summary table comes from
+`lib/metrics/report.ts`, which also feeds the `report` CSV download, so the
+two cannot differ. The sentence that sums the chart up for screen readers is
+printed in the report as text.
+
+**Settings.** `app/actions/settings.ts`. Each action takes the workspace from
+the session, never from the form. The currency cannot change while there are
+orders: the database refuses it (orders reference the workspace's currency),
+and the form shows the field locked with the reason. Changing the time zone
+moves no instant; it changes which day and hour each one reads as, and the
+form says so.
+
+**Leaving.** `delete_workspace_data()` removes everything imported and keeps
+the workspace. `delete_my_account()` deletes the caller's own account, and the
+workspace and data cascade with it. It is the only function in the database
+that runs with more rights than its caller (nobody may delete from
+`auth.users` directly), which is why it takes no argument: it cannot be
+pointed at anyone else. Both ask for the workspace name or the email to be
+typed out first.
+
+**States.** `loading.tsx` shows a skeleton shaped like the page that is
+coming; `error.tsx` shows a plain message and a reference, never the failure
+itself. An opened drawer puts focus on its title.

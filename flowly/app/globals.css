@@ -220,3 +220,32 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* Printing a report. The shell hides itself (print:hidden); here the page is
+   set up as A4 and colours are kept, so the chart prints as it looks. */
+@page {
+  size: A4;
+  margin: 14mm 14mm 16mm;
+}
+
+@media print {
+  html,
+  body {
+    background: #ffffff !important;
+    font-size: 11pt;
+  }
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  main {
+    max-width: none !important;
+    padding: 0 !important;
+  }
+  .break-inside-avoid {
+    break-inside: avoid;
+  }
+  a[href]::after {
+    content: none;
+  }
+}

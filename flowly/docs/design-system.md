@@ -103,3 +103,17 @@ figures, used by the overview and by the landing preview.
 - **Status** is a word in a pill with a dot; pending has a hollow dot.
 - **Drawers** show one order or one customer. They are part of the address,
   so a drawer can be linked to and the back button closes it.
+
+## The printed report
+
+A sheet, not a dashboard: black rules, tables with every number written out,
+one chart, small footnotes. Text sizes are fixed (not fluid) so the page count
+does not depend on the window. The demo's report carries a line saying the
+data is invented, which survives printing. Sections do not break across pages.
+
+## Forms and irreversible actions
+
+Fields are 44 px high with the label above and the explanation below, tied to
+the field for screen readers. A locked field says why it is locked. Anything
+that cannot be undone is a quiet outlined button that opens a red-tinted form
+asking for the name to be typed; the confirming button repeats what it does.

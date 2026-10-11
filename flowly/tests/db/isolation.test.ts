@@ -296,3 +296,62 @@ describe("deleting", () => {
     expect(await count("orders")).toBe(others);
   });
 });
+
+describe("leaving", () => {
+  it("clears a workspace's imported data and nothing else", async () => {
+    const fay = await t.user("fay@example.com");
+    const fayWorkspace = await workspace(fay, "Fay's shop");
+    const fayBatch = await batch(fay, fayWorkspace);
+    await importOrders(fay, fayBatch, [
+      order("F-1", "3.00", { customer: { identity_key: "id:f", external_id: "f", name: "F", email: null } }),
+      order("F-2", "4.00"),
+    ]);
+    const others = await count("orders", "workspace_id <> $1", [fayWorkspace]);
+
+    const result = await t.as(fay, async (db) => (await db.query("select public.delete_workspace_data() as r")).rows[0].r);
+    expect(result).toEqual({ orders_removed: 2 });
+    for (const table of ["import_batches", "customers", "orders", "order_lines"])
+      expect([table, await count(table, "workspace_id = $1", [fayWorkspace])]).toEqual([table, 0]);
+    // The workspace and its settings stay; so does everybody else's data.
+    expect(await count("workspaces", "id = $1", [fayWorkspace])).toBe(1);
+    expect(await count("orders")).toBe(others);
+    // With no orders left, the currency can be changed.
+    await t.as(fay, (db) => db.query("update public.workspaces set currency_code = 'EUR' where id = $1", [fayWorkspace]));
+    expect((await t.db.query("select currency_code from public.workspaces where id = $1", [fayWorkspace])).rows[0].currency_code).toBe(
+      "EUR",
+    );
+  });
+
+  it("deletes the caller's own account, with everything in it, and only theirs", async () => {
+    const gus = await t.user("gus@example.com");
+    const gusWorkspace = await workspace(gus, "Gus's shop");
+    const gusBatch = await batch(gus, gusWorkspace);
+    await importOrders(gus, gusBatch, [order("G-1", "3.00")]);
+    const accounts = (await t.db.query("select count(*)::int n from auth.users")).rows[0].n;
+    const others = await count("orders", "workspace_id <> $1", [gusWorkspace]);
+
+    await t.as(gus, (db) => db.query("select public.delete_my_account()"));
+    expect((await t.db.query("select count(*)::int n from auth.users")).rows[0].n).toBe(accounts - 1);
+    expect((await t.db.query("select count(*)::int n from auth.users where id = $1", [gus])).rows[0].n).toBe(0);
+    expect(await count("workspaces", "id = $1", [gusWorkspace])).toBe(0);
+    expect(await count("orders", "workspace_id = $1", [gusWorkspace])).toBe(0);
+    expect(await count("orders")).toBe(others);
+  });
+
+  it("gives a visitor no way to delete anything", async () => {
+    expect(await codeOf(() => t.as(null, (db) => db.query("select public.delete_my_account()")))).toBe("42501");
+    expect(await codeOf(() => t.as(null, (db) => db.query("select public.delete_workspace_data()")))).toBe("42501");
+  });
+
+  it("cannot be pointed at another account: the functions take no argument", async () => {
+    const signatures = (
+      await t.db.query(
+        "select proname, pronargs from pg_proc where pronamespace = 'public'::regnamespace and proname in ('delete_my_account', 'delete_workspace_data') order by proname",
+      )
+    ).rows;
+    expect(signatures).toEqual([
+      { proname: "delete_my_account", pronargs: 0 },
+      { proname: "delete_workspace_data", pronargs: 0 },
+    ]);
+  });
+});

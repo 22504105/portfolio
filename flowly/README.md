@@ -8,27 +8,39 @@ Portfolio project #03. Everything runs on free tiers.
 
 ## Status
 
-**Phase 3 of 5 — accounts, persistence and imports.** Done and checked
-against a live Supabase project (2026-10-11): setting up a workspace,
-importing the sample file, the figures on every page to the cent, the CSV
-download, importing the same file again (skipped, then replaced), signing out
-and in, a second account seeing none of the first one's data through the
-pages or through the database API directly, and deleting an import.
+**Phase 4 of 5 — reports, settings and polish.** The product is feature
+complete against the brief:
 
-**Not verified:** the sign-up call itself and the password-reset email. The
-test project still had email confirmation switched on and had used up its
-email allowance, so the test accounts were created already confirmed and
-signed in through the real sign-in page. Only Chrome was used.
+- **Reports**: a printable A4 report for any period and filters (summary
+  against the previous period, revenue chart with a written summary,
+  breakdowns, orders by status, and how each figure is calculated), saved as
+  PDF through the browser's print window; the summary and the transactions as
+  CSV.
+- **Settings**: workspace name, currency (locked while there are orders, and
+  it says why) and time zone; profile; password; deleting all imported data;
+  deleting the account.
+- **Privacy page** that says what happens to data and claims nothing more.
+- Loading skeletons, error screens, and no page left that says "being built".
 
-Not built yet: reports and settings (Phase 4); hardening and deployment
-(Phase 5).
+Checked against a live Supabase project (2026-10-11), 43 checks: everything
+in Phase 3, plus renaming the workspace, changing its time zone (the same
+instant reads on a different clock), the locked currency, the report's
+figures, deleting one import, deleting all data, and an account deleting
+itself with its workspace while another account's data stays untouched.
+
+**Not verified:** the sign-up call itself and the password-reset email (the
+test project still has email confirmation on and has used up its email
+allowance; test accounts were created already confirmed). Only Chrome was
+used. The PDF was checked for format and page size, not read by eye.
+
+Not done yet: hardening, a final security review and deployment (Phase 5).
 
 | Phase | Scope                                  | State                                          |
 | ----- | -------------------------------------- | ---------------------------------------------- |
 | 1     | Foundation and architecture            | Done                                           |
 | 2     | Demo dashboard and analytics           | Done                                           |
 | 3     | Accounts, persistence, CSV/XLSX import | Done; sign-up and reset email not yet verified |
-| 4     | Reports, settings, polish              | Not started                                    |
+| 4     | Reports, settings, polish              | Done, awaiting review                          |
 | 5     | Hardening, QA, deployment              | Not started                                    |
 
 ## What the demo does
