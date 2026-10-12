@@ -402,3 +402,96 @@ describe("the recogniser's words, put into rows", () => {
       expect(linesFromTsv(tsv)).toEqual([]);
   });
 });
+
+describe("a real till receipt, photographed by hand", () => {
+  // The rows as the recogniser gave them for a real Turkish supermarket receipt (the shop's own details left out):
+  // prices marked with a star, a barcode row above every name, weighed goods on two rows, the tax class after each
+  // name, stray marks at the paper's edge, two names lost to print showing through, and a tax table after the total.
+  const READ = `2901268                              $
+0.8660 KG — x 109,90 TL/KG             İ
+UZUM SULTANI           Vis)       x94,51
+RMEERET
+3090021 Töğc67        isi                  39,99
+ERLER m     x169,99
+— PİN COOL LIME 1LT PE   X10      x64 99
+8690997032959                     ği
+JIMMY GÜMMY WATERMEL   X10     x29,99 Çe
+2901336                                Ş
+1.060 KG   x 84,90 TL/KG                 &
+NEKTARİN              v5       x89,99 |
+2200000071873                           b
+MACRO ALİSVERİS POSE — X5        <4,00 Öl
+TOPKDV                  xA2,9D6
+TOPLAM               x493,46       f
+TÜRK LİRASI                     x500,00
+PARA ÜSTÜ      x6,54          ş
+KDV           KDV TUTARI KDV'Lİ TOPLAM       kB
+Bi                                x10,88                x228,49               ğe
+5               x23,45        x169,99        ş
+(              x8,63        x94,98        :
+TEŞEKKÜR EDERİZ`;
+
+  it("every price is found, weights go to the line they belong to, and the lines add up to the printed total", () => {
+    const parsed = parseReceipt(text(READ), "TRY");
+    expect(parsed.lines.map((line) => [line.label, line.quantity, line.lineTotalMinor])).toEqual([
+      ["UZUM SULTANI", "0.866", 9451],
+      ["3090021 Töğc67 isi", "1", 3999],
+      ["ERLER m", "1", 16_999],
+      ["PİN COOL LIME 1LT PE", "1", 6499],
+      ["JIMMY GÜMMY WATERMEL", "1", 2999],
+      ["NEKTARİN", "1.060", 8999],
+      ["MACRO ALİSVERİS POSE", "1", 400],
+    ]);
+    expect(parsed.lines.every((line) => line.kind === "item")).toBe(true);
+    // 493.46 printed, 493.46 read: nothing after the total (cash given, change, the tax table) was taken for a purchase.
+    expect(parsed.printedTotalMinor).toBe(49_346);
+    expect(reconcile(parsed.lines, parsed.printedTotalMinor)).toEqual({ sumMinor: 49_346, differenceMinor: 0 });
+  });
+
+  it("a starred price is read however the star came out, and a star is never invented where there was none", () => {
+    const price = (row: string) => parseReceipt([{ text: row }], "TRY").lines.map((line) => [line.label, line.lineTotalMinor]);
+    for (const mark of ["*", "x", "X", "×", "<", "«", "x "])
+      expect([mark, price(`NEKTARIN %5 ${mark}89,99`)]).toEqual([mark, [["NEKTARIN", 8999]]]);
+    expect(price("NEKTARIN x89 ,99 |")).toEqual([["NEKTARIN", 8999]]);
+    expect(price("NEKTARIN x89 99")).toEqual([["NEKTARIN", 8999]]);
+    expect(price("JIMMY GÜMMY WATERMEL X10 x29, 99.")).toEqual([["JIMMY GÜMMY WATERMEL", 2999]]);
+    expect(price("TOPLAM x1.493,46 f")).toEqual([]);
+    expect(parseReceipt([{ text: "TOPLAM x1.493,46 f" }], "TRY").printedTotalMinor).toBe(149_346);
+    // Without a mark, two numbers side by side are not glued into a price, and a tax class is not a price.
+    expect(price("COLA 89 99")).toEqual([]);
+    expect(price("POSE X5 12,50")).toEqual([["POSE", 1250]]);
+    expect(price("MIST 20x30 BUZDOLABI %5 *39,99")).toEqual([["MIST 20x30 BUZDOLABI", 3999]]);
+  });
+
+  it("a slanted photo: the price at the far end of a row stays with its own name", () => {
+    // Three rows, 25 px apart, each falling 19 px from its left end to its right, as on the real photo.
+    const word = (left: number, top: number, text: string, line: number) =>
+      ["5", "1", "1", "1", line, "1", left, top, text.length * 12, 19, 90, text].join("\t");
+    const row = (top: number, line: number, name: string, price: string) => [
+      word(250, top, name.split(" ")[0], line),
+      word(320, top - 3, name.split(" ")[1], line),
+      word(545, top - 13, "%5", line),
+      word(675, top - 19, price, line),
+    ];
+    const tsv = [
+      ...row(547, 1, "UZUM SULTANI", "x94,51"),
+      ...row(572, 2, "MIST BUZDOLABI", "x39,99"),
+      ...row(597, 3, "BONHAIR WAX", "x169,99"),
+    ].join("\n");
+    expect(linesFromTsv(tsv).map((line) => line.text)).toEqual([
+      "UZUM SULTANI %5 x94,51",
+      "MIST BUZDOLABI %5 x39,99",
+      "BONHAIR WAX %5 x169,99",
+    ]);
+    // The same words with the recogniser's line numbers scrambled: the rows still come out by position.
+    const scrambled = tsv
+      .split("\n")
+      .map((line, index) => line.replace(/^5\t1\t1\t1\t\d/, `5\t1\t1\t1\t${index < 6 ? 1 : 2}`))
+      .join("\n");
+    expect(linesFromTsv(scrambled).map((line) => line.text)).toEqual([
+      "UZUM SULTANI %5 x94,51",
+      "MIST BUZDOLABI %5 x39,99",
+      "BONHAIR WAX %5 x169,99",
+    ]);
+  });
+});

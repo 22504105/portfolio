@@ -41,7 +41,7 @@ const WORDS = {
   tip: /bahsis|\btip\b|gratuity|чаевые/,
   // How it was paid, what came back, and the till's own housekeeping: nothing that was bought.
   ignore:
-    /nakit|kredi kart|banka kart|para ustu|\bcash\b|\bcard\b|\bchange\b|visa|master ?card|troy|наличн|картой|сдача|безнал|\biban\b|fis no|fiş no|\bz no\b|tarih|saat|\bdate\b|\btime\b|дата|время|kasiyer|cashier|кассир|tesekkur|thank|спасибо|vergi|\bv\.?d\b|\btel\b|www\.|http|\bmersis\b|(?<![а-яё])(инн|ккт|фн|фд|фп)(?![а-яё])|чек №|receipt (no|#)|terminal|onay kodu|approval|ref(erence)? no|eku no|sicil/,
+    /nakit|turk lirasi|kredi kart|banka kart|para ustu|\bcash\b|\bcard\b|\bchange\b|visa|master ?card|troy|наличн|картой|сдача|безнал|\biban\b|fis no|fiş no|\bz no\b|tarih|saat|\bdate\b|\btime\b|дата|время|kasiyer|cashier|кассир|tesekkur|thank|спасибо|vergi|\bv\.?d\b|\btel\b|www\.|http|\bmersis\b|(?<![а-яё])(инн|ккт|фн|фд|фп)(?![а-яё])|чек №|receipt (no|#)|terminal|onay kodu|approval|ref(erence)? no|eku no|sicil/,
 } as const;
 
 /**
@@ -54,7 +54,7 @@ function trailingAmount(text: string, exponent: number): { minor: number; before
   const clean = text.replace(/[₺$€£₽]|\b(tl|try|usd|eur|rub|руб\.?|р\.)\s*$/giu, " ").replace(/\s+$/, "");
   const decimals = exponent === 0 ? "" : `[.,]\\s?\\d{${exponent}}`;
   const match = new RegExp(
-    `(-?)\\s?[*x×]?\\s?(?<![\\p{L}\\d.,])((?:\\d{1,3}(?:[ .,]\\d{3})+|\\d+)${decimals})\\s?[a-zа-я%]{0,2}\\s?$`,
+    `(-?)\\s?[*x×]?\\s?(?<![\\p{L}\\d.,])((?:\\d{1,3}(?:[ .,]\\d{3})+|\\d+)${decimals})(?:\\s?[^\\d\\s]{1,3})?\\s?$`,
     "iu",
   ).exec(clean);
   if (!match) return null;
@@ -84,8 +84,11 @@ const tidy = (label: string) =>
   label
     .replace(/^[\s*#.:\-–—]+|[\s*#.:\-–—]+$/g, "")
     .replace(/\s{2,}/g, " ")
-    // The tax class a till prints after a name: "%08", "%1", "A", "*".
-    .replace(/\s[%*]\s?\d{1,2}$/, "")
+    // A last word that is only marks and brackets (a tax class misread: "Vis)", "VAS)").
+    .replace(/\s\S*[)(|\]}\[{]\S*$/, "")
+    // The tax class a till prints after a name: "%08", "%1", "*5", read also as "X10" or "v5".
+    .replace(/\s[%*xXvV]\s?\d{1,2}$/, "")
+    .replace(/^[\s*#.:\-–—“”"'|]+|[\s*#.:\-–—“”"'|]+$/g, "")
     .trim();
 
 /**
@@ -93,12 +96,22 @@ const tidy = (label: string) =>
  * the decimal comma is, and a stray space beside it ("312 ‚50" is 312,50). Only between digits; letters are left alone.
  */
 function mend(text: string): string {
-  return text
-    .replace(/\s+/g, " ")
-    .replace(/(\d) ?[‚‘’`´'] ?(\d{2})(?!\d)/g, "$1,$2")
-    .replace(/(\d) ([.,]\d{2})(?![\d.,])/g, "$1$2")
-    .replace(/(\d[.,]) (\d{2})$/g, "$1$2")
-    .trim();
+  return (
+    text
+      .replace(/\s+/g, " ")
+      // Tills mark a price with a star ("*94,51"), which is read as a letter or a bracket stuck to the digits ("x94,51",
+      // "<4,00", "x64 99"). At the end of a row, such a mark and what follows it is a price: the mark goes, and the
+      // decimal comma is put back if it was lost.
+      // (Not after a bare number: "3 X 4.00" is three of something at 4.00 each.)
+      .replace(
+        /(?<!(?:^|\s)\d{1,4}(?:[.,]\d{1,3})?\s?(?:kg|ad|adet|шт|pcs?)?\.?)(^|\s)[*x×<«»~+]{1,2} ?(\d{1,3}(?:[.,]\d{3})*) ?[.,]? ?(\d{2})(?=[.,]?\s*[^\d\s.,]{0,3}$)/iu,
+        "$1$2,$3",
+      )
+      .replace(/(\d) ?[‚‘’`´'] ?(\d{2})(?!\d)/g, "$1,$2")
+      .replace(/(\d) ([.,]\d{2})(?![\d.,])/g, "$1$2")
+      .replace(/(\d[.,]) (\d{2})$/g, "$1$2")
+      .trim()
+  );
 }
 
 export function parseReceipt(ocr: readonly OcrLine[], currency: string): ParsedReceipt {
@@ -109,6 +122,7 @@ export function parseReceipt(ocr: readonly OcrLine[], currency: string): ParsedR
   let includedTaxMinor: number | null = null;
   /** A quantity line that belongs to the next (or previous) priced line: "2 X 15,00" printed on its own row. */
   let pendingQuantity: string | null = null;
+  let afterTotal = false;
 
   for (const raw of ocr) {
     const text = mend(raw.text);
@@ -120,19 +134,34 @@ export function parseReceipt(ocr: readonly OcrLine[], currency: string): ParsedR
       pendingQuantity = countOnly[1].replace(",", ".");
       continue;
     }
+    // "0.860 KG x 109,90 TL/KG": what was weighed and the price per unit. The amount paid is on the row with the name.
+    const weighed =
+      /^\W{0,3}(\d{1,3}[.,]\d{1,4})\s?(?:kg|кг|gr?|lt?)\b.{0,8}?\d+[.,]\d{2}\s?(?:tl|try|₺|руб|р)?\.?\s?\/\s?(?:kg|кг|gr?|lt?)\b/iu.exec(
+        text,
+      );
+    if (weighed) {
+      pendingQuantity = weighed[1].replace(",", ".").replace(/(\.\d{3})\d+$/, "$1");
+      continue;
+    }
     const amount = trailingAmount(text, exponent);
 
     if (WORDS.subtotal.test(folded)) continue;
     if (WORDS.total.test(folded)) {
       // Several lines may say "total" (with and without tax, then the grand one): the last is the one to pay.
-      if (amount && amount.minor > 0) printedTotalMinor = amount.minor;
-      else unmatched.push(text);
+      if (amount && amount.minor > 0) {
+        printedTotalMinor = amount.minor;
+        afterTotal = true;
+      } else unmatched.push(text);
       continue;
     }
     if (WORDS.tax.test(folded)) {
-      if (amount && amount.minor > 0) includedTaxMinor = (includedTaxMinor ?? 0) + amount.minor;
+      // (Less than the total: a row of the tax table that repeats the total is not tax.)
+      if (amount && amount.minor > 0 && amount.minor < (printedTotalMinor ?? Infinity))
+        includedTaxMinor = (includedTaxMinor ?? 0) + amount.minor;
       continue;
     }
+    // After the total come how it was paid, the change and the tax table: rows with amounts, none of them bought.
+    if (afterTotal) continue;
     if (WORDS.ignore.test(folded)) continue;
 
     const special: LineKind | null = WORDS.discount.test(folded)

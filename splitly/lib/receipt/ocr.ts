@@ -17,10 +17,11 @@ export class OcrError extends Error {
 
 /**
  * The recogniser's table of words, as rows of text with how sure it was of
- * each. Words are put into rows by where they are on the page, not by the
- * recogniser's own idea of lines: on a receipt it often takes the names for
- * one column and the prices for another, and a price cut off from its name
- * is worthless.
+ * each. Words are put into rows by where they are on the page: a price
+ * belongs to the name at the same height, whatever the recogniser took for
+ * lines and columns. A receipt is rarely photographed square on, so the
+ * page's slant is found first and taken out: otherwise the price at the far
+ * end of a slanting row lands on the row above or below.
  */
 export function linesFromTsv(tsv: string): OcrLine[] {
   type Word = { text: string; left: number; middle: number; height: number; confidence: number };
@@ -32,21 +33,45 @@ export function linesFromTsv(tsv: string): OcrLine[] {
     const text = cells.slice(11).join("\t").trim();
     const [left, top, height, confidence] = [Number(cells[6]), Number(cells[7]), Number(cells[9]), Number(cells[10])];
     if (!text || !Number.isFinite(left) || !Number.isFinite(top) || !Number.isFinite(height)) continue;
-    words.push({ text, left, middle: top + height / 2, height, confidence: Number.isFinite(confidence) ? confidence : 0 });
+    words.push({
+      text,
+      left,
+      middle: top + height / 2,
+      height,
+      confidence: Number.isFinite(confidence) ? confidence : 0,
+    });
   }
   if (words.length === 0) return [];
 
-  const heights = words.map((word) => word.height).sort((a, b) => a - b);
-  // Words whose middles are within half a typical letter height of each other are on one row.
-  const reach = Math.max(4, heights[Math.floor(heights.length / 2)] * 0.5);
-  words.sort((a, b) => a.middle - b.middle);
+  const median = (values: number[]) => [...values].sort((a, b) => a - b)[Math.floor(values.length / 2)];
+  const letter = median(words.map((word) => word.height));
+  // Specks and rules are not letters: they would pull a row up or down.
+  const real = words.filter((word) => word.height >= letter * 0.5 && word.height <= letter * 2.5);
 
-  const rows: Word[][] = [];
-  for (const word of words) {
-    const row = rows[rows.length - 1];
-    const level = row ? row.reduce((sum, other) => sum + other.middle, 0) / row.length : -Infinity;
-    if (row && Math.abs(word.middle - level) <= reach) row.push(word);
-    else rows.push([word]);
+  // Words whose levels are within half a letter's height of each other are on one row.
+  const reach = Math.max(4, letter * 0.5);
+  const rowsAt = (slant: number): Word[][] => {
+    const level = (word: Word) => word.middle - slant * word.left;
+    const sorted = [...real].sort((x, y) => level(x) - level(y));
+    const rows: Word[][] = [];
+    for (const word of sorted) {
+      const row = rows[rows.length - 1];
+      const mean = row ? row.reduce((sum, other) => sum + level(other), 0) / row.length : -Infinity;
+      if (row && Math.abs(level(word) - mean) <= reach) row.push(word);
+      else rows.push([word]);
+    }
+    return rows;
+  };
+
+  // The slant is the one at which the words fall into the fewest rows: square on, every word of a printed row is at
+  // one height; at any other angle rows smear into each other's neighbours and break up. Tried from about seven
+  // degrees one way to seven the other (a photo held by hand), the straight page first so that it wins a tie.
+  let rows = rowsAt(0);
+  for (let step = 1; step <= 30 && real.length > 3; step++) {
+    for (const slant of [step * 0.004, -step * 0.004]) {
+      const tried = rowsAt(slant);
+      if (tried.length < rows.length) rows = tried;
+    }
   }
   return rows.map((row) => {
     row.sort((a, b) => a.left - b.left);
