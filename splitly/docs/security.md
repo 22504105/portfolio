@@ -214,3 +214,21 @@ Next.js starts pages with them.
   list, 500 generated receipts that must balance), `tests/db/api.test.ts`
   ("receipts", on a real PostgreSQL), `e2e/scan.spec.ts` (the real recogniser
   in a real browser), and `scripts/live-check.mjs` against the real database.
+
+## What stage 4 added, and how it is checked
+
+- **Payments** follow the same door as everything else: the session's user
+  must be a current member of the group, and both people in a payment must be
+  current members of that same group. From outside, a group's payments and
+  rates answer exactly like a group that does not exist.
+- **Who may confirm or cancel** is decided on the server by the same function
+  the screen uses to choose which buttons to show (`lib/balances/settle.ts`);
+  hiding a button is never the protection.
+- **A recorded rate cannot be altered**, by the application or by a direct
+  update: the database refuses it.
+- **The export is made in the browser** from what the person can already see.
+  A cell that a spreadsheet would run as a formula is written as plain text.
+- Checked by `tests/debts.test.ts` (2,300 generated cases that must settle to
+  zero, mixed currencies, historical rates, rounding), the "settling up" and
+  "exchange rates" parts of `tests/db/api.test.ts`, `e2e/money.spec.ts`, and
+  `scripts/live-check.mjs` against the real database.

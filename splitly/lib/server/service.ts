@@ -1,10 +1,30 @@
 import "server-only";
 import { createHash, randomBytes } from "node:crypto";
 import { netOfMember, netsOf } from "@/lib/balances/net";
-import { LIMITS, type Expense, type Group, type GroupSummary, type Invite, type Member, type Role } from "@/lib/domain/types";
+import {
+  checkRate,
+  checkSettlement,
+  confirmedAtOnce,
+  mayCancel,
+  mayConfirm,
+  RATES_PER_GROUP,
+  type RateProblem,
+  type SettlementProblem,
+} from "@/lib/balances/settle";
+import {
+  LIMITS,
+  type Expense,
+  type Group,
+  type GroupSummary,
+  type Invite,
+  type Member,
+  type Role,
+  type Settlement,
+} from "@/lib/domain/types";
 import { isCurrencyCode } from "@/lib/money/currency";
 import { buildReceiptExpense, type ReceiptProblem } from "@/lib/receipt/build";
 import { checkExpense, type ExpenseProblem } from "@/lib/split/expense";
+import type { Rate } from "@/lib/money/fx";
 import type { StoredReceiptLine } from "@/lib/receipt/types";
 import type { Db } from "./db";
 import type { TelegramUser } from "./telegram";
@@ -18,7 +38,7 @@ export class ServiceError extends Error {
   constructor(
     public code: "not_found" | "forbidden" | "invalid" | "limit" | "conflict" | "duplicate_receipt",
     public details?: {
-      problems?: (ExpenseProblem | ReceiptProblem)[];
+      problems?: (ExpenseProblem | ReceiptProblem | SettlementProblem | RateProblem)[];
       differences?: Record<string, number>;
       field?: string;
       lines?: number[];
@@ -222,11 +242,42 @@ const toExpense = (row: Record<string, unknown>): Expense => ({
     : null,
 });
 
+const toSettlement = (row: Record<string, unknown>): Settlement => ({
+  id: row.id as string,
+  fromMemberId: row.from_member_id as string,
+  toMemberId: row.to_member_id as string,
+  currency: row.currency as string,
+  amountMinor: Number(row.amount),
+  status: row.status as Settlement["status"],
+  createdBy: row.created_by_member_id as string,
+  createdAt: new Date(row.created_at as string).toISOString(),
+  confirmedAt: row.confirmed_at ? new Date(row.confirmed_at as string).toISOString() : null,
+});
+
 export async function getGroup(db: Db, userId: string, groupId: unknown): Promise<Group> {
   const me = await membership(db, userId, groupId);
   const group = (await db.query("select id, name, base_currency, archived_at from splitly.groups where id = $1", [groupId])).rows[0];
   const members = (await db.query(MEMBERS_SQL, [groupId, userId])).rows.map(toMember);
   const expenses = (await db.query(EXPENSES_SQL, [groupId])).rows.map(toExpense);
+  const settlements = (
+    await db.query(
+      "select id, from_member_id, to_member_id, currency, amount_minor::text as amount, status, created_by_member_id, created_at, confirmed_at from splitly.settlements where group_id = $1 order by created_at desc, id",
+      [groupId],
+    )
+  ).rows.map(toSettlement);
+  const rates: Rate[] = (
+    await db.query(
+      "select id, from_currency, to_currency, decimal_rate, to_char(effective_at at time zone 'UTC', 'YYYY-MM-DD') as day, created_at from splitly.fx_rates where group_id = $1 order by effective_at desc, created_at desc",
+      [groupId],
+    )
+  ).rows.map((row) => ({
+    id: row.id,
+    from: row.from_currency,
+    to: row.to_currency,
+    rate: row.decimal_rate,
+    effectiveDate: row.day,
+    createdAt: new Date(row.created_at).toISOString(),
+  }));
   return {
     id: group.id,
     name: group.name,
@@ -234,7 +285,9 @@ export async function getGroup(db: Db, userId: string, groupId: unknown): Promis
     archivedAt: group.archived_at ? new Date(group.archived_at).toISOString() : null,
     members,
     expenses,
-    myNet: netOfMember(netsOf(expenses), me.memberId),
+    settlements,
+    rates,
+    myNet: netOfMember(netsOf(expenses, settlements), me.memberId),
     expenseCount: expenses.filter((expense) => expense.status === "active").length,
   };
 }
@@ -249,8 +302,10 @@ export async function listGroups(db: Db, userId: string): Promise<GroupSummary[]
   // Each group is read the same way as on its own page, so the list and the page cannot disagree.
   const groups: GroupSummary[] = [];
   for (const id of ids) {
-    const { expenses: _expenses, ...summary } = await getGroup(db, userId, id);
+    const { expenses: _expenses, settlements: _settlements, rates: _rates, ...summary } = await getGroup(db, userId, id);
     void _expenses;
+    void _settlements;
+    void _rates;
     groups.push(summary);
   }
   return groups;
@@ -671,6 +726,108 @@ export async function createReceiptExpense(
     lines: built.lines.length,
   });
   return { id, repeated: false };
+}
+
+// -------------------------------------------------------------- settling up
+
+async function archived(db: Db, groupId: unknown): Promise<boolean> {
+  return (
+    (await db.query("select archived_at is not null as archived from splitly.groups where id = $1", [groupId])).rows[0]?.archived === true
+  );
+}
+
+/**
+ * Records a payment between two current members. Whether it counts at once
+ * depends on who records it (lib/balances/settle.ts): the person paid, or a
+ * manager, yes; the person paying, not until the other side confirms.
+ */
+export async function createSettlement(
+  db: Db,
+  userId: string,
+  groupId: unknown,
+  key: unknown,
+  raw: unknown,
+): Promise<{ id: string; repeated: boolean }> {
+  const me = await membership(db, userId, groupId);
+  if (!uuid(key)) throw new ServiceError("invalid", { field: "idempotencyKey" });
+  const existing = (await db.query("select id from splitly.settlements where group_id = $1 and idempotency_key = $2", [groupId, key]))
+    .rows[0];
+  if (existing) return { id: existing.id, repeated: true };
+  if (await archived(db, groupId)) throw new ServiceError("conflict");
+
+  const checked = checkSettlement(raw, await currentMemberIds(db, groupId as string));
+  if (!checked.ok) throw new ServiceError("invalid", { problems: checked.problems });
+  const { fromMemberId, toMemberId, currency, amountMinor } = checked.input;
+  const confirmed = confirmedAtOnce({ id: me.memberId, role: me.role }, toMemberId);
+  const id = (
+    await db.query(
+      `insert into splitly.settlements (group_id, from_member_id, to_member_id, currency, amount_minor, status, idempotency_key, created_by_member_id, confirmed_at)
+       values ($1, $2, $3, $4, $5, $6, $7, $8, case when $6 = 'confirmed' then now() end) returning id`,
+      [groupId, fromMemberId, toMemberId, currency, amountMinor, confirmed ? "confirmed" : "proposed", key, me.memberId],
+    )
+  ).rows[0].id as string;
+  await log(db, groupId as string, me.memberId, confirmed ? "settlement.confirmed" : "settlement.proposed", "settlement", id, {
+    amountMinor: String(amountMinor),
+    currency,
+  });
+  return { id, repeated: false };
+}
+
+async function lockedSettlement(db: Db, groupId: unknown, settlementId: unknown) {
+  if (!uuid(settlementId)) throw new ServiceError("not_found");
+  const row = (
+    await db.query(
+      "select id, status, from_member_id, to_member_id, created_by_member_id from splitly.settlements where group_id = $1 and id = $2 for update",
+      [groupId, settlementId],
+    )
+  ).rows[0];
+  if (!row) throw new ServiceError("not_found");
+  return {
+    id: row.id as string,
+    status: row.status as Settlement["status"],
+    fromMemberId: row.from_member_id as string,
+    toMemberId: row.to_member_id as string,
+    createdBy: row.created_by_member_id as string,
+  };
+}
+
+/** Says a proposed payment happened. Confirming twice is the same as once. */
+export async function confirmSettlement(db: Db, userId: string, groupId: unknown, settlementId: unknown): Promise<void> {
+  const me = await membership(db, userId, groupId);
+  const settlement = await lockedSettlement(db, groupId, settlementId);
+  if (settlement.status === "confirmed") return;
+  if (settlement.status !== "proposed") throw new ServiceError("conflict");
+  if (!mayConfirm({ id: me.memberId, role: me.role }, settlement)) throw new ServiceError("forbidden");
+  await db.query("update splitly.settlements set status = 'confirmed', confirmed_at = now() where id = $1", [settlement.id]);
+  await log(db, groupId as string, me.memberId, "settlement.confirmed", "settlement", settlement.id);
+}
+
+/** Withdraws a proposed payment or takes back a confirmed one. It stays on record. Cancelling twice is the same as once. */
+export async function cancelSettlement(db: Db, userId: string, groupId: unknown, settlementId: unknown): Promise<void> {
+  const me = await membership(db, userId, groupId);
+  const settlement = await lockedSettlement(db, groupId, settlementId);
+  if (settlement.status === "cancelled") return;
+  if (!mayCancel({ id: me.memberId, role: me.role }, settlement)) throw new ServiceError("forbidden");
+  await db.query("update splitly.settlements set status = 'cancelled', confirmed_at = null where id = $1", [settlement.id]);
+  await log(db, groupId as string, me.memberId, "settlement.cancelled", "settlement", settlement.id);
+}
+
+/** Records an exchange rate for the group. Rates only change how totals are shown, never what anyone owes. */
+export async function addRate(db: Db, userId: string, groupId: unknown, raw: unknown): Promise<string> {
+  const me = await membership(db, userId, groupId);
+  const checked = checkRate(raw);
+  if (!checked.ok) throw new ServiceError("invalid", { problems: checked.problems });
+  const count = (await db.query("select count(*)::int as n from splitly.fx_rates where group_id = $1", [groupId])).rows[0].n;
+  if (count >= RATES_PER_GROUP) throw new ServiceError("limit");
+  const { from, to, rate, effectiveDate } = checked.input;
+  const id = (
+    await db.query(
+      "insert into splitly.fx_rates (group_id, from_currency, to_currency, decimal_rate, effective_at, created_by_member_id) values ($1, $2, $3, $4, ($5 || 'T00:00:00Z')::timestamptz, $6) returning id",
+      [groupId, from, to, rate, effectiveDate, me.memberId],
+    )
+  ).rows[0].id as string;
+  await log(db, groupId as string, me.memberId, "rate.added", "fx_rate", id, { from, to });
+  return id;
 }
 
 // ------------------------------------------------------------------- limits

@@ -224,6 +224,37 @@ const ROUTES: [string, string, Route, Limit?][] = [
   ],
   [
     "POST",
+    "groups/:group/settlements",
+    async ({ request, db, parts }) => {
+      const { idempotencyKey, settlement } = await body(request);
+      return service.createSettlement(db, sessionUser(request), parts[1], idempotencyKey, settlement);
+    },
+    { scope: "expense.write", by: "user", max: 300, seconds: 3600 },
+  ],
+  [
+    "POST",
+    "groups/:group/settlements/:settlement/confirm",
+    async ({ request, db, parts }) => {
+      await service.confirmSettlement(db, sessionUser(request), parts[1], parts[3]);
+      return { ok: true };
+    },
+  ],
+  [
+    "DELETE",
+    "groups/:group/settlements/:settlement",
+    async ({ request, db, parts }) => {
+      await service.cancelSettlement(db, sessionUser(request), parts[1], parts[3]);
+      return { ok: true };
+    },
+  ],
+  [
+    "POST",
+    "groups/:group/rates",
+    async ({ request, db, parts }) => ({ id: await service.addRate(db, sessionUser(request), parts[1], await body(request)) }),
+    { scope: "expense.write", by: "user", max: 300, seconds: 3600 },
+  ],
+  [
+    "POST",
     "groups/:group/receipts",
     async ({ request, db, parts }) => {
       const userId = sessionUser(request);

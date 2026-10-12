@@ -140,12 +140,20 @@ function GroupHero({ group }: { group: GroupSummary }) {
           <h2 id="home-recent" className="type-heading">
             {t.home.recent}
           </h2>
-          <Link
-            href={`${base}/groups/${group.id}`}
-            className="type-small text-ink inline-flex h-11 items-center font-semibold underline underline-offset-4"
-          >
-            {t.home.allExpenses}
-          </Link>
+          <span className="flex shrink-0 items-center gap-4">
+            <Link
+              href={`${base}/activity`}
+              className="type-small text-ink inline-flex h-11 items-center font-semibold underline underline-offset-4"
+            >
+              {t.activity.link}
+            </Link>
+            <Link
+              href={`${base}/groups/${group.id}`}
+              className="type-small text-ink inline-flex h-11 items-center font-semibold underline underline-offset-4"
+            >
+              {t.home.allExpenses}
+            </Link>
+          </span>
         </div>
         {!full ? (
           <Loading label={t.common.loading} />

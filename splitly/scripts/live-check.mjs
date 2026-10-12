@@ -258,6 +258,38 @@ try {
     },
   });
   check("a receipt with a line given to nobody is refused whole", half.status === 422, JSON.stringify(half));
+
+  // Stage 4: a payment waits until the person paid confirms it, then counts; a rate is recorded as exact text.
+  const netOf = async (token) => (await call("GET", `groups/${groupA}`, { token })).body.group.myNet.TRY ?? 0;
+  const before = [await netOf(A), await netOf(B)];
+  const claim = await call("POST", `groups/${groupA}/settlements`, {
+    token: B,
+    body: { idempotencyKey: randomUUID(), settlement: { fromMemberId: guest, toMemberId: memberA, currency: "TRY", amountMinor: 250 } },
+  });
+  const waiting = [await netOf(A), await netOf(B)];
+  check(
+    "a payment recorded by the payer waits and changes no balance",
+    claim.status === 200 && waiting.join() === before.join(),
+    JSON.stringify([claim, before, waiting]),
+  );
+  const byPayer = await call("POST", `groups/${groupA}/settlements/${claim.body.id}/confirm`, { token: B, body: {} });
+  const byReceiver = await call("POST", `groups/${groupA}/settlements/${claim.body.id}/confirm`, { token: A, body: {} });
+  const settled = [await netOf(A), await netOf(B)];
+  check(
+    "only the person paid can confirm it, and then it counts for both, by exactly its amount",
+    byPayer.status === 403 && byReceiver.status === 200 && settled[0] === before[0] - 250 && settled[1] === before[1] + 250,
+    JSON.stringify([byPayer.status, byReceiver.status, before, settled]),
+  );
+  const rate = await call("POST", `groups/${groupA}/rates`, {
+    token: A,
+    body: { from: "EUR", to: "TRY", rate: "36,50", effectiveDate: "2026-10-01" },
+  });
+  const rates = (await call("GET", `groups/${groupA}`, { token: B })).body.group.rates;
+  check(
+    "an exchange rate is recorded as exact text with its day",
+    rate.status === 200 && rates.length === 1 && rates[0].rate === "36.5" && rates[0].effectiveDate === "2026-10-01",
+    JSON.stringify([rate, rates]),
+  );
 } catch (error) {
   failed++;
   console.log("FAIL the check itself broke:", error.message);

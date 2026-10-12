@@ -194,3 +194,27 @@ Rules worth knowing:
   "<4,00": the mark is recognised at the end of a row and removed.
 - **Layout mode**: one block read row by row. The "single column" mode read a
   receipt as two columns, names and then prices.
+
+## 10. Debts, payments, rates, analytics (stage 4)
+
+| What                         | Where                      | Rule                                                                                                                                  |
+| ---------------------------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| Where everyone stands        | `lib/balances/net.ts`      | paid − owed + paid to others to settle − received to settle; only confirmed payments; zero-sum per currency                           |
+| Who should pay whom          | `lib/balances/debts.ts`    | "Simplified": largest debtor to largest creditor, ties by the group's order. "All debts": pair by pair, from the expenses they shared |
+| Payments and who may do what | `lib/balances/settle.ts`   | Recorded by the receiver or a manager: counts at once. By the payer: waits for one of them. Cancelled is final                        |
+| Rates and conversion         | `lib/money/fx.ts`          | Exact decimal text; the rate for a day is the latest recorded on or before it; halves round away from zero                            |
+| What was spent               | `lib/analytics/summary.ts` | In the group's currency; an expense with no rate for its day is left out and counted, never guessed                                   |
+
+- **The sign of a payment.** The brief words it as "plus incoming, minus
+  outgoing". With net meaning "owed to me", paying someone must bring my net
+  up towards zero, and being paid must bring it down: so it is plus outgoing,
+  minus incoming, and the tests pin it.
+- **Pair-by-pair debts** give every payer back exactly what they paid: each
+  person's share is spread over the payers in proportion to what is still to
+  be given back to each, so no unit goes astray.
+- **Old figures do not move.** A rate has a day and is never edited; adding a
+  rate for a later day changes nothing about earlier expenses. A rate recorded
+  only the other way round is turned over (to twelve significant digits).
+- **No new tables**: payments, rates and the log were in the first schema. The
+  activity screen is derived from expenses and payments, the same for the demo
+  and for accounts.

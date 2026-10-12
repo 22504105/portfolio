@@ -200,3 +200,45 @@ describe("the demo follows the same rules as the server", () => {
     expect(await code(store.acceptInvite("x"))).toBe("not_found");
   });
 });
+
+describe("settling up in the demo follows the same rules", () => {
+  it("starts with a payment someone says they made, which changes nothing until it is confirmed", async () => {
+    const before = (await store.getGroup("demo-istanbul"))!;
+    expect(
+      before.settlements.map((settlement) => [settlement.fromMemberId, settlement.toMemberId, settlement.amountMinor, settlement.status]),
+    ).toEqual([["t-deniz", "t-you", 30_000, "proposed"]]);
+    expect(before.myNet).toEqual({ TRY: 146_237 });
+
+    await store.confirmSettlement("demo-istanbul", "t-s1");
+    await store.confirmSettlement("demo-istanbul", "t-s1");
+    expect((await store.getGroup("demo-istanbul"))!.myNet).toEqual({ TRY: 116_237 });
+    expect((await store.listGroups())[0].myNet).toEqual({ TRY: 116_237 });
+
+    // Taken back: it stays on record as cancelled and stops counting.
+    await store.cancelSettlement("demo-istanbul", "t-s1");
+    const after = (await store.getGroup("demo-istanbul"))!;
+    expect([after.settlements[0].status, after.myNet]).toEqual(["cancelled", { TRY: 146_237 }]);
+    expect(await code(store.confirmSettlement("demo-istanbul", "t-s1"))).toBe("conflict");
+  });
+
+  it("a payment the owner records counts at once, once per submission, and bad ones are refused", async () => {
+    const pay = (key: string, input: unknown) => store.createSettlement("demo-istanbul", key, input);
+    const id = await pay("key-settle-1", { fromMemberId: "t-you", toMemberId: "t-mira", currency: "TRY", amountMinor: 5000 });
+    expect(await pay("key-settle-1", { fromMemberId: "t-you", toMemberId: "t-mira", currency: "TRY", amountMinor: 5000 })).toBe(id);
+    const group = (await store.getGroup("demo-istanbul"))!;
+    expect(group.settlements.filter((settlement) => settlement.status === "confirmed")).toHaveLength(1);
+    expect(group.myNet).toEqual({ TRY: 151_237 });
+    const error = await pay("key-settle-2", { fromMemberId: "t-you", toMemberId: "t-you", currency: "TRY", amountMinor: 0 }).catch(
+      (caught) => caught,
+    );
+    expect([error.code, error.details.problems]).toEqual(["invalid", ["same", "amount"]]);
+    expect(await code(store.cancelSettlement("demo-istanbul", "nope"))).toBe("not_found");
+  });
+
+  it("rates are recorded and kept; a new one is added beside the old", async () => {
+    expect((await store.getGroup("demo-flat"))!.rates.map((rate) => [rate.from, rate.to, rate.rate])).toEqual([["EUR", "TRY", "36.5"]]);
+    await store.addRate("demo-flat", { from: "EUR", to: "TRY", rate: "37,1", effectiveDate: "2026-10-10" });
+    expect((await store.getGroup("demo-flat"))!.rates.map((rate) => rate.rate)).toEqual(["37.1", "36.5"]);
+    expect(await code(store.addRate("demo-flat", { from: "EUR", to: "EUR", rate: "1", effectiveDate: "2026-10-10" }))).toBe("invalid");
+  });
+});

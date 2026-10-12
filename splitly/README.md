@@ -10,24 +10,24 @@ Russian. Portfolio project #04, built on free tiers only.
 
 ## Status
 
-**Stage 3 of 5 — the receipt scanner.** In place: Telegram sign-in verified by
-the server, groups, people, invitations, roles, expenses typed in by hand, and
-now receipts: a photo is read on the device (Turkish, English or Russian),
-its lines are checked and corrected by the person, translated from a word
-list where the list knows the word, given out line by line, and stored as one
-expense that balances to the last unit. The browser demo runs the same
-screens and the same rules on invented data kept in the visitor's browser.
+**Stage 4 of 5 — debts, currencies, analytics.** In place: Telegram sign-in
+verified by the server, groups, people, invitations, roles, expenses typed in
+by hand or read from a receipt on the device, and now: who should pay whom
+(simplified, or as it happened), settling up with payments that count once
+the person paid confirms them, exchange rates recorded by the group's own
+people, analytics by category, person and day, an activity list, and a
+spreadsheet export. The browser demo runs the same screens and rules on
+invented data kept in the visitor's browser.
 
-Not built yet: settling up, exchange rates, analytics and the activity feed
-(stage 4); launch (stage 5). Screens that are not written say so and show the
-plan; nothing on them pretends to work.
+Not built yet: launch work (stage 5): Telegram's own controls, the invitation
+QR code, accessibility and performance passes, an independent look at security.
 
 | Stage | Scope                                        | State                 |
 | ----- | -------------------------------------------- | --------------------- |
 | 1     | Foundation, design system, deployment proof  | Done, awaiting review |
 | 2     | Groups, manual expenses, Telegram identity   | Done, awaiting review |
 | 3     | Receipt scanner and item assignment          | Done, awaiting review |
-| 4     | Balances, currencies, settlements, analytics | Not started           |
+| 4     | Balances, currencies, settlements, analytics | Done, awaiting review |
 | 5     | Telegram QA, accessibility, security, launch | Not started           |
 
 ## Running locally
@@ -69,7 +69,7 @@ lists what the concept shows, what it leaves out, and which stage builds what.
 - [`docs/deployment.md`](docs/deployment.md) — the deployment proof, with the
   real command and output.
 
-## Known limits (stages 1–3)
+## Known limits (stages 1–4)
 
 - Built and checked by one agent; the brief's three subagent roles were not
   delegated.
@@ -99,8 +99,17 @@ lists what the concept shows, what it leaves out, and which stage builds what.
   half on a desktop, longer on a phone.
 - There is no list of past receipts as such: a receipt is its expense, and
   its lines are shown under that expense in the group.
-- Balances are shown per currency and per person. Who should pay whom, and
-  converting between currencies, are stage 4.
+- **The scanner reads real receipts poorly** (the owner's verdict after trying
+  it): prices are found, names often are not. It is usable only with the
+  review screen. To be revisited.
+- Debts are never converted: each stays in the currency of its expense, and
+  is settled in that currency. Rates are typed in by hand; nothing fetches
+  one. They are used only to show totals in the group's own currency.
+- "Simplified" transfers are few and stable, not proven to be the fewest
+  possible.
+- The activity list is read from the expenses and payments themselves. It
+  does not show renames, role changes or who cancelled what.
+- The export is CSV only; there is no PDF report.
 - The demo has no invitations: there are no other accounts in it to invite.
 - A person's Telegram photo is loaded from Telegram by address; when the
   address stops working their face is drawn until they next open the app.

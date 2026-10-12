@@ -1,3 +1,4 @@
+import type { Rate } from "@/lib/money/fx";
 import type { StoredReceiptLine } from "@/lib/receipt/types";
 
 // The shapes the whole application works with. The browser demo and the
@@ -64,6 +65,28 @@ export type Expense = ExpenseInput & {
   createdAt: string;
 };
 
+export type SettlementStatus = "proposed" | "confirmed" | "cancelled";
+
+/**
+ * A payment from one member to another, outside any expense: how a debt is
+ * paid off. It counts only once it is confirmed; a proposed one is a claim
+ * ("I paid you") waiting for the other side, and a cancelled one never
+ * counted or no longer does.
+ */
+export type Settlement = {
+  id: string;
+  fromMemberId: string;
+  toMemberId: string;
+  currency: string;
+  amountMinor: number;
+  status: SettlementStatus;
+  createdBy: string;
+  createdAt: string;
+  confirmedAt: string | null;
+};
+
+export type SettlementInput = { fromMemberId: string; toMemberId: string; currency: string; amountMinor: number };
+
 export type GroupSummary = {
   id: string;
   name: string;
@@ -78,6 +101,10 @@ export type GroupSummary = {
 export type Group = GroupSummary & {
   /** Every expense, newest first, cancelled and replaced ones included. */
   expenses: Expense[];
+  /** Every payment between members, newest first, whatever its state. */
+  settlements: Settlement[];
+  /** The exchange rates recorded for this group, newest first. Never changed once recorded. */
+  rates: Rate[];
 };
 
 export type Invite = {

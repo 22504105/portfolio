@@ -76,11 +76,11 @@ test("a group, as in the concept: faces, tabs, and everyone's balance with its s
   await expect(balances(page).filter({ hasText: "Alex" })).toContainText(/owes -485\.47\sEUR/);
   await expect(balances(page).filter({ hasText: "Alex" })).toContainText(/gets back \+426\.66\sTRY/);
 
-  // What a later stage builds says so, in its own tab.
+  // Each tab has its own screen (the money ones are tested in money.spec.ts).
   await tab(page, "Debts").click();
-  await expect(page.getByRole("tabpanel")).toContainText("built in stage 4");
+  await expect(page.getByRole("tabpanel")).toContainText("Simplified transfers");
   await tab(page, "Analytics").click();
-  await expect(page.getByRole("tabpanel")).toContainText("built in stage 4");
+  await expect(page.getByRole("tabpanel")).toContainText("Total spent");
   await tab(page, "Settings").click();
   await expect(page.getByRole("region", { name: "Group settings" })).toBeVisible();
   expect(await overflow(page)).toBe(0);

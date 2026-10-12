@@ -1,4 +1,5 @@
 import type { Group, GroupSummary, Invite, Role } from "@/lib/domain/types";
+import type { RateProblem, SettlementProblem } from "@/lib/balances/settle";
 import type { ReceiptProblem } from "@/lib/receipt/build";
 import type { ExpenseProblem } from "@/lib/split/expense";
 
@@ -23,7 +24,7 @@ export class StoreError extends Error {
   constructor(
     public code: StoreErrorCode,
     public details: {
-      problems?: (ExpenseProblem | ReceiptProblem)[];
+      problems?: (ExpenseProblem | ReceiptProblem | SettlementProblem | RateProblem)[];
       differences?: Partial<Record<ExpenseProblem, number>>;
       field?: string;
       lines?: number[];
@@ -71,4 +72,16 @@ export interface Store {
    * input says the person has been told and wants it anyway.
    */
   createReceiptExpense(groupId: string, key: string, input: unknown): Promise<string>;
+
+  /**
+   * Records a payment from one member to another. It counts at once if the person recording it is the one who was
+   * paid, or manages the group; otherwise it waits, changing nothing, until one of them confirms it.
+   */
+  createSettlement(groupId: string, key: string, input: unknown): Promise<string>;
+  /** Says a proposed payment did happen. For the person who was paid, or a manager. */
+  confirmSettlement(groupId: string, settlementId: string): Promise<void>;
+  /** Withdraws a proposed payment, or takes a confirmed one back. It stays on record as cancelled. */
+  cancelSettlement(groupId: string, settlementId: string): Promise<void>;
+  /** Records an exchange rate for the group, from a day on. A rate is never changed afterwards: a new one is added. */
+  addRate(groupId: string, input: unknown): Promise<string>;
 }
