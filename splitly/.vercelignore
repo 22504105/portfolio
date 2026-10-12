@@ -1,0 +1,16 @@
+# What is never uploaded to Vercel. When this file exists the CLI reads it
+# instead of .gitignore, so everything private is listed here again.
+.env
+.env.*
+!.env.example
+.tmp
+.next
+.vercel
+node_modules
+tests
+e2e
+docs
+test-results
+playwright-report
+*.tsbuildinfo
+Concept

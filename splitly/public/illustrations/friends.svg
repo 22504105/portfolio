@@ -1,0 +1,127 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 600" role="img" aria-label="Four friends looking at a shared bill on their phones">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#F6EFE3"/>
+      <stop offset="1" stop-color="#E6F1E6"/>
+    </linearGradient>
+    <linearGradient id="paper" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#F6F4EE"/>
+    </linearGradient>
+    <filter id="soft" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="14" stdDeviation="16" flood-color="#173D35" flood-opacity="0.18"/>
+    </filter>
+    <clipPath id="frame"><rect width="960" height="600" rx="36"/></clipPath>
+  </defs>
+
+  <g clip-path="url(#frame)">
+    <rect width="960" height="600" fill="url(#bg)"/>
+    <circle cx="150" cy="110" r="150" fill="#B9E4C9" opacity="0.35"/>
+    <circle cx="840" cy="90" r="110" fill="#F4D9B8" opacity="0.45"/>
+    <circle cx="500" cy="640" r="260" fill="#FFFFFF" opacity="0.4"/>
+
+    <!-- Friend 2: long dark hair, rose top (behind) -->
+    <g transform="translate(0 -62)">
+      <path d="M262 318c-8-92 30-150 100-150s108 58 100 150v150H262z" fill="#2F2622"/>
+      <path d="M232 690c0-150 54-240 130-240s130 90 130 240z" fill="#D9A3A0"/>
+      <path d="M338 404h48v56c0 14-48 14-48 0z" fill="#E2B089"/>
+      <ellipse cx="362" cy="318" rx="74" ry="82" fill="#EDBE98"/>
+      <path d="M288 322c-6-70 26-112 74-112 50 0 82 40 74 112-10-40-28-62-52-70-26 22-62 36-96 70z" fill="#2F2622"/>
+      <ellipse cx="336" cy="322" rx="7" ry="9" fill="#2B211C"/>
+      <ellipse cx="390" cy="322" rx="7" ry="9" fill="#2B211C"/>
+      <circle cx="338" cy="319" r="2.200" fill="#fff"/>
+      <circle cx="392" cy="319" r="2.200" fill="#fff"/>
+      <path d="M322 302c8-6 18-6 26-2M378 300c8-4 18-4 26 2" fill="none" stroke="#2B211C" stroke-width="4" stroke-linecap="round"/>
+      <path d="M340 356c14 14 32 14 46 0" fill="#fff" stroke="#8A4A3A" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="318" cy="346" r="11" fill="#E89C8C" opacity="0.45"/>
+      <circle cx="408" cy="346" r="11" fill="#E89C8C" opacity="0.45"/>
+    </g>
+
+    <!-- Friend 3: ginger hair, green tee (behind) -->
+    <g transform="translate(0 -62)">
+      <path d="M470 690c0-160 58-250 138-250s138 90 138 250z" fill="#2F6B58"/>
+      <path d="M584 396h50v58c0 16-50 16-50 0z" fill="#EBB78F"/>
+      <ellipse cx="608" cy="300" rx="78" ry="88" fill="#F3C7A2"/>
+      <path d="M528 292c-10-70 30-116 84-116 40 0 62 14 74 36 18 20 18 52 8 82-8-36-26-56-50-60-34 16-82 18-116 58z" fill="#C8772E"/>
+      <path d="M560 196c16-22 44-30 72-26 26 4 46 18 56 40-30-14-78-18-128-14z" fill="#D88A3A"/>
+      <ellipse cx="582" cy="308" rx="7" ry="9" fill="#2B211C"/>
+      <ellipse cx="636" cy="308" rx="7" ry="9" fill="#2B211C"/>
+      <circle cx="584" cy="305" r="2.200" fill="#fff"/>
+      <circle cx="638" cy="305" r="2.200" fill="#fff"/>
+      <path d="M566 286c8-6 20-6 28-1M622 285c8-5 20-5 28 1" fill="none" stroke="#9A5A22" stroke-width="4.500" stroke-linecap="round"/>
+      <path d="M584 342c14 16 36 16 50 0" fill="#fff" stroke="#8A4A3A" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="562" cy="334" r="11" fill="#E89C8C" opacity="0.4"/>
+      <circle cx="656" cy="334" r="11" fill="#E89C8C" opacity="0.4"/>
+    </g>
+
+    <!-- Friend 1: dark curls, glasses, cream jumper (front left) -->
+    <g>
+      <path d="M40 600c0-112 62-172 150-172s150 60 150 172z" fill="#F1E7D6"/>
+      <path d="M130 468c18 22 100 22 120 0" fill="none" stroke="#E0D3BD" stroke-width="10" stroke-linecap="round"/>
+      <path d="M164 384h52v60c0 16-52 16-52 0z" fill="#E0AC84"/>
+      <ellipse cx="190" cy="290" rx="80" ry="90" fill="#EBB991"/>
+      <g fill="#2B211C">
+        <circle cx="128" cy="232" r="34"/><circle cx="166" cy="204" r="36"/><circle cx="212" cy="200" r="36"/><circle cx="252" cy="226" r="34"/>
+        <circle cx="116" cy="270" r="22"/><circle cx="266" cy="266" r="22"/><circle cx="190" cy="222" r="34"/>
+      </g>
+      <g fill="none" stroke="#2B211C" stroke-width="6">
+        <circle cx="160" cy="300" r="25"/><circle cx="222" cy="300" r="25"/><path d="M185 298h12M135 296l-22-8M247 296l22-8"/>
+      </g>
+      <ellipse cx="160" cy="301" rx="6.500" ry="8.500" fill="#2B211C"/>
+      <ellipse cx="222" cy="301" rx="6.500" ry="8.500" fill="#2B211C"/>
+      <path d="M168 342c14 14 32 14 46 0" fill="#fff" stroke="#8A4A3A" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="136" cy="340" r="11" fill="#E89C8C" opacity="0.4"/>
+      <circle cx="246" cy="340" r="11" fill="#E89C8C" opacity="0.4"/>
+      <!-- phone -->
+      <g transform="rotate(-12 236 470)">
+        <rect x="204" y="400" width="74" height="136" rx="14" fill="#1F2A27"/>
+        <rect x="211" y="408" width="60" height="120" rx="9" fill="#2F6B58"/>
+        <rect x="220" y="422" width="42" height="8" rx="4" fill="#B9E4C9"/>
+        <rect x="220" y="440" width="28" height="6" rx="3" fill="#fff" opacity="0.7"/>
+        <rect x="220" y="454" width="36" height="6" rx="3" fill="#fff" opacity="0.5"/>
+      </g>
+      <path d="M196 500c14-16 40-22 58-12 10 6 12 20 4 28-16 14-48 14-62 4-8-6-6-14 0-20z" fill="#EBB991"/>
+    </g>
+
+    <!-- Friend 4: brown curls in a bun, cream top (front right) -->
+    <g>
+      <circle cx="800" cy="170" r="44" fill="#6B3F2A"/>
+      <path d="M676 330c-10-92 34-154 104-154s112 60 104 154c10 40 4 86-20 112H700c-26-28-32-70-24-112z" fill="#6B3F2A"/>
+      <path d="M640 600c0-108 60-166 144-166s144 58 144 166z" fill="#F4EBDD"/>
+      <path d="M758 392h50v58c0 16-50 16-50 0z" fill="#E7B48D"/>
+      <ellipse cx="782" cy="306" rx="76" ry="86" fill="#F0C29C"/>
+      <path d="M706 312c-8-70 26-116 78-116 50 0 84 44 76 116-12-44-34-66-62-70-24 18-60 30-92 70z" fill="#6B3F2A"/>
+      <g fill="#7A4A33"><circle cx="704" cy="356" r="20"/><circle cx="860" cy="352" r="20"/><circle cx="696" cy="398" r="18"/><circle cx="868" cy="396" r="18"/></g>
+      <ellipse cx="756" cy="314" rx="7" ry="9" fill="#2B211C"/>
+      <ellipse cx="810" cy="314" rx="7" ry="9" fill="#2B211C"/>
+      <circle cx="758" cy="311" r="2.200" fill="#fff"/>
+      <circle cx="812" cy="311" r="2.200" fill="#fff"/>
+      <path d="M740 294c8-6 20-6 28-1M796 293c8-5 20-5 28 1" fill="none" stroke="#4A2A1C" stroke-width="4" stroke-linecap="round"/>
+      <path d="M760 348c14 14 32 14 46 0" fill="#fff" stroke="#8A4A3A" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="738" cy="340" r="11" fill="#E89C8C" opacity="0.45"/>
+      <circle cx="828" cy="340" r="11" fill="#E89C8C" opacity="0.45"/>
+      <!-- phone -->
+      <g transform="rotate(10 724 470)">
+        <rect x="688" y="398" width="74" height="136" rx="14" fill="#8E969A"/>
+        <rect x="695" y="406" width="60" height="120" rx="9" fill="#EEF2EF"/>
+        <rect x="704" y="420" width="42" height="8" rx="4" fill="#2F6B58"/>
+        <rect x="704" y="438" width="30" height="6" rx="3" fill="#A5B5AA"/>
+        <rect x="704" y="452" width="38" height="6" rx="3" fill="#C9D3CC"/>
+      </g>
+      <path d="M700 498c14-16 42-20 58-10 10 6 12 20 4 28-16 14-48 14-62 4-8-6-6-16 0-22z" fill="#F0C29C"/>
+    </g>
+
+    <!-- The bill they are splitting -->
+    <g transform="rotate(-4 480 470)" filter="url(#soft)">
+      <rect x="340" y="318" width="280" height="330" rx="18" fill="url(#paper)"/>
+      <g font-family="Inter, 'Segoe UI', system-ui, -apple-system, sans-serif" font-size="25" fill="#232826">
+        <text x="368" y="372">Coffee</text><text x="592" y="372" text-anchor="end">2.50</text>
+        <text x="368" y="416">Pizza</text><text x="592" y="416" text-anchor="end">18.00</text>
+        <text x="368" y="460">Taxi</text><text x="592" y="460" text-anchor="end">12.00</text>
+        <text x="368" y="504">Groceries</text><text x="592" y="504" text-anchor="end">45.00</text>
+        <path d="M368 528h224" stroke="#CDD4CC" stroke-width="2" stroke-dasharray="6 6"/>
+        <text x="368" y="570" font-weight="700" font-size="28">Total</text><text x="592" y="570" text-anchor="end" font-weight="700" font-size="28">77.50</text>
+      </g>
+    </g>
+  </g>
+</svg>
