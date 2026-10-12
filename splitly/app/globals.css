@@ -1,0 +1,198 @@
+@import "tailwindcss";
+
+/*
+ * Splitly design tokens: "calm fintech". docs/design-system.md explains each
+ * one and records its contrast; tests/theme.test.ts reads both palettes from
+ * this file and checks every pair. Components use the names, never the values.
+ *
+ * A colour used for text and a fill that carries text are separate tokens:
+ * in the dark theme text gets lighter, and what sits under text must not.
+ */
+
+:root {
+  /* Surfaces */
+  --canvas: #f8f7f3;
+  --surface: #ffffff;
+  --surface-2: #f0f1ec;
+  --line: #e5e9e3;
+  --field-border: #cdd4cc;
+
+  /* Text */
+  --ink: #232826;
+  /* The brief's #737C76 is 4.0:1 on the canvas; this is 5.4:1. */
+  --ink-muted: #5f6862;
+
+  /* Forest: the primary fill and the text set on it. */
+  --primary: #173d35;
+  --primary-hover: #0f2e27;
+  --on-primary: #ffffff;
+
+  /* Mint: the quiet accent, with forest text. */
+  --accent: #b9e4c9;
+  --accent-soft: #e3f3e8;
+  --on-accent: #173d35;
+
+  /* Meaning. Never the only signal: always with a word, a sign or an icon. */
+  --positive: #1b6b4c;
+  /* The brief's #C75B57 is 4.1:1 on white; this is 5.6:1. */
+  --danger: #b04440;
+  --danger-fill: #b04440;
+  /* The brief's #A66B26 is 4.4:1 on white; this is 5.3:1. */
+  --warning: #96601f;
+
+  --card-shadow: 0 1px 2px rgb(23 61 53 / 0.05);
+  --raised-shadow: 0 14px 34px -14px rgb(23 61 53 / 0.22), 0 2px 6px rgb(23 61 53 / 0.06);
+
+  color-scheme: light;
+}
+
+[data-theme="dark"] {
+  --canvas: #111a17;
+  --surface: #1b2923;
+  --surface-2: #24342d;
+  --line: #2c3d35;
+  --field-border: #3d5248;
+
+  --ink: #f2f5f0;
+  --ink-muted: #a5b5aa;
+
+  /* In the dark the primary button is mint with near-black text. */
+  --primary: #a7d8ba;
+  --primary-hover: #bfe6cd;
+  --on-primary: #111a17;
+
+  --accent: #2b4a3d;
+  --accent-soft: #223a30;
+  --on-accent: #c9ecd6;
+
+  --positive: #8fd3ab;
+  --danger: #f2a29d;
+  --danger-fill: #a8443f;
+  --warning: #e6b56f;
+
+  --card-shadow: 0 1px 2px rgb(0 0 0 / 0.35);
+  --raised-shadow: 0 16px 40px -12px rgb(0 0 0 / 0.65), 0 2px 8px rgb(0 0 0 / 0.4);
+
+  color-scheme: dark;
+}
+
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+@theme inline {
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-field: var(--field-border);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-on-primary: var(--on-primary);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-on-accent: var(--on-accent);
+  --color-positive: var(--positive);
+  --color-danger: var(--danger);
+  --color-danger-fill: var(--danger-fill);
+  --color-warning: var(--warning);
+
+  /* 8 px rhythm; radii of 12 to 20 px. */
+  --radius-control: 12px;
+  --radius-card: 16px;
+  --radius-sheet: 20px;
+
+  --shadow-card: var(--card-shadow);
+  --shadow-raised: var(--raised-shadow);
+
+  --spacing-nav: 4.5rem;
+  --spacing-rail: 15rem;
+}
+
+@layer base {
+  * {
+    border-color: var(--line);
+  }
+  html {
+    font-family: var(--font-sans);
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    background: var(--canvas);
+    color: var(--ink);
+    font-size: 1rem;
+    line-height: 1.5;
+    min-height: 100dvh;
+  }
+  :focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+  }
+  ::selection {
+    background: var(--accent);
+    color: var(--on-accent);
+  }
+}
+
+@layer components {
+  .type-display {
+    font-size: clamp(2rem, 6vw, 3.25rem);
+    line-height: 1.06;
+    font-weight: 650;
+    letter-spacing: -0.035em;
+  }
+  .type-title {
+    font-size: clamp(1.5rem, 3.4vw, 1.875rem);
+    line-height: 1.15;
+    font-weight: 650;
+    letter-spacing: -0.025em;
+  }
+  .type-heading {
+    font-size: 1.0625rem;
+    line-height: 1.3;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  /* Amounts: large, tabular, tight. */
+  .type-amount {
+    font-size: clamp(1.75rem, 6vw, 2.5rem);
+    line-height: 1.05;
+    font-weight: 650;
+    letter-spacing: -0.03em;
+    font-variant-numeric: tabular-nums;
+  }
+  .type-lead {
+    font-size: clamp(1rem, 2.2vw, 1.125rem);
+    line-height: 1.55;
+  }
+  .type-small {
+    font-size: 0.875rem;
+    line-height: 1.45;
+  }
+  .type-label {
+    font-size: 0.75rem;
+    line-height: 1.35;
+    font-weight: 600;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+  }
+  .card {
+    border-radius: var(--radius-card);
+    border: 1px solid var(--line);
+    background: var(--surface);
+    box-shadow: var(--card-shadow);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
