@@ -126,7 +126,7 @@ function GroupHero({ group }: { group: GroupSummary }) {
             {t.group.addExpense}
           </Link>
           <Link
-            href={`${base}/scan`}
+            href={`${base}/scan?group=${group.id}`}
             className="rounded-control inline-flex h-12 items-center justify-center gap-2 bg-white/14 px-5 font-semibold text-white transition-colors hover:bg-white/22"
           >
             <ScanLine aria-hidden="true" className="size-5" />

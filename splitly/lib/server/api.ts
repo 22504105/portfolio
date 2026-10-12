@@ -12,7 +12,8 @@ import { verifyInitData } from "./telegram";
 // Answers are JSON. Errors carry a code and no detail a stranger could use:
 // a group you are not in and a group that does not exist are both "not_found".
 
-const MAX_BODY_BYTES = 64 * 1024;
+// A long receipt is a few hundred short lines: well under this.
+const MAX_BODY_BYTES = 128 * 1024;
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
@@ -22,7 +23,14 @@ const json = (body: unknown, status = 200) =>
 
 const fail = (code: string, status: number, details?: unknown) => json({ error: code, ...(details ? { details } : {}) }, status);
 
-const STATUS: Record<ServiceError["code"], number> = { not_found: 404, forbidden: 403, invalid: 422, limit: 429, conflict: 409 };
+const STATUS: Record<ServiceError["code"], number> = {
+  not_found: 404,
+  forbidden: 403,
+  invalid: 422,
+  limit: 429,
+  conflict: 409,
+  duplicate_receipt: 409,
+};
 
 class RequestError extends Error {
   constructor(
@@ -211,6 +219,16 @@ const ROUTES: [string, string, Route, Limit?][] = [
       const userId = sessionUser(request);
       const { idempotencyKey, expense } = await body(request);
       return service.createExpense(db, userId, parts[1], idempotencyKey, expense);
+    },
+    { scope: "expense.write", by: "user", max: 300, seconds: 3600 },
+  ],
+  [
+    "POST",
+    "groups/:group/receipts",
+    async ({ request, db, parts }) => {
+      const userId = sessionUser(request);
+      const { idempotencyKey, receipt } = await body(request);
+      return service.createReceiptExpense(db, userId, parts[1], idempotencyKey, receipt);
     },
     { scope: "expense.write", by: "user", max: 300, seconds: 3600 },
   ],

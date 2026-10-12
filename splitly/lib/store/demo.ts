@@ -1,6 +1,7 @@
 import { netOfMember, netsOf } from "@/lib/balances/net";
 import { LIMITS, type Expense, type Group, type GroupSummary, type Member, type Role } from "@/lib/domain/types";
 import { isCurrencyCode } from "@/lib/money/currency";
+import { buildReceiptExpense } from "@/lib/receipt/build";
 import { checkExpense } from "@/lib/split/expense";
 import { seedGroups } from "./seed";
 import { StoreError, type Store } from "./types";
@@ -21,6 +22,8 @@ export type DemoGroup = {
   expenses: Expense[];
   /** Submission keys already used → the expense each made. */
   keys: Record<string, string>;
+  /** Photos already turned into expenses: the photo's hash → the expense. Only the hash is kept, never the photo. */
+  receipts?: Record<string, string>;
 };
 
 type DemoState = { version: 1; groups: DemoGroup[] };
@@ -244,6 +247,22 @@ export function createDemoStore(shelf: Shelf, locale: string, newId: () => strin
         if (expense.status === "cancelled") return;
         if (expense.status !== "active") throw new StoreError("conflict");
         expense.status = "cancelled";
+      });
+    },
+
+    async createReceiptExpense(groupId, key, input) {
+      return inGroup(groupId, (group, me) => {
+        if (group.keys[key]) return group.keys[key];
+        const current = new Set(group.members.filter((member) => !member.removedAt).map((member) => member.id));
+        const built = buildReceiptExpense(input, current);
+        if (!built.ok) throw new StoreError("invalid", { problems: built.problems, lines: built.lines });
+        const earlier = group.receipts?.[built.contentHash];
+        const stillCounts = group.expenses.some((expense) => expense.id === earlier && expense.status === "active");
+        if (stillCounts && (input as { allowDuplicate?: unknown }).allowDuplicate !== true) throw new StoreError("duplicate_receipt");
+        const id = store(group, me, key, built.expense);
+        group.expenses.find((expense) => expense.id === id)!.receipt = { lines: built.lines };
+        group.receipts = { ...group.receipts, [built.contentHash]: id };
+        return id;
       });
     },
 

@@ -9,9 +9,9 @@ import { pageLocale } from "@/lib/page";
 
 // What each of the four promises looks like, and whether it is kept yet.
 const FEATURES: readonly { icon: LucideIcon; built: boolean }[] = [
-  { icon: ScanLine, built: false },
-  { icon: Languages, built: false },
-  { icon: Split, built: false },
+  { icon: ScanLine, built: true },
+  { icon: Languages, built: true },
+  { icon: Split, built: true },
   { icon: HandCoins, built: true },
 ];
 

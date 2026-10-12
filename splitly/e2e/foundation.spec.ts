@@ -157,7 +157,7 @@ test("the health endpoint answers, and says nothing it should not", async ({ req
   expect(response.headers()["cache-control"]).toBe("no-store");
   const body = await response.json();
   expect(Object.keys(body).sort()).toEqual(["ok", "region", "service", "stage", "time"]);
-  expect(body).toMatchObject({ ok: true, service: "splitly", stage: 2 });
+  expect(body).toMatchObject({ ok: true, service: "splitly", stage: 3 });
 });
 
 test("only Telegram may frame the site, and the headers are set", async ({ request }) => {

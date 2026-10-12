@@ -111,7 +111,7 @@ function GroupView({ group }: { group: Group }) {
                     <Plus aria-hidden="true" className="size-5" />
                     {t.group.addExpense}
                   </Link>
-                  <Link href={`${base}/scan`} className={buttonClass("secondary")}>
+                  <Link href={`${base}/scan?group=${group.id}`} className={buttonClass("secondary")}>
                     <ScanLine aria-hidden="true" className="size-5" />
                     {t.home.scan}
                   </Link>
@@ -299,6 +299,29 @@ function Expenses({ group, me, manages, onFailure }: SectionProps) {
                         ))}
                       </div>
                     </dl>
+                    {expense.receipt && (
+                      <div className="mt-4">
+                        <p className="type-label text-ink-muted mb-1.5">{t.scan.fromReceipt}</p>
+                        <ul className="type-small flex flex-col gap-1">
+                          {expense.receipt.lines.map((line, index) => (
+                            <li key={index} className="flex justify-between gap-3">
+                              <span className="min-w-0 break-words">
+                                {line.displayLabel}
+                                <span className="text-ink-muted">
+                                  {" · "}
+                                  {line.allocations.length === group.members.filter((member) => !member.removedAt).length
+                                    ? fill(t.scan.everyone, { n: line.allocations.length })
+                                    : line.allocations.map((share) => names.get(share.memberId)).join(", ")}
+                                </span>
+                              </span>
+                              <span className="shrink-0 tabular-nums">
+                                {formatMoney(line.lineTotalMinor, expense.currency, { locale })}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                     {expense.category && <p className="type-small text-ink-muted mt-3">{t.expense.categories[expense.category]}</p>}
                     {editable && (
                       <div className="mt-4 flex flex-wrap items-start gap-2">

@@ -11,6 +11,7 @@ const CODES: readonly string[] = [
   "invalid",
   "limit",
   "conflict",
+  "duplicate_receipt",
   "rate_limited",
   "unauthenticated",
   "server_error",
@@ -81,5 +82,7 @@ export function createRemoteStore(session: () => string | null, renew: () => Pro
     async cancelExpense(groupId, expenseId) {
       await send("DELETE", `groups/${groupId}/expenses/${expenseId}`);
     },
+    createReceiptExpense: async (groupId, key, input) =>
+      (await send("POST", `groups/${groupId}/receipts`, { idempotencyKey: key, receipt: input })).id as string,
   };
 }

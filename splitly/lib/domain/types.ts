@@ -1,3 +1,5 @@
+import type { StoredReceiptLine } from "@/lib/receipt/types";
+
 // The shapes the whole application works with. The browser demo and the
 // server both produce exactly these, so no screen knows or cares where a
 // group's data lives. Amounts are whole minor units of the stated currency.
@@ -53,6 +55,8 @@ export type ExpenseStatus = "active" | "cancelled" | "replaced";
 
 export type Expense = ExpenseInput & {
   id: string;
+  /** The lines of the receipt this expense was made from, with what each person took. Absent for an expense typed in by hand. */
+  receipt?: { lines: StoredReceiptLine[] } | null;
   status: ExpenseStatus;
   /** What each person owes of it. Always adds up to the total. */
   splits: { memberId: string; owedMinor: number }[];

@@ -3,7 +3,9 @@ import { createHash, randomBytes } from "node:crypto";
 import { netOfMember, netsOf } from "@/lib/balances/net";
 import { LIMITS, type Expense, type Group, type GroupSummary, type Invite, type Member, type Role } from "@/lib/domain/types";
 import { isCurrencyCode } from "@/lib/money/currency";
+import { buildReceiptExpense, type ReceiptProblem } from "@/lib/receipt/build";
 import { checkExpense, type ExpenseProblem } from "@/lib/split/expense";
+import type { StoredReceiptLine } from "@/lib/receipt/types";
 import type { Db } from "./db";
 import type { TelegramUser } from "./telegram";
 
@@ -14,8 +16,13 @@ import type { TelegramUser } from "./telegram";
 
 export class ServiceError extends Error {
   constructor(
-    public code: "not_found" | "forbidden" | "invalid" | "limit" | "conflict",
-    public details?: { problems?: ExpenseProblem[]; differences?: Record<string, number>; field?: string },
+    public code: "not_found" | "forbidden" | "invalid" | "limit" | "conflict" | "duplicate_receipt",
+    public details?: {
+      problems?: (ExpenseProblem | ReceiptProblem)[];
+      differences?: Record<string, number>;
+      field?: string;
+      lines?: number[];
+    },
   ) {
     super(code);
   }
@@ -164,6 +171,14 @@ const toMember = (row: Record<string, unknown>): Member => ({
 const EXPENSES_SQL = `
   select e.id, e.description, e.category, to_char(e.expense_date, 'YYYY-MM-DD') as date, e.currency, e.total_minor::text as total, e.status, e.split_mode,
          e.creator_member_id, e.created_at,
+         (select json_agg(json_build_object(
+                   'k', i.kind, 'o', i.original_label, 'd', i.display_label, 't', i.translation_source, 'q', i.quantity_decimal,
+                   'a', i.line_total_minor::text, 'c', i.confidence, 'r', i.manual_reviewed,
+                   'm', (select min(a.method) from splitly.receipt_item_allocations a where a.receipt_item_id = i.id),
+                   's', (select coalesce(json_agg(json_build_object('m', a.member_id, 'a', a.share_minor::text) order by gm.joined_at, gm.id), '[]')
+                         from splitly.receipt_item_allocations a join splitly.group_members gm on gm.id = a.member_id where a.receipt_item_id = i.id)
+                 ) order by i.position)
+          from splitly.receipt_items i where i.receipt_id = e.receipt_id) as receipt_lines,
          (select coalesce(json_agg(json_build_object('m', p.member_id, 'a', p.paid_minor::text) order by p.position), '[]') from splitly.expense_payers p where p.expense_id = e.id) as payers,
          (select coalesce(json_agg(json_build_object('m', s.member_id, 'a', s.owed_minor::text, 'v', s.split_value::text) order by s.position), '[]') from splitly.expense_splits s where s.expense_id = e.id) as splits
   from splitly.expenses e
@@ -189,6 +204,22 @@ const toExpense = (row: Record<string, unknown>): Expense => ({
   splits: (row.splits as Part[]).map((part) => ({ memberId: part.m, owedMinor: Number(part.a) })),
   createdBy: row.creator_member_id as string,
   createdAt: new Date(row.created_at as string).toISOString(),
+  receipt: row.receipt_lines
+    ? {
+        lines: (row.receipt_lines as Record<string, unknown>[]).map((line) => ({
+          kind: line.k as StoredReceiptLine["kind"],
+          originalLabel: line.o as string,
+          displayLabel: line.d as string,
+          translationSource: line.t as StoredReceiptLine["translationSource"],
+          quantity: line.q as string,
+          lineTotalMinor: Number(line.a),
+          confidence: (line.c as number | null) ?? null,
+          manualReviewed: line.r === true,
+          method: line.m === "equal" ? "equal" : "shares",
+          allocations: (line.s as Part[]).map((share) => ({ memberId: share.m, shareMinor: Number(share.a) })),
+        })),
+      }
+    : null,
 });
 
 export async function getGroup(db: Db, userId: string, groupId: unknown): Promise<Group> {
@@ -432,7 +463,14 @@ async function currentMemberIds(db: Db, groupId: string): Promise<Set<string>> {
   );
 }
 
-async function insertExpense(db: Db, groupId: string, creatorMemberId: string, key: string, raw: unknown): Promise<string> {
+async function insertExpense(
+  db: Db,
+  groupId: string,
+  creatorMemberId: string,
+  key: string,
+  raw: unknown,
+  receiptId: string | null = null,
+): Promise<string> {
   // An archived group is kept as it is.
   const archived = (await db.query("select archived_at is not null as archived from splitly.groups where id = $1", [groupId])).rows[0]
     ?.archived;
@@ -447,9 +485,20 @@ async function insertExpense(db: Db, groupId: string, creatorMemberId: string, k
 
   const id = (
     await db.query(
-      `insert into splitly.expenses (group_id, creator_member_id, description, category, expense_date, currency, total_minor, split_mode, idempotency_key)
-       values ($1, $2, $3, $4, $5, $6, $7, $8, $9) returning id`,
-      [groupId, creatorMemberId, input.description, input.category, input.date, input.currency, input.totalMinor, input.split.mode, key],
+      `insert into splitly.expenses (group_id, creator_member_id, description, category, expense_date, currency, total_minor, split_mode, idempotency_key, receipt_id)
+       values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) returning id`,
+      [
+        groupId,
+        creatorMemberId,
+        input.description,
+        input.category,
+        input.date,
+        input.currency,
+        input.totalMinor,
+        input.split.mode,
+        key,
+        receiptId,
+      ],
     )
   ).rows[0].id as string;
 
@@ -546,6 +595,82 @@ export async function cancelExpense(db: Db, userId: string, groupId: unknown, ex
   if (old.status !== "active") throw new ServiceError("conflict");
   await db.query("update splitly.expenses set status = 'cancelled' where id = $1", [expenseId]);
   await log(db, groupId as string, me.memberId, "expense.cancelled", "expense", expenseId);
+}
+
+/**
+ * Turns an assigned receipt into an expense, with its lines and what each
+ * person took of each, all in one transaction: either the whole receipt is
+ * stored and balances, or none of it is. Everyone's share is worked out here
+ * from who each line was given to. Only the photo's hash arrives, to notice
+ * the same receipt scanned twice; the photo never leaves the person's device.
+ */
+export async function createReceiptExpense(
+  db: Db,
+  userId: string,
+  groupId: unknown,
+  key: unknown,
+  raw: unknown,
+): Promise<{ id: string; repeated: boolean }> {
+  const me = await membership(db, userId, groupId);
+  if (!uuid(key)) throw new ServiceError("invalid", { field: "idempotencyKey" });
+  const existing = (await db.query("select id from splitly.expenses where group_id = $1 and idempotency_key = $2", [groupId, key])).rows[0];
+  if (existing) return { id: existing.id, repeated: true };
+
+  const built = buildReceiptExpense(raw, await currentMemberIds(db, groupId as string));
+  if (!built.ok) throw new ServiceError("invalid", { problems: built.problems, lines: built.lines });
+
+  // The same photo, already an expense that still counts in this group.
+  const hash = Buffer.from(built.contentHash, "hex");
+  const duplicate = (
+    await db.query(
+      "select 1 from splitly.receipts r join splitly.expenses e on e.receipt_id = r.id where r.group_id = $1 and r.content_hash = $2 and e.status = 'active' limit 1",
+      [groupId, hash],
+    )
+  ).rows[0];
+  if (duplicate && (raw as { allowDuplicate?: unknown }).allowDuplicate !== true) throw new ServiceError("duplicate_receipt");
+
+  const receiptId = (
+    await db.query(
+      "insert into splitly.receipts (group_id, uploader_member_id, content_hash, mime_type, status) values ($1, $2, $3, $4, 'confirmed') returning id",
+      [groupId, me.memberId, hash, built.mimeType],
+    )
+  ).rows[0].id as string;
+  const id = await insertExpense(db, groupId as string, me.memberId, key, built.expense, receiptId);
+
+  for (const [index, line] of built.lines.entries()) {
+    const itemId = (
+      await db.query(
+        `insert into splitly.receipt_items (receipt_id, group_id, position, kind, original_label, display_label, translation_source, quantity_decimal, line_total_minor, confidence, manual_reviewed)
+         values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) returning id`,
+        [
+          receiptId,
+          groupId,
+          index + 1,
+          line.kind,
+          line.originalLabel,
+          line.displayLabel,
+          line.translationSource,
+          line.quantity,
+          line.lineTotalMinor,
+          line.confidence,
+          line.manualReviewed,
+        ],
+      )
+    ).rows[0].id as string;
+    for (const share of line.allocations) {
+      await db.query(
+        "insert into splitly.receipt_item_allocations (receipt_item_id, group_id, member_id, share_minor, method) values ($1, $2, $3, $4, $5)",
+        [itemId, groupId, share.memberId, share.shareMinor, line.method],
+      );
+    }
+  }
+  // Amounts and counts only in the log: never what was bought.
+  await log(db, groupId as string, me.memberId, "receipt.confirmed", "expense", id, {
+    totalMinor: String(built.expense.totalMinor),
+    currency: built.expense.currency,
+    lines: built.lines.length,
+  });
+  return { id, repeated: false };
 }
 
 // ------------------------------------------------------------------- limits

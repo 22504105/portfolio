@@ -643,7 +643,7 @@ describe("the edges of the API", () => {
     expect((await call("POST", "groups", { token: ann.token, raw: "{not json" })).status).toBe(400);
     expect((await call("POST", "groups", { token: ann.token, raw: "[1,2]" })).status).toBe(400);
     expect(
-      (await call("POST", "groups", { token: ann.token, raw: JSON.stringify({ name: "x".repeat(70_000), baseCurrency: "TRY" }) })).status,
+      (await call("POST", "groups", { token: ann.token, raw: JSON.stringify({ name: "x".repeat(140_000), baseCurrency: "TRY" }) })).status,
     ).toBe(413);
     expect((await call("GET", "passwords", { token: ann.token })).status).toBe(404);
     expect((await call("POST", "groups/not-a-uuid/expenses", { token: ann.token, body: {} })).status).toBe(404);
@@ -775,5 +775,192 @@ describe("faces", () => {
     await expect(
       t.db.query("update splitly.users set photo_url = $2 where id = $1", [ann.userId, `https://t.me/${"x".repeat(600)}`]),
     ).rejects.toMatchObject({ code: "23514" });
+  });
+});
+
+describe("receipts", () => {
+  const line = (displayLabel: string, lineTotalMinor: number, assigned: string[], extra: Record<string, unknown> = {}) => ({
+    kind: "item",
+    originalLabel: displayLabel.toUpperCase(),
+    displayLabel,
+    translationSource: "glossary",
+    quantity: "1",
+    lineTotalMinor,
+    confidence: 88 as number | null,
+    manualReviewed: false,
+    assigned: assigned.map((memberId) => ({ memberId, weight: 1 })),
+    ...extra,
+  });
+  const receipt = (payer: string, lines: ReturnType<typeof line>[], hash = "ab".repeat(32), extra: Record<string, unknown> = {}) => ({
+    description: "Migros",
+    category: "groceries",
+    date: "2026-10-12",
+    currency: "TRY",
+    payers: [{ memberId: payer, paidMinor: lines.reduce((sum, item) => sum + item.lineTotalMinor, 0) }],
+    receipt: { contentHash: hash, mimeType: "image/jpeg", lines },
+    ...extra,
+  });
+
+  async function pair() {
+    const [ann, bob] = await Promise.all([person("Ann"), person("Bob")]);
+    const id = (await call("POST", "groups", { token: ann.token, body: { name: "Flat", baseCurrency: "TRY" } })).body.id as string;
+    const invite = (await call("POST", `groups/${id}/invites`, { token: ann.token, body: {} })).body.invite.token;
+    await call("POST", "invites/accept", { token: bob.token, body: { token: invite } });
+    const members = (await groupOf(ann.token, id)).members;
+    return { ann, bob, id, annM: members[0].id as string, bobM: members[1].id as string };
+  }
+
+  it("a receipt becomes one expense with its lines; every share is worked out by the server and it all balances", async () => {
+    const { ann, bob, id, annM, bobM } = await pair();
+    const lines = [
+      line("Milk", 8000, [annM, bobM]),
+      line("Chicken", 36_001, [bobM], { quantity: "0.485", confidence: 41 }),
+      line("Bread", 4000, [annM, bobM], { translationSource: "user", manualReviewed: true }),
+      line("Discount", -5000, [], { kind: "discount", confidence: null }),
+    ];
+    // Shares sent by a client are not even looked at.
+    const sent = { ...receipt(annM, lines), splits: [{ memberId: annM, owedMinor: 1 }], totalMinor: 5 };
+    const created = await call("POST", `groups/${id}/receipts`, {
+      token: ann.token,
+      body: { idempotencyKey: randomUUID(), receipt: sent },
+    });
+    expect(created).toMatchObject({ status: 200, body: { repeated: false } });
+
+    const group = await groupOf(bob.token, id);
+    const stored = group.expenses[0];
+    expect(stored).toMatchObject({ description: "Migros", totalMinor: 43_001, status: "active", category: "groceries" });
+    // Ann took 6,000 of the 48,001 bought, Bob 42,001: the discount follows those proportions.
+    expect(
+      stored.receipt.lines.map((item: any) => [
+        item.kind,
+        item.displayLabel,
+        item.quantity,
+        item.lineTotalMinor,
+        item.method,
+        item.allocations.map((share: any) => share.shareMinor),
+      ]),
+    ).toEqual([
+      ["item", "Milk", "1", 8000, "equal", [4000, 4000]],
+      ["item", "Chicken", "0.485", 36_001, "equal", [36_001]],
+      ["item", "Bread", "1", 4000, "equal", [2000, 2000]],
+      ["discount", "Discount", "1", -5000, "shares", [-625, -4375]],
+    ]);
+    expect(
+      stored.receipt.lines.map((item: any) => [item.originalLabel, item.translationSource, item.confidence, item.manualReviewed]),
+    ).toEqual([
+      ["MILK", "glossary", 88, false],
+      ["CHICKEN", "glossary", 41, false],
+      ["BREAD", "user", 88, true],
+      ["DISCOUNT", "glossary", null, false],
+    ]);
+    expect(stored.splits).toEqual([
+      { memberId: annM, owedMinor: 5375 },
+      { memberId: bobM, owedMinor: 37_626 },
+    ]);
+    expect((await groupOf(ann.token, id)).myNet).toEqual({ TRY: 37_626 });
+
+    // In the database: every line fully given out, and the lines add up to the expense.
+    const check = await t.db.query(
+      `select (select sum(line_total_minor)::int from splitly.receipt_items where group_id = $1) as lines,
+              (select sum(share_minor)::int from splitly.receipt_item_allocations where group_id = $1) as shares,
+              (select total_minor::int from splitly.expenses where group_id = $1) as total,
+              (select count(*)::int from splitly.receipts where group_id = $1 and status = 'confirmed') as receipts`,
+      [id],
+    );
+    expect(check.rows[0]).toEqual({ lines: 43_001, shares: 43_001, total: 43_001, receipts: 1 });
+  });
+
+  it("the same photo twice is noticed, and can be added again only on purpose; the same submission twice is one expense", async () => {
+    const { ann, id, annM, bobM } = await pair();
+    const body = { idempotencyKey: randomUUID(), receipt: receipt(annM, [line("Pizza", 1000, [annM, bobM])], "cd".repeat(32)) };
+    const first = await call("POST", `groups/${id}/receipts`, { token: ann.token, body });
+    expect((await call("POST", `groups/${id}/receipts`, { token: ann.token, body })).body).toEqual({ id: first.body.id, repeated: true });
+
+    const again = await call("POST", `groups/${id}/receipts`, { token: ann.token, body: { ...body, idempotencyKey: randomUUID() } });
+    expect([again.status, again.body]).toEqual([409, { error: "duplicate_receipt" }]);
+    expect((await groupOf(ann.token, id)).expenses).toHaveLength(1);
+
+    const onPurpose = await call("POST", `groups/${id}/receipts`, {
+      token: ann.token,
+      body: { idempotencyKey: randomUUID(), receipt: { ...body.receipt, allowDuplicate: true } },
+    });
+    expect(onPurpose.status).toBe(200);
+    expect((await groupOf(ann.token, id)).expenses).toHaveLength(2);
+
+    // Once both are cancelled, the photo is no longer "already there".
+    for (const expense of (await groupOf(ann.token, id)).expenses)
+      await call("DELETE", `groups/${id}/expenses/${expense.id}`, { token: ann.token });
+    expect(
+      (await call("POST", `groups/${id}/receipts`, { token: ann.token, body: { ...body, idempotencyKey: randomUUID() } })).status,
+    ).toBe(200);
+  });
+
+  it("a receipt that is not ready is refused whole, with which lines are wrong, and nothing is stored", async () => {
+    const { ann, id, annM, bobM } = await pair();
+    const stranger = await person("Stranger");
+    const other = (await call("POST", "groups", { token: stranger.token, body: { name: "Other", baseCurrency: "TRY" } })).body.id;
+    const outsider = (await groupOf(stranger.token, other)).members[0].id;
+
+    const attempts: [unknown, string[], number[]][] = [
+      [receipt(annM, [line("Milk", 8000, [annM]), line("Bread", 4000, [])]), ["line_unassigned"], [1]],
+      [receipt(annM, [line("Milk", 8000, [outsider])]), ["assignee_unknown", "line_unassigned"], [0]],
+      [receipt(annM, [line("Milk", 0, [annM])]), ["line_amount"], [0]],
+      [{ ...receipt(annM, [line("Milk", 8000, [annM, bobM])]), payers: [{ memberId: annM, paidMinor: 7000 }] }, ["payers_sum"], []],
+      [{ ...receipt(annM, [line("Milk", 8000, [annM])]), payers: [{ memberId: outsider, paidMinor: 8000 }] }, ["payer_unknown"], []],
+      [receipt(annM, [line("Milk", 8000, [annM])], "not-a-hash"), ["receipt_hash"], []],
+      [receipt(annM, []), ["no_lines"], []],
+    ];
+    for (const [sent, problems, lines] of attempts) {
+      const result = await call("POST", `groups/${id}/receipts`, {
+        token: ann.token,
+        body: { idempotencyKey: randomUUID(), receipt: sent },
+      });
+      expect([result.status, result.body.details?.problems?.sort(), result.body.details?.lines]).toEqual([422, problems, lines]);
+    }
+    for (const garbage of [
+      {},
+      { idempotencyKey: randomUUID() },
+      { idempotencyKey: randomUUID(), receipt: "photo" },
+      { idempotencyKey: "x", receipt: receipt(annM, [line("Milk", 1, [annM])]) },
+    ]) {
+      expect((await call("POST", `groups/${id}/receipts`, { token: ann.token, body: garbage })).status).toBe(422);
+    }
+    const counts = await t.db.query(
+      "select (select count(*)::int from splitly.receipts where group_id = $1) receipts, (select count(*)::int from splitly.expenses where group_id = $1) expenses",
+      [id],
+    );
+    expect(counts.rows[0]).toEqual({ receipts: 0, expenses: 0 });
+
+    // And someone outside the group cannot add a receipt to it, or learn that it exists.
+    const outside = await call("POST", `groups/${id}/receipts`, {
+      token: stranger.token,
+      body: { idempotencyKey: randomUUID(), receipt: receipt(annM, [line("Milk", 1, [annM])]) },
+    });
+    expect([outside.status, outside.body]).toEqual([404, { error: "not_found" }]);
+  });
+
+  it("the database itself refuses a line that is only partly given out", async () => {
+    const { ann, id, annM, bobM } = await pair();
+    await call("POST", `groups/${id}/receipts`, {
+      token: ann.token,
+      body: { idempotencyKey: randomUUID(), receipt: receipt(annM, [line("Pizza", 1000, [annM, bobM])], "ef".repeat(32)) },
+    });
+    await expect(
+      t.db.query("update splitly.receipt_item_allocations set share_minor = share_minor - 1 where group_id = $1 and member_id = $2", [
+        id,
+        annM,
+      ]),
+    ).rejects.toMatchObject({ code: "23514" });
+  });
+
+  it("an expense made from a receipt can be cancelled like any other, and its lines stay on record", async () => {
+    const { ann, id, annM, bobM } = await pair();
+    const created = await call("POST", `groups/${id}/receipts`, {
+      token: ann.token,
+      body: { idempotencyKey: randomUUID(), receipt: receipt(annM, [line("Pizza", 1000, [annM, bobM])], "12".repeat(32)) },
+    });
+    expect((await call("DELETE", `groups/${id}/expenses/${created.body.id}`, { token: ann.token })).status).toBe(200);
+    const group = await groupOf(ann.token, id);
+    expect([group.expenses[0].status, group.expenses[0].receipt.lines.length, group.myNet]).toEqual(["cancelled", 1, {}]);
   });
 });
