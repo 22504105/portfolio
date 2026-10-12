@@ -1,11 +1,12 @@
 "use client";
 
-import { ArrowLeft, ChevronDown, Copy, Plus, ScanLine } from "lucide-react";
+import { ArrowLeft, ChevronDown, Copy, Plus, ScanLine, Send } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { errorText, useApp, useLoad } from "@/components/app/AppProvider";
 import { Avatar, AvatarStack } from "@/components/ui/Avatar";
+import { QrCode } from "@/components/ui/QrCode";
 import { Button, buttonClass, Confirm, Field, inputClass, Loading, Problem } from "@/components/ui/controls";
 import { netsOf } from "@/lib/balances/net";
 import type { Expense, Group, Invite, Member } from "@/lib/domain/types";
@@ -464,6 +465,7 @@ function People({ group, me, manages, onFailure }: SectionProps) {
                 <p className="type-small text-ink-muted">{t.people.inviteHint}</p>
                 {invite && link && (
                   <div className="flex flex-col gap-2">
+                    <QrCode value={link} label={t.people.inviteQr} className="border-line mx-auto size-48 rounded-[14px] border" />
                     <input
                       readOnly
                       aria-label={t.people.inviteLink}
@@ -477,6 +479,17 @@ function People({ group, me, manages, onFailure }: SectionProps) {
                   </div>
                 )}
                 <div className="flex flex-wrap gap-2">
+                  {invite && link && (
+                    <a
+                      href={`https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(fill(t.people.inviteText, { group: group.name }))}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className={buttonClass("primary", true)}
+                    >
+                      <Send aria-hidden="true" className="size-4" />
+                      {t.people.inviteShare}
+                    </a>
+                  )}
                   {invite && link ? (
                     <Button
                       variant="secondary"

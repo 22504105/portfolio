@@ -10,17 +10,22 @@ Russian. Portfolio project #04, built on free tiers only.
 
 ## Status
 
-**Stage 4 of 5 — debts, currencies, analytics.** In place: Telegram sign-in
-verified by the server, groups, people, invitations, roles, expenses typed in
-by hand or read from a receipt on the device, and now: who should pay whom
-(simplified, or as it happened), settling up with payments that count once
-the person paid confirms them, exchange rates recorded by the group's own
-people, analytics by category, person and day, an activity list, and a
-spreadsheet export. The browser demo runs the same screens and rules on
-invented data kept in the visitor's browser.
+**Stage 5 of 5 — launch work, done; awaiting the owner's review.** Splitly is
+a Telegram Mini App and a public browser demo for sharing costs in a group:
+sign-in verified by the server, groups, people, invitations (with a QR code),
+roles, expenses typed in by hand or read from a receipt on the device, who
+should pay whom, settling up, exchange rates recorded by the group's own
+people, analytics, an activity list and a spreadsheet export. The demo runs
+the same screens and rules on invented data kept in the visitor's browser.
 
-Not built yet: launch work (stage 5): Telegram's own controls, the invitation
-QR code, accessibility and performance passes, an independent look at security.
+|                                                   |                                               |                                                |
+| ------------------------------------------------- | --------------------------------------------- | ---------------------------------------------- |
+| ![Home](docs/screenshots/home.webp)               | ![A group](docs/screenshots/group.webp)       | ![Debts](docs/screenshots/debts.webp)          |
+| ![A receipt, read](docs/screenshots/receipt.webp) | ![Analytics](docs/screenshots/analytics.webp) | ![Dark theme](docs/screenshots/home-dark.webp) |
+
+![The wide layout](docs/screenshots/wide.webp)
+
+The screenshots are of the demo's invented data (`node scripts/screenshots.mjs`).
 
 | Stage | Scope                                        | State                 |
 | ----- | -------------------------------------------- | --------------------- |
@@ -28,7 +33,7 @@ QR code, accessibility and performance passes, an independent look at security.
 | 2     | Groups, manual expenses, Telegram identity   | Done, awaiting review |
 | 3     | Receipt scanner and item assignment          | Done, awaiting review |
 | 4     | Balances, currencies, settlements, analytics | Done, awaiting review |
-| 5     | Telegram QA, accessibility, security, launch | Not started           |
+| 5     | Telegram QA, accessibility, security, launch | Done, awaiting review |
 
 ## Running locally
 
@@ -69,10 +74,16 @@ lists what the concept shows, what it leaves out, and which stage builds what.
 - [`docs/deployment.md`](docs/deployment.md) — the deployment proof, with the
   real command and output.
 
-## Known limits (stages 1–4)
+## Known limits
 
 - Built and checked by one agent; the brief's three subagent roles were not
-  delegated.
+  delegated, and the security review (`docs/security-review.md`) is a
+  self-review.
+- Accessibility was checked by machine on every screen in both themes (clean),
+  not with a screen reader.
+- Inside Telegram: opened by the owner on a phone. Telegram's back button,
+  header colour and the tap on saving were written to Telegram's documented
+  interface and have not been seen working by the author.
 - Hosted on Vercel by the owner's decision; the brief's Cloudflare Workers
   comparison was not run.
 - **Not opened inside Telegram yet.** Sign-in was checked end to end with

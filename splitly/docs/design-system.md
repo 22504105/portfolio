@@ -24,7 +24,7 @@ All values live in `app/globals.css` as tokens. Components use the names.
 | `positive`               | `#1B6B4C`             | `#8FD3AB`             | "You are owed"                        |
 | `danger`                 | `#B04440`             | `#F2A29D`             | "You owe", errors                     |
 | `danger-fill`            | `#B04440`             | `#A8443F`             | A destructive button, with white text |
-| `warning`                | `#96601F`             | `#E6B56F`             | Demo badge, cautions                  |
+| `warning`                | `#8A5514`             | `#E6B56F`             | Demo badge, cautions                  |
 
 **Where the brief's colours were moved, and why** (WCAG 2.2 AA asks 4.5:1 for
 text):
@@ -33,7 +33,7 @@ text):
 | ----------------------------- | ------------- | --------- | ----- |
 | muted `#737C76` on the canvas | 4.0:1         | `#5F6862` | 5.4:1 |
 | danger `#C75B57` on white     | 4.1:1         | `#B04440` | 5.6:1 |
-| warning `#A66B26` on white    | 4.4:1         | `#96601F` | 5.3:1 |
+| warning `#A66B26` on white    | 4.4:1         | `#8A5514` | 6.2:1 |
 
 Canvas, forest, mint, ink, divider, and the whole dark palette are the
 brief's own. `tests/foundation.test.ts` reads both palettes from the

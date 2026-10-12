@@ -7,6 +7,7 @@ import { errorText, useApp, useLoad } from "@/components/app/AppProvider";
 import { Button, Field, inputClass, Loading, Problem } from "@/components/ui/controls";
 import { fill } from "@/lib/i18n";
 import { CURRENCIES } from "@/lib/money/currency";
+import { preferredCurrency } from "@/lib/preferences";
 import { StoreError } from "@/lib/store/types";
 import { GroupCard } from "./parts";
 
@@ -19,7 +20,9 @@ export function GroupsScreen() {
   const [query, setQuery] = useState("");
   const [creating, setCreating] = useState(false);
   const [name, setName] = useState("");
-  const [currency, setCurrency] = useState<string>("TRY");
+  // The currency they chose in their profile, if they did; asked for when the form is opened, not while the page is prepared.
+  const [chosen, setCurrency] = useState<string | null>(null);
+  const currency = chosen ?? (creating ? preferredCurrency() : "TRY");
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<{ name?: string; form?: string }>({});
 

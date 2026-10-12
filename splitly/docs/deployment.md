@@ -123,3 +123,31 @@ The scanner needs no variables and no migration (its tables were part of the
 first schema). `npm run build` copies the reader's files into `public/ocr`
 first; they are served as static files (the largest is about 4 MB). Not
 deployed until the owner says so.
+
+## Stage 5: where the functions run
+
+`vercel.json` puts the functions in Dublin (`dub1`), next to the database
+(Ireland). Before, they ran in the default US region and every request
+crossed the Atlantic several times.
+
+## Reproducing the deployment at no cost
+
+1. A Supabase project (free): copy its **transaction pooler** connection
+   string. `npm run db:migrate` with it in `.env.local` applies the schema.
+2. A bot from @BotFather (free): its token and its @name.
+3. A Vercel project (Hobby, free) with this folder as its root: set
+   `DATABASE_URL`, `TELEGRAM_BOT_TOKEN`, `SESSION_SECRET` (32+ random
+   characters) and `TELEGRAM_BOT_USERNAME`, then
+   `npx vercel deploy --prod`.
+4. In @BotFather: Bot Settings → Configure Mini App → the site's address
+   followed by `/app`.
+5. `node scripts/live-check.mjs https://<the site>` checks sign-in, isolation
+   between people, receipts, payments and rates against the deployment, and
+   removes what it made.
+
+Without steps 1, 2 and 4 the site is the browser demo alone, which needs
+nothing: `npm run build && npm start`.
+
+What stays within the free tiers: no stored images (photos never leave the
+device), one small schema, functions that do a handful of queries each, and
+about 8 MB of reading data for the three languages served as static files.

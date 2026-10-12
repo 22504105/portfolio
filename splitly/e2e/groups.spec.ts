@@ -433,3 +433,32 @@ test("the data API gives nothing without a session", async ({ request }) => {
     expect(response.headers()["cache-control"]).toBe("no-store");
   }
 });
+
+test("privacy is said in plain words, and a usual currency is remembered on the device", async ({ page }) => {
+  await page.goto("/en", { waitUntil: "networkidle" });
+  await page.getByRole("link", { name: "Privacy" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "What Splitly keeps, and what it does not" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2 })).toHaveText([
+    "In the browser demo",
+    "When you sign in through Telegram",
+    "Groups and expenses",
+    "Receipts",
+    "What is not there",
+    "Deleting",
+  ]);
+  await expect(page.getByRole("main")).toContainText("It is never uploaded and never stored.");
+  await page.goto("/ru/privacy", { waitUntil: "networkidle" });
+  await expect(page.getByRole("heading", { level: 1, name: "Что Splitly хранит и чего не хранит" })).toBeVisible();
+
+  // The currency chosen in the profile is the one offered for a new group, after a reload too.
+  await page.goto("/en/demo/profile", { waitUntil: "networkidle" });
+  await expect(page.getByRole("combobox", { name: "Your usual currency" })).toHaveValue("TRY");
+  await page.getByRole("combobox", { name: "Your usual currency" }).selectOption("GBP");
+  await page.reload({ waitUntil: "networkidle" });
+  await expect(page.getByRole("combobox", { name: "Your usual currency" })).toHaveValue("GBP");
+  await page.getByRole("main").getByRole("link", { name: "Privacy" }).click();
+  await expect(page).toHaveURL(/\/en\/privacy$/);
+  await page.goto("/en/demo/groups", { waitUntil: "networkidle" });
+  await page.getByRole("button", { name: "New group" }).click();
+  await expect(page.getByLabel("Main currency")).toHaveValue("GBP");
+});

@@ -41,7 +41,7 @@
   --danger: #b04440;
   --danger-fill: #b04440;
   /* The brief's #A66B26 is 4.4:1 on white; this is 5.3:1. */
-  --warning: #96601f;
+  --warning: #8a5514;
 
   --card-shadow: 0 1px 2px rgb(23 61 53 / 0.05);
   --raised-shadow: 0 14px 34px -14px rgb(23 61 53 / 0.22), 0 2px 6px rgb(23 61 53 / 0.06);

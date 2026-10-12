@@ -151,6 +151,9 @@ export const en = {
     inviteExpires: "Good until {date}, for up to {n} people.",
     inviteRevoke: "Cancel all links",
     inviteRevoked: "Links cancelled: {n}",
+    inviteQr: "QR code of the invitation link",
+    inviteShare: "Share in Telegram",
+    inviteText: "Join “{group}” on Splitly",
     inviteDemo: "Invitations bring in other people's Telegram accounts, and the demo has none. Here, add people by name.",
   },
   expense: {
@@ -451,6 +454,8 @@ export const en = {
     languageHint: "Receipt items keep their original text whatever you choose here.",
     theme: "Theme",
     themeHint: "Kept on this device only.",
+    currency: "Your usual currency",
+    currencyHint: "Offered first when you create a group. Kept on this device only.",
   },
   stage: {
     title: "This screen is built in stage {stage}",
@@ -464,6 +469,38 @@ export const en = {
       "Telegram polish, accessibility, security review, launch.",
     ],
     current: "now",
+  },
+  privacy: {
+    title: "What Splitly keeps, and what it does not",
+    lead: "A short and complete account. Splitly is a portfolio project, not a company: there is nobody to sell your data to, and it is not sold.",
+    link: "Privacy",
+    sections: [
+      {
+        title: "In the browser demo",
+        body: "Nothing leaves your browser. The sample groups and whatever you add to them are kept in this browser's own storage and can be wiped from the Profile screen.",
+      },
+      {
+        title: "When you sign in through Telegram",
+        body: "Splitly keeps your Telegram account's number, the name you use there, your language, and the address of your profile photo if Telegram gives one (the photo itself stays on Telegram's servers). It never sees your phone number, your contacts or your messages.",
+      },
+      {
+        title: "Groups and expenses",
+        body: "What you and the people of your groups enter: groups, names, expenses, who paid and who owes, payments between you, exchange rates. Only the members of a group can see it, and the server checks that on every request.",
+      },
+      {
+        title: "Receipts",
+        body: "A photo of a receipt is read on your device. It is never uploaded and never stored. What is kept is the lines you confirm, and a fingerprint of the photo (a hash, from which the photo cannot be rebuilt) to notice the same receipt twice.",
+      },
+      {
+        title: "What is not there",
+        body: "No advertising, no analytics, no tracking, no cookies. No outside service receives anything about you; the only outside code is Telegram's own, and only inside Telegram.",
+      },
+      {
+        title: "Deleting",
+        body: "Profile → Delete my account removes you, the groups that are yours alone, and your name from shared groups (your expenses there stay under \"Former member\", so that nobody else's balances change). A group's owner can delete the whole group.",
+      },
+    ],
+    back: "To the front page",
   },
   theme: { label: "Theme", light: "Light", dark: "Dark", system: "Same as device", switchTo: "Switch to" },
   language: { label: "Language", en: "English", ru: "Русский" },
