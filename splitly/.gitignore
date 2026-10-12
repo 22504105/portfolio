@@ -50,3 +50,6 @@ next-env.d.ts
 
 # The owner's design reference (a generated board and crops of it): kept locally, not published.
 /Concept/
+
+# The receipt reader's worker, engine and language data: copied from node_modules before every build.
+/public/ocr/

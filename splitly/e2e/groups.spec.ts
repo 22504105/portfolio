@@ -57,10 +57,11 @@ test("home, as in the concept: a greeting, one group on the green card, its late
   ]);
   await expect(page.getByText("Each currency is kept apart")).toBeVisible();
 
-  // Scanning is the next stage: the button leads to a page that says so.
+  // The other button on the card opens the scanner, for that group.
   await flat.getByRole("link", { name: "Scan receipt" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Scan a receipt" })).toBeVisible();
-  await expect(page.getByText("This screen is built in stage 3")).toBeVisible();
+  await expect(page).toHaveURL(/\/en\/demo\/scan\?group=demo-flat$/);
+  await expect(page.getByRole("button", { name: "Open the camera" })).toBeVisible();
 });
 
 test("a group, as in the concept: faces, tabs, and everyone's balance with its sign", async ({ page }) => {
@@ -75,11 +76,11 @@ test("a group, as in the concept: faces, tabs, and everyone's balance with its s
   await expect(balances(page).filter({ hasText: "Alex" })).toContainText(/owes -485\.47\sEUR/);
   await expect(balances(page).filter({ hasText: "Alex" })).toContainText(/gets back \+426\.66\sTRY/);
 
-  // What a later stage builds says so, in its own tab.
+  // Each tab has its own screen (the money ones are tested in money.spec.ts).
   await tab(page, "Debts").click();
-  await expect(page.getByRole("tabpanel")).toContainText("built in stage 4");
+  await expect(page.getByRole("tabpanel")).toContainText("Simplified transfers");
   await tab(page, "Analytics").click();
-  await expect(page.getByRole("tabpanel")).toContainText("built in stage 4");
+  await expect(page.getByRole("tabpanel")).toContainText("Total spent");
   await tab(page, "Settings").click();
   await expect(page.getByRole("region", { name: "Group settings" })).toBeVisible();
   expect(await overflow(page)).toBe(0);

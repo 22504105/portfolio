@@ -202,6 +202,94 @@ try {
     joined.status === 200 && shared?.myNet.TRY === -500,
     JSON.stringify([joined, shared?.myNet]),
   );
+
+  // Stage 3: a receipt becomes one expense with its lines, shares worked out by the server; the same photo twice is noticed.
+  const line = (displayLabel, lineTotalMinor, assigned, extra = {}) => ({
+    kind: "item",
+    originalLabel: displayLabel.toUpperCase(),
+    displayLabel,
+    translationSource: "glossary",
+    quantity: "1",
+    lineTotalMinor,
+    confidence: 90,
+    manualReviewed: false,
+    assigned: assigned.map((memberId) => ({ memberId, weight: 1 })),
+    ...extra,
+  });
+  const receipt = {
+    description: "Check receipt",
+    category: "groceries",
+    date: "2026-10-12",
+    currency: "TRY",
+    payers: [{ memberId: memberA, paidMinor: 11_001 }],
+    receipt: {
+      contentHash: "c0ffee".padEnd(64, "0"),
+      mimeType: "image/png",
+      lines: [
+        line("Milk", 8001, [memberA, guest]),
+        line("Bread", 4000, [guest]),
+        line("Discount", -1000, [], { kind: "discount", confidence: null }),
+      ],
+    },
+  };
+  const scanned = await call("POST", `groups/${groupA}/receipts`, { token: A, body: { idempotencyKey: randomUUID(), receipt } });
+  const withReceipt = (await call("GET", `groups/${groupA}`, { token: B })).body.group;
+  const stored = withReceipt?.expenses.find((expense) => expense.id === scanned.body.id);
+  const lineSums = stored?.receipt?.lines.map((item) => item.allocations.reduce((sum, share) => sum + share.shareMinor, 0)).join();
+  check(
+    "a receipt is stored as one expense whose lines, shares and total agree",
+    scanned.status === 200 &&
+      stored?.totalMinor === 11_001 &&
+      lineSums === "8001,4000,-1000" &&
+      stored.splits.reduce((sum, split) => sum + split.owedMinor, 0) === 11_001,
+    JSON.stringify([scanned, lineSums, stored?.splits]),
+  );
+  const twice = await call("POST", `groups/${groupA}/receipts`, { token: A, body: { idempotencyKey: randomUUID(), receipt } });
+  check(
+    "the same photo a second time is refused as a duplicate",
+    twice.status === 409 && twice.body.error === "duplicate_receipt",
+    JSON.stringify(twice),
+  );
+  const half = await call("POST", `groups/${groupA}/receipts`, {
+    token: A,
+    body: {
+      idempotencyKey: randomUUID(),
+      receipt: { ...receipt, receipt: { ...receipt.receipt, contentHash: "d".repeat(64), lines: [line("Milk", 8001, [])] } },
+    },
+  });
+  check("a receipt with a line given to nobody is refused whole", half.status === 422, JSON.stringify(half));
+
+  // Stage 4: a payment waits until the person paid confirms it, then counts; a rate is recorded as exact text.
+  const netOf = async (token) => (await call("GET", `groups/${groupA}`, { token })).body.group.myNet.TRY ?? 0;
+  const before = [await netOf(A), await netOf(B)];
+  const claim = await call("POST", `groups/${groupA}/settlements`, {
+    token: B,
+    body: { idempotencyKey: randomUUID(), settlement: { fromMemberId: guest, toMemberId: memberA, currency: "TRY", amountMinor: 250 } },
+  });
+  const waiting = [await netOf(A), await netOf(B)];
+  check(
+    "a payment recorded by the payer waits and changes no balance",
+    claim.status === 200 && waiting.join() === before.join(),
+    JSON.stringify([claim, before, waiting]),
+  );
+  const byPayer = await call("POST", `groups/${groupA}/settlements/${claim.body.id}/confirm`, { token: B, body: {} });
+  const byReceiver = await call("POST", `groups/${groupA}/settlements/${claim.body.id}/confirm`, { token: A, body: {} });
+  const settled = [await netOf(A), await netOf(B)];
+  check(
+    "only the person paid can confirm it, and then it counts for both, by exactly its amount",
+    byPayer.status === 403 && byReceiver.status === 200 && settled[0] === before[0] - 250 && settled[1] === before[1] + 250,
+    JSON.stringify([byPayer.status, byReceiver.status, before, settled]),
+  );
+  const rate = await call("POST", `groups/${groupA}/rates`, {
+    token: A,
+    body: { from: "EUR", to: "TRY", rate: "36,50", effectiveDate: "2026-10-01" },
+  });
+  const rates = (await call("GET", `groups/${groupA}`, { token: B })).body.group.rates;
+  check(
+    "an exchange rate is recorded as exact text with its day",
+    rate.status === 200 && rates.length === 1 && rates[0].rate === "36.5" && rates[0].effectiveDate === "2026-10-01",
+    JSON.stringify([rate, rates]),
+  );
 } catch (error) {
   failed++;
   console.log("FAIL the check itself broke:", error.message);

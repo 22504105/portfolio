@@ -1,6 +1,9 @@
 import { netOfMember, netsOf } from "@/lib/balances/net";
-import { LIMITS, type Expense, type Group, type GroupSummary, type Member, type Role } from "@/lib/domain/types";
+import { checkRate, checkSettlement, confirmedAtOnce, mayCancel, mayConfirm, RATES_PER_GROUP } from "@/lib/balances/settle";
+import { LIMITS, type Expense, type Group, type GroupSummary, type Member, type Role, type Settlement } from "@/lib/domain/types";
+import type { Rate } from "@/lib/money/fx";
 import { isCurrencyCode } from "@/lib/money/currency";
+import { buildReceiptExpense } from "@/lib/receipt/build";
 import { checkExpense } from "@/lib/split/expense";
 import { seedGroups } from "./seed";
 import { StoreError, type Store } from "./types";
@@ -21,6 +24,12 @@ export type DemoGroup = {
   expenses: Expense[];
   /** Submission keys already used → the expense each made. */
   keys: Record<string, string>;
+  /** Payments between members, newest first. */
+  settlements?: Settlement[];
+  /** Exchange rates recorded for the group, newest first. */
+  rates?: Rate[];
+  /** Photos already turned into expenses: the photo's hash → the expense. Only the hash is kept, never the photo. */
+  receipts?: Record<string, string>;
 };
 
 type DemoState = { version: 1; groups: DemoGroup[] };
@@ -83,7 +92,9 @@ export function createDemoStore(shelf: Shelf, locale: string, newId: () => strin
       archivedAt: group.archivedAt,
       members: group.members,
       expenses,
-      myNet: netOfMember(netsOf(expenses), me?.id),
+      settlements: group.settlements ?? [],
+      rates: group.rates ?? [],
+      myNet: netOfMember(netsOf(expenses, group.settlements ?? []), me?.id),
       expenseCount: expenses.filter((expense) => expense.status === "active").length,
     };
   };
@@ -122,7 +133,7 @@ export function createDemoStore(shelf: Shelf, locale: string, newId: () => strin
     async listGroups(): Promise<GroupSummary[]> {
       return read()
         .groups.map(view)
-        .map(({ expenses, ...summary }) => (void expenses, summary))
+        .map(({ expenses, settlements, rates, ...summary }) => (void expenses, void settlements, void rates, summary))
         .sort((a, b) => Number(a.archivedAt !== null) - Number(b.archivedAt !== null));
     },
 
@@ -244,6 +255,80 @@ export function createDemoStore(shelf: Shelf, locale: string, newId: () => strin
         if (expense.status === "cancelled") return;
         if (expense.status !== "active") throw new StoreError("conflict");
         expense.status = "cancelled";
+      });
+    },
+
+    async createSettlement(groupId, key, input) {
+      return inGroup(groupId, (group, me) => {
+        if (group.keys[key]) return group.keys[key];
+        if (typeof key !== "string" || key.length < 8) throw new StoreError("invalid", { field: "idempotencyKey" });
+        if (group.archivedAt) throw new StoreError("conflict");
+        const current = new Set(group.members.filter((member) => !member.removedAt).map((member) => member.id));
+        const checked = checkSettlement(input, current);
+        if (!checked.ok) throw new StoreError("invalid", { problems: checked.problems });
+        const now = new Date().toISOString();
+        const confirmed = confirmedAtOnce(me, checked.input.toMemberId);
+        const settlement: Settlement = {
+          ...checked.input,
+          id: newId(),
+          status: confirmed ? "confirmed" : "proposed",
+          createdBy: me.id,
+          createdAt: now,
+          confirmedAt: confirmed ? now : null,
+        };
+        group.settlements = [settlement, ...(group.settlements ?? [])];
+        group.keys[key] = settlement.id;
+        return settlement.id;
+      });
+    },
+
+    async confirmSettlement(groupId, settlementId) {
+      inGroup(groupId, (group, me) => {
+        const settlement = group.settlements?.find((candidate) => candidate.id === settlementId);
+        if (!settlement) throw new StoreError("not_found");
+        if (settlement.status === "confirmed") return;
+        if (settlement.status !== "proposed") throw new StoreError("conflict");
+        if (!mayConfirm(me, settlement)) throw new StoreError("forbidden");
+        settlement.status = "confirmed";
+        settlement.confirmedAt = new Date().toISOString();
+      });
+    },
+
+    async cancelSettlement(groupId, settlementId) {
+      inGroup(groupId, (group, me) => {
+        const settlement = group.settlements?.find((candidate) => candidate.id === settlementId);
+        if (!settlement) throw new StoreError("not_found");
+        if (settlement.status === "cancelled") return;
+        if (!mayCancel(me, settlement)) throw new StoreError("forbidden");
+        settlement.status = "cancelled";
+        settlement.confirmedAt = null;
+      });
+    },
+
+    async addRate(groupId, input) {
+      return inGroup(groupId, (group) => {
+        const checked = checkRate(input);
+        if (!checked.ok) throw new StoreError("invalid", { problems: checked.problems });
+        if ((group.rates ?? []).length >= RATES_PER_GROUP) throw new StoreError("limit");
+        const rate: Rate = { ...checked.input, id: newId(), createdAt: new Date().toISOString() };
+        group.rates = [rate, ...(group.rates ?? [])];
+        return rate.id;
+      });
+    },
+
+    async createReceiptExpense(groupId, key, input) {
+      return inGroup(groupId, (group, me) => {
+        if (group.keys[key]) return group.keys[key];
+        const current = new Set(group.members.filter((member) => !member.removedAt).map((member) => member.id));
+        const built = buildReceiptExpense(input, current);
+        if (!built.ok) throw new StoreError("invalid", { problems: built.problems, lines: built.lines });
+        const earlier = group.receipts?.[built.contentHash];
+        const stillCounts = group.expenses.some((expense) => expense.id === earlier && expense.status === "active");
+        if (stillCounts && (input as { allowDuplicate?: unknown }).allowDuplicate !== true) throw new StoreError("duplicate_receipt");
+        const id = store(group, me, key, built.expense);
+        group.expenses.find((expense) => expense.id === id)!.receipt = { lines: built.lines };
+        group.receipts = { ...group.receipts, [built.contentHash]: id };
+        return id;
       });
     },
 

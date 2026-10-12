@@ -116,3 +116,10 @@ The database: a Supabase project of Splitly's own. Migrations are applied with `
 `splitly_meta.migrations`); all three are applied. The schema `splitly` is not
 exposed through Supabase's own API, has row security on every table and grants
 nothing to `anon` or `authenticated`: only the server's own connection reads it.
+
+## Stage 3: nothing new to configure
+
+The scanner needs no variables and no migration (its tables were part of the
+first schema). `npm run build` copies the reader's files into `public/ocr`
+first; they are served as static files (the largest is about 4 MB). Not
+deployed until the owner says so.

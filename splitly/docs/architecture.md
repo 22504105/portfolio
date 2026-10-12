@@ -147,3 +147,74 @@ docs/           Brief, architecture, security, design system, deployment
   no horizontal overflow, touch targets, headers, no dead controls.
 - `npm run typecheck`, `npm run lint`, `npm run format:check`.
 - CI: `.github/workflows/splitly.yml` at the repository root.
+
+## 9. The receipt scanner (stage 3)
+
+One path from paper to expense, each step its own piece of code:
+
+| Step          | Where                      | What it does                                                                                                         |
+| ------------- | -------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| Photo         | `lib/receipt/image.ts`     | Checks type, size and dimensions; redraws on a canvas (dropping the file's own data), turns, sharpens                |
+| Reading       | `lib/receipt/ocr.ts`       | Tesseract in a worker, from files this site serves; words are put into rows by their place on the page               |
+| Understanding | `lib/receipt/parse.ts`     | Rows into bought lines, discounts, service, tip, the printed total, tax already inside prices; never guesses a price |
+| Naming        | `lib/receipt/glossary.ts`  | The word list; the person's own corrections first; unknown names stay as printed                                     |
+| Working draft | `components/scan/draft.ts` | What the person edits; totals and the difference from the printed total                                              |
+| Shares        | `lib/receipt/build.ts`     | Lines and who had them into an expense that balances; the one function the screen, the demo and the server all run   |
+| Storing       | `lib/server/service.ts`    | Receipt, expense, lines and each person's part of each line in one transaction                                       |
+
+Rules worth knowing:
+
+- **A line's leftover unit goes to the first person listed**, as everywhere
+  else. **An adjustment with nobody named** (discount, tax, service, tip,
+  correction) is spread in proportion to what each person took of the bought
+  lines. The expense's total is the sum of its lines, and each person owes the
+  sum of their parts: the three cannot disagree, and the database checks it
+  again (a line partly given out is refused at commit).
+- **Tax printed as already inside the prices** (Turkish KDV, Russian НДС) is
+  shown for information and not added. A receipt whose tax is on top needs a
+  tax line added by hand; the mismatch with the printed total says so.
+- **The photo is prepared without loss** (PNG). Re-encoding it as a JPEG
+  smeared small print enough to change digits.
+- **The reader's files are not in the repository.** `scripts/ocr-assets.mjs`
+  copies the worker, the engine and three languages' data (about 21 MB) from
+  the pinned packages into `public/ocr` before every `dev` and `build`.
+- **Two readings, one result.** The photo is prepared twice (`plain`, and
+  `evened`: enlarged if small, paper tone and shadows divided out) and read
+  twice by one worker; `mergeReadings` matches rows by their amounts, keeps a
+  row either reading found, and of two names takes the one that reads more
+  like words. If one reading alone adds up to the printed total and the
+  combination does not, that reading's rows are used.
+- **A slanted photo**: words are put into rows by position after the page's
+  slant is found (the angle at which they fall into the fewest rows).
+- **Till numbers are not names**: a run of five or more digits is a code and
+  is dropped, with whatever is glued to digits right after it; sizes ("1LT",
+  "20x30") stay. A price whose name cannot be read is kept without a name,
+  marked as doubtful, for the person to name.
+- **Starred prices** ("*94,51") come out of the recogniser as "x94,51" or
+  "<4,00": the mark is recognised at the end of a row and removed.
+- **Layout mode**: one block read row by row. The "single column" mode read a
+  receipt as two columns, names and then prices.
+
+## 10. Debts, payments, rates, analytics (stage 4)
+
+| What                         | Where                      | Rule                                                                                                                                  |
+| ---------------------------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| Where everyone stands        | `lib/balances/net.ts`      | paid − owed + paid to others to settle − received to settle; only confirmed payments; zero-sum per currency                           |
+| Who should pay whom          | `lib/balances/debts.ts`    | "Simplified": largest debtor to largest creditor, ties by the group's order. "All debts": pair by pair, from the expenses they shared |
+| Payments and who may do what | `lib/balances/settle.ts`   | Recorded by the receiver or a manager: counts at once. By the payer: waits for one of them. Cancelled is final                        |
+| Rates and conversion         | `lib/money/fx.ts`          | Exact decimal text; the rate for a day is the latest recorded on or before it; halves round away from zero                            |
+| What was spent               | `lib/analytics/summary.ts` | In the group's currency; an expense with no rate for its day is left out and counted, never guessed                                   |
+
+- **The sign of a payment.** The brief words it as "plus incoming, minus
+  outgoing". With net meaning "owed to me", paying someone must bring my net
+  up towards zero, and being paid must bring it down: so it is plus outgoing,
+  minus incoming, and the tests pin it.
+- **Pair-by-pair debts** give every payer back exactly what they paid: each
+  person's share is spread over the payers in proportion to what is still to
+  be given back to each, so no unit goes astray.
+- **Old figures do not move.** A rate has a day and is never edited; adding a
+  rate for a later day changes nothing about earlier expenses. A rate recorded
+  only the other way round is turned over (to twelve significant digits).
+- **No new tables**: payments, rates and the log were in the first schema. The
+  activity screen is derived from expenses and payments, the same for the demo
+  and for accounts.

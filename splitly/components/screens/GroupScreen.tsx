@@ -12,7 +12,10 @@ import type { Expense, Group, Invite, Member } from "@/lib/domain/types";
 import { fill } from "@/lib/i18n";
 import { formatMoney } from "@/lib/money/amount";
 import { cn } from "@/lib/utils";
+import { AnalyticsView } from "./AnalyticsView";
+import { DebtsTab } from "./DebtsTab";
 import { ExpenseRow, formatDay, MyBalance } from "./parts";
+import { ExportButton, RatesSection } from "./RatesSection";
 
 /** One group, after the concept: its people's faces, tabs, everyone's balance and what was spent. */
 export function GroupScreen() {
@@ -111,7 +114,7 @@ function GroupView({ group }: { group: Group }) {
                     <Plus aria-hidden="true" className="size-5" />
                     {t.group.addExpense}
                   </Link>
-                  <Link href={`${base}/scan`} className={buttonClass("secondary")}>
+                  <Link href={`${base}/scan?group=${group.id}`} className={buttonClass("secondary")}>
                     <ScanLine aria-hidden="true" className="size-5" />
                     {t.home.scan}
                   </Link>
@@ -122,11 +125,12 @@ function GroupView({ group }: { group: Group }) {
             <Expenses {...section} />
           </>
         )}
-        {tab === "debts" && <Later text={t.group.debtsLater} />}
-        {tab === "analytics" && <Later text={t.group.analyticsLater} />}
+        {tab === "debts" && <DebtsTab group={group} me={me} onFailure={setFailure} />}
+        {tab === "analytics" && <AnalyticsView group={group} />}
         {tab === "settings" && (
           <>
             <People {...section} />
+            <RatesSection group={group} onFailure={setFailure} />
             <Settings {...section} />
           </>
         )}
@@ -135,14 +139,9 @@ function GroupView({ group }: { group: Group }) {
   );
 }
 
-/** A part of the group that a later stage builds: said plainly, with nothing made to look as if it worked. */
-function Later({ text }: { text: string }) {
-  return <p className="card text-ink-muted mt-5 p-5">{text}</p>;
-}
-
 function Balances({ group }: { group: Group }) {
   const { t, locale } = useApp();
-  const nets = netsOf(group.expenses);
+  const nets = netsOf(group.expenses, group.settlements);
   // Everyone still in the group, and anyone who left with something still owed either way.
   const standing = group.members.filter(
     (member) => !member.removedAt || Object.values(nets).some((byMember) => (byMember[member.id] ?? 0) !== 0),
@@ -299,6 +298,29 @@ function Expenses({ group, me, manages, onFailure }: SectionProps) {
                         ))}
                       </div>
                     </dl>
+                    {expense.receipt && (
+                      <div className="mt-4">
+                        <p className="type-label text-ink-muted mb-1.5">{t.scan.fromReceipt}</p>
+                        <ul className="type-small flex flex-col gap-1">
+                          {expense.receipt.lines.map((line, index) => (
+                            <li key={index} className="flex justify-between gap-3">
+                              <span className="min-w-0 break-words">
+                                {line.displayLabel}
+                                <span className="text-ink-muted">
+                                  {" · "}
+                                  {line.allocations.length === group.members.filter((member) => !member.removedAt).length
+                                    ? fill(t.scan.everyone, { n: line.allocations.length })
+                                    : line.allocations.map((share) => names.get(share.memberId)).join(", ")}
+                                </span>
+                              </span>
+                              <span className="shrink-0 tabular-nums">
+                                {formatMoney(line.lineTotalMinor, expense.currency, { locale })}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                     {expense.category && <p className="type-small text-ink-muted mt-3">{t.expense.categories[expense.category]}</p>}
                     {editable && (
                       <div className="mt-4 flex flex-wrap items-start gap-2">
@@ -595,6 +617,7 @@ function Settings({ group, me, manages, onFailure }: SectionProps) {
             {!group.archivedAt && <p className="type-small text-ink-muted">{t.group.archiveHint}</p>}
           </div>
         )}
+        <ExportButton group={group} />
         {me.role === "owner" ? (
           <Confirm
             label={t.group.delete}

@@ -8,9 +8,10 @@ const development = process.env.NODE_ENV !== "production";
 // "these sites only", so frame-ancestors does the job alone.)
 const contentSecurityPolicy = [
   "default-src 'self'",
+  // 'wasm-unsafe-eval' lets the receipt reader's engine (WebAssembly, served by this site) be compiled; it allows no other kind of eval.
   // Next.js starts pages with inline scripts. Telegram's own script is the one outside script allowed:
   // it is how a Mini App learns who opened it, and it is loaded only when Telegram opened the page.
-  `script-src 'self' 'unsafe-inline' https://telegram.org${development ? " 'unsafe-eval'" : ""}`,
+  `script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://telegram.org${development ? " 'unsafe-eval'" : ""}`,
   "style-src 'self' 'unsafe-inline'",
   // Profile photos come straight from Telegram's servers; nothing else outside the site may be shown.
   "img-src 'self' data: blob: https://t.me https://*.telegram.org https://*.telesco.pe https://*.telegram-cdn.org",

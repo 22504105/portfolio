@@ -180,7 +180,11 @@ function Editor({ group, editing }: { group: Group; editing: Expense | undefined
       router.push(`${base}/groups/${group.id}`);
     } catch (caught) {
       const listed = caught instanceof StoreError ? (caught.details.problems ?? []) : [];
-      setFailure(listed.length > 0 ? listed.map((problem) => t.expense.problems[problem]).join(" ") : errorText(t, caught));
+      setFailure(
+        listed.length > 0
+          ? listed.map((problem) => (t.expense.problems as Record<string, string>)[problem] ?? t.errors.invalid).join(" ")
+          : errorText(t, caught),
+      );
       setBusy(false);
     }
   }

@@ -27,8 +27,8 @@ describe("the two languages", () => {
     for (const text of [...texts(en), ...texts(ru)]) expect(text.trim().length).toBeGreaterThan(0);
     // Russian text is in Cyrillic, apart from the product's name and the language names themselves.
     const latinOnly = texts(ru).filter((text) => !/[а-яё]/i.test(text));
-    // …and one pattern that is all placeholders.
-    expect(latinOnly.sort()).toEqual(["English", "Splitly", "{name}: {what}"]);
+    // …and two patterns that are all placeholders.
+    expect(latinOnly.sort()).toEqual(["English", "Splitly", "{name}: {item}", "{name}: {what}"]);
   });
 
   it("use the same placeholders", () => {

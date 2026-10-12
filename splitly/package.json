@@ -3,7 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "predev": "node scripts/ocr-assets.mjs",
     "dev": "next dev",
+    "prebuild": "node scripts/ocr-assets.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
@@ -16,6 +18,9 @@
     "db:migrate": "node scripts/migrate.mjs"
   },
   "dependencies": {
+    "@tesseract.js-data/eng": "1.0.0",
+    "@tesseract.js-data/rus": "1.0.0",
+    "@tesseract.js-data/tur": "1.0.0",
     "clsx": "2.1.1",
     "decimal.js": "10.6.0",
     "lucide-react": "1.55.0",
@@ -24,6 +29,7 @@
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "tailwind-merge": "3.7.0",
+    "tesseract.js": "7.0.0",
     "zod": "4.6.6"
   },
   "devDependencies": {

@@ -10,7 +10,12 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   reporter: process.env.CI ? "github" : "list",
-  use: { baseURL: `http://localhost:${PORT}`, trace: "retain-on-failure" },
+  use: {
+    baseURL: `http://localhost:${PORT}`,
+    trace: "retain-on-failure",
+    // A stand-in camera, so that the scanner's camera screen can be opened without a real one or a question to answer.
+    launchOptions: { args: ["--use-fake-ui-for-media-stream", "--use-fake-device-for-media-stream"] },
+  },
   projects: [
     // A phone first: that is where Splitly lives.
     { name: "phone", use: { ...devices["Pixel 7"], channel } },

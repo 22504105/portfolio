@@ -103,6 +103,19 @@ export function seedGroups(locale: string, now = new Date()): DemoGroup[] {
         member("t-kerem", t.kerem, { guest: true }),
       ],
       keys: {},
+      settlements: [
+        {
+          id: "t-s1",
+          fromMemberId: "t-deniz",
+          toMemberId: "t-you",
+          currency: "TRY",
+          amountMinor: 30_000,
+          status: "proposed",
+          createdBy: "t-deniz",
+          createdAt: new Date(now.getTime() - 3_600_000).toISOString(),
+          confirmedAt: null,
+        },
+      ],
       expenses: [
         expense("t-e1", t.baklava, "food", 0, "TRY", 42_000, [["t-mira", 42_000]], "exact", [
           ["t-you", 12_000],
@@ -142,6 +155,16 @@ export function seedGroups(locale: string, now = new Date()): DemoGroup[] {
       archivedAt: null,
       members: [member("f-you", t.you, { self: true, role: "owner" }), member("f-nika", "Nika"), member("f-sam", "Sam")],
       keys: {},
+      rates: [
+        {
+          id: "f-r1",
+          from: "EUR",
+          to: "TRY",
+          rate: "36.5",
+          effectiveDate: day(30),
+          createdAt: new Date(now.getTime() - 30 * 86_400_000).toISOString(),
+        },
+      ],
       expenses: [
         expense("f-e1", t.supplies, "groceries", 1, "TRY", 64_000, [["f-you", 64_000]], "equal", everyone(flat)),
         expense("f-e2", t.groceries, "groceries", 2, "EUR", 8_640, [["f-sam", 8_640]], "equal", everyone(flat)),

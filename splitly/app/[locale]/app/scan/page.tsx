@@ -1,12 +1,17 @@
 import type { Metadata } from "next";
-import { StageNotice } from "@/components/shell/StageNotice";
+import { Suspense } from "react";
+import { ScanScreen } from "@/components/scan/ScanScreen";
 import { pageLocale } from "@/lib/page";
 
 export async function generateMetadata({ params }: PageProps<"/[locale]/app/scan">): Promise<Metadata> {
   return { title: (await pageLocale(params)).dictionary.scan.title };
 }
 
-export default async function Page({ params }: PageProps<"/[locale]/app/scan">) {
-  const { dictionary } = await pageLocale(params);
-  return <StageNotice title={dictionary.scan.title} lead={dictionary.scan.lead} stage={3} labels={dictionary.stage} />;
+// The scanner works in the browser: the camera, the reading of the photo, the address that says which group.
+export default function Page() {
+  return (
+    <Suspense>
+      <ScanScreen />
+    </Suspense>
+  );
 }

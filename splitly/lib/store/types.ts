@@ -1,4 +1,6 @@
 import type { Group, GroupSummary, Invite, Role } from "@/lib/domain/types";
+import type { RateProblem, SettlementProblem } from "@/lib/balances/settle";
+import type { ReceiptProblem } from "@/lib/receipt/build";
 import type { ExpenseProblem } from "@/lib/split/expense";
 
 // Where a screen gets its data and sends its changes. There are two of these:
@@ -7,12 +9,26 @@ import type { ExpenseProblem } from "@/lib/split/expense";
 // cannot tell which they have.
 
 export type StoreErrorCode =
-  "not_found" | "forbidden" | "invalid" | "limit" | "conflict" | "rate_limited" | "unauthenticated" | "offline" | "server_error";
+  | "duplicate_receipt"
+  | "not_found"
+  | "forbidden"
+  | "invalid"
+  | "limit"
+  | "conflict"
+  | "rate_limited"
+  | "unauthenticated"
+  | "offline"
+  | "server_error";
 
 export class StoreError extends Error {
   constructor(
     public code: StoreErrorCode,
-    public details: { problems?: ExpenseProblem[]; differences?: Partial<Record<ExpenseProblem, number>>; field?: string } = {},
+    public details: {
+      problems?: (ExpenseProblem | ReceiptProblem | SettlementProblem | RateProblem)[];
+      differences?: Partial<Record<ExpenseProblem, number>>;
+      field?: string;
+      lines?: number[];
+    } = {},
   ) {
     super(code);
   }
@@ -49,4 +65,23 @@ export interface Store {
   /** Writes a new expense in place of an old one, which stays on record as replaced. */
   replaceExpense(groupId: string, expenseId: string, key: string, input: unknown): Promise<string>;
   cancelExpense(groupId: string, expenseId: string): Promise<void>;
+
+  /**
+   * Turns an assigned receipt into an expense with its lines. Everyone's share is worked out by the store from who
+   * each line was given to. The same photo twice in one group is refused with "duplicate_receipt", unless the
+   * input says the person has been told and wants it anyway.
+   */
+  createReceiptExpense(groupId: string, key: string, input: unknown): Promise<string>;
+
+  /**
+   * Records a payment from one member to another. It counts at once if the person recording it is the one who was
+   * paid, or manages the group; otherwise it waits, changing nothing, until one of them confirms it.
+   */
+  createSettlement(groupId: string, key: string, input: unknown): Promise<string>;
+  /** Says a proposed payment did happen. For the person who was paid, or a manager. */
+  confirmSettlement(groupId: string, settlementId: string): Promise<void>;
+  /** Withdraws a proposed payment, or takes a confirmed one back. It stays on record as cancelled. */
+  cancelSettlement(groupId: string, settlementId: string): Promise<void>;
+  /** Records an exchange rate for the group, from a day on. A rate is never changed afterwards: a new one is added. */
+  addRate(groupId: string, input: unknown): Promise<string>;
 }

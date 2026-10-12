@@ -643,7 +643,7 @@ describe("the edges of the API", () => {
     expect((await call("POST", "groups", { token: ann.token, raw: "{not json" })).status).toBe(400);
     expect((await call("POST", "groups", { token: ann.token, raw: "[1,2]" })).status).toBe(400);
     expect(
-      (await call("POST", "groups", { token: ann.token, raw: JSON.stringify({ name: "x".repeat(70_000), baseCurrency: "TRY" }) })).status,
+      (await call("POST", "groups", { token: ann.token, raw: JSON.stringify({ name: "x".repeat(140_000), baseCurrency: "TRY" }) })).status,
     ).toBe(413);
     expect((await call("GET", "passwords", { token: ann.token })).status).toBe(404);
     expect((await call("POST", "groups/not-a-uuid/expenses", { token: ann.token, body: {} })).status).toBe(404);
@@ -775,5 +775,385 @@ describe("faces", () => {
     await expect(
       t.db.query("update splitly.users set photo_url = $2 where id = $1", [ann.userId, `https://t.me/${"x".repeat(600)}`]),
     ).rejects.toMatchObject({ code: "23514" });
+  });
+});
+
+describe("receipts", () => {
+  const line = (displayLabel: string, lineTotalMinor: number, assigned: string[], extra: Record<string, unknown> = {}) => ({
+    kind: "item",
+    originalLabel: displayLabel.toUpperCase(),
+    displayLabel,
+    translationSource: "glossary",
+    quantity: "1",
+    lineTotalMinor,
+    confidence: 88 as number | null,
+    manualReviewed: false,
+    assigned: assigned.map((memberId) => ({ memberId, weight: 1 })),
+    ...extra,
+  });
+  const receipt = (payer: string, lines: ReturnType<typeof line>[], hash = "ab".repeat(32), extra: Record<string, unknown> = {}) => ({
+    description: "Migros",
+    category: "groceries",
+    date: "2026-10-12",
+    currency: "TRY",
+    payers: [{ memberId: payer, paidMinor: lines.reduce((sum, item) => sum + item.lineTotalMinor, 0) }],
+    receipt: { contentHash: hash, mimeType: "image/jpeg", lines },
+    ...extra,
+  });
+
+  async function pair() {
+    const [ann, bob] = await Promise.all([person("Ann"), person("Bob")]);
+    const id = (await call("POST", "groups", { token: ann.token, body: { name: "Flat", baseCurrency: "TRY" } })).body.id as string;
+    const invite = (await call("POST", `groups/${id}/invites`, { token: ann.token, body: {} })).body.invite.token;
+    await call("POST", "invites/accept", { token: bob.token, body: { token: invite } });
+    const members = (await groupOf(ann.token, id)).members;
+    return { ann, bob, id, annM: members[0].id as string, bobM: members[1].id as string };
+  }
+
+  it("a receipt becomes one expense with its lines; every share is worked out by the server and it all balances", async () => {
+    const { ann, bob, id, annM, bobM } = await pair();
+    const lines = [
+      line("Milk", 8000, [annM, bobM]),
+      line("Chicken", 36_001, [bobM], { quantity: "0.485", confidence: 41 }),
+      line("Bread", 4000, [annM, bobM], { translationSource: "user", manualReviewed: true }),
+      line("Discount", -5000, [], { kind: "discount", confidence: null }),
+    ];
+    // Shares sent by a client are not even looked at.
+    const sent = { ...receipt(annM, lines), splits: [{ memberId: annM, owedMinor: 1 }], totalMinor: 5 };
+    const created = await call("POST", `groups/${id}/receipts`, {
+      token: ann.token,
+      body: { idempotencyKey: randomUUID(), receipt: sent },
+    });
+    expect(created).toMatchObject({ status: 200, body: { repeated: false } });
+
+    const group = await groupOf(bob.token, id);
+    const stored = group.expenses[0];
+    expect(stored).toMatchObject({ description: "Migros", totalMinor: 43_001, status: "active", category: "groceries" });
+    // Ann took 6,000 of the 48,001 bought, Bob 42,001: the discount follows those proportions.
+    expect(
+      stored.receipt.lines.map((item: any) => [
+        item.kind,
+        item.displayLabel,
+        item.quantity,
+        item.lineTotalMinor,
+        item.method,
+        item.allocations.map((share: any) => share.shareMinor),
+      ]),
+    ).toEqual([
+      ["item", "Milk", "1", 8000, "equal", [4000, 4000]],
+      ["item", "Chicken", "0.485", 36_001, "equal", [36_001]],
+      ["item", "Bread", "1", 4000, "equal", [2000, 2000]],
+      ["discount", "Discount", "1", -5000, "shares", [-625, -4375]],
+    ]);
+    expect(
+      stored.receipt.lines.map((item: any) => [item.originalLabel, item.translationSource, item.confidence, item.manualReviewed]),
+    ).toEqual([
+      ["MILK", "glossary", 88, false],
+      ["CHICKEN", "glossary", 41, false],
+      ["BREAD", "user", 88, true],
+      ["DISCOUNT", "glossary", null, false],
+    ]);
+    expect(stored.splits).toEqual([
+      { memberId: annM, owedMinor: 5375 },
+      { memberId: bobM, owedMinor: 37_626 },
+    ]);
+    expect((await groupOf(ann.token, id)).myNet).toEqual({ TRY: 37_626 });
+
+    // In the database: every line fully given out, and the lines add up to the expense.
+    const check = await t.db.query(
+      `select (select sum(line_total_minor)::int from splitly.receipt_items where group_id = $1) as lines,
+              (select sum(share_minor)::int from splitly.receipt_item_allocations where group_id = $1) as shares,
+              (select total_minor::int from splitly.expenses where group_id = $1) as total,
+              (select count(*)::int from splitly.receipts where group_id = $1 and status = 'confirmed') as receipts`,
+      [id],
+    );
+    expect(check.rows[0]).toEqual({ lines: 43_001, shares: 43_001, total: 43_001, receipts: 1 });
+  });
+
+  it("the same photo twice is noticed, and can be added again only on purpose; the same submission twice is one expense", async () => {
+    const { ann, id, annM, bobM } = await pair();
+    const body = { idempotencyKey: randomUUID(), receipt: receipt(annM, [line("Pizza", 1000, [annM, bobM])], "cd".repeat(32)) };
+    const first = await call("POST", `groups/${id}/receipts`, { token: ann.token, body });
+    expect((await call("POST", `groups/${id}/receipts`, { token: ann.token, body })).body).toEqual({ id: first.body.id, repeated: true });
+
+    const again = await call("POST", `groups/${id}/receipts`, { token: ann.token, body: { ...body, idempotencyKey: randomUUID() } });
+    expect([again.status, again.body]).toEqual([409, { error: "duplicate_receipt" }]);
+    expect((await groupOf(ann.token, id)).expenses).toHaveLength(1);
+
+    const onPurpose = await call("POST", `groups/${id}/receipts`, {
+      token: ann.token,
+      body: { idempotencyKey: randomUUID(), receipt: { ...body.receipt, allowDuplicate: true } },
+    });
+    expect(onPurpose.status).toBe(200);
+    expect((await groupOf(ann.token, id)).expenses).toHaveLength(2);
+
+    // Once both are cancelled, the photo is no longer "already there".
+    for (const expense of (await groupOf(ann.token, id)).expenses)
+      await call("DELETE", `groups/${id}/expenses/${expense.id}`, { token: ann.token });
+    expect(
+      (await call("POST", `groups/${id}/receipts`, { token: ann.token, body: { ...body, idempotencyKey: randomUUID() } })).status,
+    ).toBe(200);
+  });
+
+  it("a receipt that is not ready is refused whole, with which lines are wrong, and nothing is stored", async () => {
+    const { ann, id, annM, bobM } = await pair();
+    const stranger = await person("Stranger");
+    const other = (await call("POST", "groups", { token: stranger.token, body: { name: "Other", baseCurrency: "TRY" } })).body.id;
+    const outsider = (await groupOf(stranger.token, other)).members[0].id;
+
+    const attempts: [unknown, string[], number[]][] = [
+      [receipt(annM, [line("Milk", 8000, [annM]), line("Bread", 4000, [])]), ["line_unassigned"], [1]],
+      [receipt(annM, [line("Milk", 8000, [outsider])]), ["assignee_unknown", "line_unassigned"], [0]],
+      [receipt(annM, [line("Milk", 0, [annM])]), ["line_amount"], [0]],
+      [{ ...receipt(annM, [line("Milk", 8000, [annM, bobM])]), payers: [{ memberId: annM, paidMinor: 7000 }] }, ["payers_sum"], []],
+      [{ ...receipt(annM, [line("Milk", 8000, [annM])]), payers: [{ memberId: outsider, paidMinor: 8000 }] }, ["payer_unknown"], []],
+      [receipt(annM, [line("Milk", 8000, [annM])], "not-a-hash"), ["receipt_hash"], []],
+      [receipt(annM, []), ["no_lines"], []],
+    ];
+    for (const [sent, problems, lines] of attempts) {
+      const result = await call("POST", `groups/${id}/receipts`, {
+        token: ann.token,
+        body: { idempotencyKey: randomUUID(), receipt: sent },
+      });
+      expect([result.status, result.body.details?.problems?.sort(), result.body.details?.lines]).toEqual([422, problems, lines]);
+    }
+    for (const garbage of [
+      {},
+      { idempotencyKey: randomUUID() },
+      { idempotencyKey: randomUUID(), receipt: "photo" },
+      { idempotencyKey: "x", receipt: receipt(annM, [line("Milk", 1, [annM])]) },
+    ]) {
+      expect((await call("POST", `groups/${id}/receipts`, { token: ann.token, body: garbage })).status).toBe(422);
+    }
+    const counts = await t.db.query(
+      "select (select count(*)::int from splitly.receipts where group_id = $1) receipts, (select count(*)::int from splitly.expenses where group_id = $1) expenses",
+      [id],
+    );
+    expect(counts.rows[0]).toEqual({ receipts: 0, expenses: 0 });
+
+    // And someone outside the group cannot add a receipt to it, or learn that it exists.
+    const outside = await call("POST", `groups/${id}/receipts`, {
+      token: stranger.token,
+      body: { idempotencyKey: randomUUID(), receipt: receipt(annM, [line("Milk", 1, [annM])]) },
+    });
+    expect([outside.status, outside.body]).toEqual([404, { error: "not_found" }]);
+  });
+
+  it("the database itself refuses a line that is only partly given out", async () => {
+    const { ann, id, annM, bobM } = await pair();
+    await call("POST", `groups/${id}/receipts`, {
+      token: ann.token,
+      body: { idempotencyKey: randomUUID(), receipt: receipt(annM, [line("Pizza", 1000, [annM, bobM])], "ef".repeat(32)) },
+    });
+    await expect(
+      t.db.query("update splitly.receipt_item_allocations set share_minor = share_minor - 1 where group_id = $1 and member_id = $2", [
+        id,
+        annM,
+      ]),
+    ).rejects.toMatchObject({ code: "23514" });
+  });
+
+  it("an expense made from a receipt can be cancelled like any other, and its lines stay on record", async () => {
+    const { ann, id, annM, bobM } = await pair();
+    const created = await call("POST", `groups/${id}/receipts`, {
+      token: ann.token,
+      body: { idempotencyKey: randomUUID(), receipt: receipt(annM, [line("Pizza", 1000, [annM, bobM])], "12".repeat(32)) },
+    });
+    expect((await call("DELETE", `groups/${id}/expenses/${created.body.id}`, { token: ann.token })).status).toBe(200);
+    const group = await groupOf(ann.token, id);
+    expect([group.expenses[0].status, group.expenses[0].receipt.lines.length, group.myNet]).toEqual(["cancelled", 1, {}]);
+  });
+});
+
+describe("settling up", () => {
+  /** Ann (owner), Bob and Cy (members), and a guest; Ann paid 1,200 for the three with accounts: Bob and Cy owe her 400 each. */
+  async function group() {
+    const [ann, bob, cy] = await Promise.all([person("Ann"), person("Bob"), person("Cy")]);
+    const id = (await call("POST", "groups", { token: ann.token, body: { name: "Trip", baseCurrency: "TRY" } })).body.id as string;
+    const invite = (await call("POST", `groups/${id}/invites`, { token: ann.token, body: {} })).body.invite.token;
+    await call("POST", "invites/accept", { token: bob.token, body: { token: invite } });
+    await call("POST", "invites/accept", { token: cy.token, body: { token: invite } });
+    const guest = (await call("POST", `groups/${id}/members`, { token: ann.token, body: { name: "Guest" } })).body.id as string;
+    const members = (await groupOf(ann.token, id)).members;
+    const [annM, bobM, cyM] = ["Ann", "Bob", "Cy"].map((name) => members.find((member: any) => member.name === name).id as string);
+    await call("POST", `groups/${id}/expenses`, {
+      token: ann.token,
+      body: { idempotencyKey: randomUUID(), expense: expense(annM, [annM, bobM, cyM], 1200) },
+    });
+    const pay = (token: string, fromMemberId: string, toMemberId: string, amountMinor: number, key = randomUUID(), currency = "TRY") =>
+      call("POST", `groups/${id}/settlements`, {
+        token,
+        body: { idempotencyKey: key, settlement: { fromMemberId, toMemberId, currency, amountMinor } },
+      });
+    const net = async (token: string) => (await groupOf(token, id)).myNet;
+    return { ann, bob, cy, id, annM, bobM, cyM, guest, pay, net };
+  }
+
+  it("a payment recorded by the one who paid waits for the other side, and changes nothing until confirmed", async () => {
+    const { ann, bob, cy, id, annM, bobM, pay, net } = await group();
+    const proposed = await pay(bob.token, bobM, annM, 400);
+    expect(proposed).toMatchObject({ status: 200, body: { repeated: false } });
+    let settlement = (await groupOf(ann.token, id)).settlements[0];
+    expect(settlement).toMatchObject({
+      fromMemberId: bobM,
+      toMemberId: annM,
+      amountMinor: 400,
+      currency: "TRY",
+      status: "proposed",
+      confirmedAt: null,
+      createdBy: bobM,
+    });
+    expect([await net(ann.token), await net(bob.token)]).toEqual([{ TRY: 800 }, { TRY: -400 }]);
+
+    // Neither the payer nor a bystander can confirm it; the one who was paid can.
+    expect((await call("POST", `groups/${id}/settlements/${settlement.id}/confirm`, { token: bob.token, body: {} })).status).toBe(403);
+    expect((await call("POST", `groups/${id}/settlements/${settlement.id}/confirm`, { token: cy.token, body: {} })).status).toBe(403);
+    expect((await call("POST", `groups/${id}/settlements/${settlement.id}/confirm`, { token: ann.token, body: {} })).status).toBe(200);
+    // Confirming again is the same as once.
+    expect((await call("POST", `groups/${id}/settlements/${settlement.id}/confirm`, { token: ann.token, body: {} })).status).toBe(200);
+    settlement = (await groupOf(ann.token, id)).settlements[0];
+    expect([settlement.status, settlement.confirmedAt !== null]).toEqual(["confirmed", true]);
+    expect([await net(ann.token), await net(bob.token), await net(cy.token)]).toEqual([{ TRY: 400 }, {}, { TRY: -400 }]);
+  });
+
+  it("recorded by the one who was paid, or by a manager, it counts at once; part payments leave the rest", async () => {
+    const { ann, bob, cy, id, annM, bobM, cyM, pay, net } = await group();
+    // Ann says Cy gave her 150 of the 400.
+    await pay(ann.token, cyM, annM, 150);
+    expect([(await groupOf(cy.token, id)).settlements[0].status, await net(cy.token)]).toEqual(["confirmed", { TRY: -250 }]);
+    // Ann, who manages the group, records a payment between two other people.
+    await pay(ann.token, bobM, cyM, 50);
+    expect([await net(bob.token), await net(cy.token)]).toEqual([{ TRY: -350 }, { TRY: -300 }]);
+    // Paying more than is owed is allowed and turns the balance round.
+    await pay(ann.token, bobM, annM, 500);
+    expect(await net(bob.token)).toEqual({ TRY: 150 });
+    const all = await t.db.query(
+      "select coalesce(sum(case when status = 'confirmed' then amount_minor end), 0)::int as confirmed, count(*)::int as n from splitly.settlements where group_id = $1",
+      [id],
+    );
+    expect(all.rows[0]).toEqual({ confirmed: 700, n: 3 });
+  });
+
+  it("the same submission twice is one payment", async () => {
+    const { ann, id, annM, bobM, pay, net } = await group();
+    const key = randomUUID();
+    const first = await pay(ann.token, bobM, annM, 400, key);
+    expect((await pay(ann.token, bobM, annM, 400, key)).body).toEqual({ id: first.body.id, repeated: true });
+    expect((await groupOf(ann.token, id)).settlements).toHaveLength(1);
+    expect(await net(ann.token)).toEqual({ TRY: 400 });
+  });
+
+  it("a proposed payment can be withdrawn by those involved; a confirmed one only taken back by the receiver or a manager", async () => {
+    const { ann, bob, cy, id, annM, bobM, cyM, pay, net } = await group();
+    const mine = (await pay(bob.token, bobM, annM, 400)).body.id;
+    expect((await call("DELETE", `groups/${id}/settlements/${mine}`, { token: cy.token })).status).toBe(403);
+    expect((await call("DELETE", `groups/${id}/settlements/${mine}`, { token: bob.token })).status).toBe(200);
+    expect((await call("DELETE", `groups/${id}/settlements/${mine}`, { token: bob.token })).status).toBe(200);
+    // Cancelled is final: it cannot be confirmed afterwards.
+    expect((await call("POST", `groups/${id}/settlements/${mine}/confirm`, { token: ann.token, body: {} })).status).toBe(409);
+
+    // Cy pays Bob (who is not a manager); Bob confirms; Cy cannot take it back, Bob can.
+    const other = (await pay(cy.token, cyM, bobM, 100)).body.id;
+    await call("POST", `groups/${id}/settlements/${other}/confirm`, { token: bob.token, body: {} });
+    expect(await net(cy.token)).toEqual({ TRY: -300 });
+    expect((await call("DELETE", `groups/${id}/settlements/${other}`, { token: cy.token })).status).toBe(403);
+    expect((await call("DELETE", `groups/${id}/settlements/${other}`, { token: bob.token })).status).toBe(200);
+    expect(await net(cy.token)).toEqual({ TRY: -400 });
+    const states = (await groupOf(ann.token, id)).settlements.map((settlement: any) => [settlement.status, settlement.confirmedAt]);
+    expect(states).toEqual([
+      ["cancelled", null],
+      ["cancelled", null],
+    ]);
+  });
+
+  it("refuses what is not a payment between two current members, and people outside the group entirely", async () => {
+    const { ann, bob, id, annM, bobM, cyM, guest, pay } = await group();
+    const stranger = await person("Stranger");
+    const elsewhere = (await call("POST", "groups", { token: stranger.token, body: { name: "Other", baseCurrency: "TRY" } })).body.id;
+    const outsider = (await groupOf(stranger.token, elsewhere)).members[0].id;
+
+    const bad: [Record<string, unknown>, string[]][] = [
+      [{ fromMemberId: bobM, toMemberId: bobM, currency: "TRY", amountMinor: 100 }, ["same"]],
+      [{ fromMemberId: bobM, toMemberId: outsider, currency: "TRY", amountMinor: 100 }, ["to"]],
+      [{ fromMemberId: outsider, toMemberId: annM, currency: "TRY", amountMinor: 100 }, ["from"]],
+      [{ fromMemberId: bobM, toMemberId: annM, currency: "TRY", amountMinor: 0 }, ["amount"]],
+      [{ fromMemberId: bobM, toMemberId: annM, currency: "TRY", amountMinor: -5 }, ["amount"]],
+      [{ fromMemberId: bobM, toMemberId: annM, currency: "TRY", amountMinor: 10.5 }, ["amount"]],
+      [{ fromMemberId: bobM, toMemberId: annM, currency: "lira", amountMinor: 100 }, ["currency"]],
+      [{}, ["from", "to", "currency", "amount"]],
+    ];
+    for (const [settlement, problems] of bad) {
+      const result = await call("POST", `groups/${id}/settlements`, {
+        token: ann.token,
+        body: { idempotencyKey: randomUUID(), settlement },
+      });
+      expect([result.status, result.body.details?.problems]).toEqual([422, problems]);
+    }
+    // Someone who left takes no part in new payments.
+    await call("DELETE", `groups/${id}/members/${cyM}`, { token: ann.token });
+    expect((await pay(ann.token, cyM, annM, 100)).body.details.problems).toEqual(["from"]);
+    // A person added by name can pay and be paid; a manager records it.
+    expect((await pay(ann.token, guest, annM, 100)).status).toBe(200);
+
+    // From outside, the group and its payments do not exist.
+    const settlementId = (await pay(bob.token, bobM, annM, 100)).body.id;
+    for (const [method, path, body] of [
+      [
+        "POST",
+        `groups/${id}/settlements`,
+        { idempotencyKey: randomUUID(), settlement: { fromMemberId: bobM, toMemberId: annM, currency: "TRY", amountMinor: 1 } },
+      ],
+      ["POST", `groups/${id}/settlements/${settlementId}/confirm`, {}],
+      ["DELETE", `groups/${id}/settlements/${settlementId}`, undefined],
+      ["POST", `groups/${id}/rates`, { from: "EUR", to: "TRY", rate: "36", effectiveDate: "2026-10-01" }],
+    ] as const) {
+      const result = await call(method, path, { token: stranger.token, body });
+      expect([method, result.status, result.body]).toEqual([method, 404, { error: "not_found" }]);
+    }
+    // A payment of another group cannot be reached through this one.
+    expect(
+      (await call("POST", `groups/${elsewhere}/settlements/${settlementId}/confirm`, { token: stranger.token, body: {} })).status,
+    ).toBe(404);
+    expect((await groupOf(ann.token, id)).settlements.find((settlement: any) => settlement.id === settlementId).status).toBe("proposed");
+  });
+
+  it("an archived group takes no new payments", async () => {
+    const { ann, id, annM, bobM, pay } = await group();
+    await call("PATCH", `groups/${id}`, { token: ann.token, body: { archived: true } });
+    expect((await pay(ann.token, bobM, annM, 100)).status).toBe(409);
+  });
+});
+
+describe("exchange rates", () => {
+  it("are recorded per group as exact text with their day, listed newest first, and never changed", async () => {
+    const ann = await person("Ann");
+    const id = (await call("POST", "groups", { token: ann.token, body: { name: "Flat", baseCurrency: "TRY" } })).body.id;
+    const add = (body: unknown) => call("POST", `groups/${id}/rates`, { token: ann.token, body });
+    expect((await add({ from: "EUR", to: "TRY", rate: "34,25", effectiveDate: "2026-09-01" })).status).toBe(200);
+    expect((await add({ from: "EUR", to: "TRY", rate: "36.50", effectiveDate: "2026-10-01" })).status).toBe(200);
+    expect((await add({ from: "USD", to: "TRY", rate: "0.0000000001", effectiveDate: "2026-10-01" })).status).toBe(200);
+
+    const rates = (await groupOf(ann.token, id)).rates;
+    expect(rates.map((rate: any) => [rate.from, rate.to, rate.rate, rate.effectiveDate]).sort()).toEqual([
+      ["EUR", "TRY", "34.25", "2026-09-01"],
+      ["EUR", "TRY", "36.5", "2026-10-01"],
+      ["USD", "TRY", "0.0000000001", "2026-10-01"],
+    ]);
+    expect(rates[0].effectiveDate >= rates[2].effectiveDate).toBe(true);
+
+    for (const [body, problems] of [
+      [{ from: "EUR", to: "EUR", rate: "1", effectiveDate: "2026-10-01" }, ["same"]],
+      [{ from: "EUR", to: "TRY", rate: "0", effectiveDate: "2026-10-01" }, ["rate"]],
+      [{ from: "EUR", to: "TRY", rate: "abc", effectiveDate: "2026-10-01" }, ["rate"]],
+      [{ from: "EUR", to: "TRY", rate: 36.5, effectiveDate: "2026-10-01" }, ["rate"]],
+      [{ from: "euro", to: "TRY", rate: "36", effectiveDate: "2026-02-30" }, ["from", "date"]],
+      [{}, ["from", "to", "rate", "date"]],
+    ] as const) {
+      const result = await add(body);
+      expect([result.status, result.body.details?.problems]).toEqual([422, problems]);
+    }
+    // A recorded rate cannot be altered, even directly in the database.
+    await expect(t.db.query("update splitly.fx_rates set decimal_rate = '1' where group_id = $1", [id])).rejects.toBeTruthy();
+    expect((await t.db.query("select count(*)::int as n from splitly.fx_rates where group_id = $1", [id])).rows[0].n).toBe(3);
   });
 });

@@ -188,3 +188,47 @@ Next.js starts pages with them.
   `/api/v1` at all (a browser test listens for one).
 - Not done: an independent review. This stage was written and reviewed by the
   same agent.
+
+## What stage 3 added, and how it is checked
+
+- **The photo never leaves the device.** It is read in a worker in the page,
+  by an engine and language data served from this site (`/ocr/…`); the content
+  policy allows connections to this site only, and a browser test fails if
+  any request during a scan goes anywhere else or to the data API before the
+  person confirms. What is sent on confirmation: the lines as the person left
+  them, and the photo's SHA-256, to notice the same receipt twice.
+- **No photo is stored anywhere**, and nothing read from one is logged: the
+  activity log holds the total and the number of lines. The file's own data
+  (place, time, device) is dropped when the photo is redrawn.
+- **`'wasm-unsafe-eval'`** was added to the script policy: it lets the engine
+  (WebAssembly from this site) be compiled, and allows no other kind of eval.
+- **Shares are never taken from a client**: the server runs the same function
+  as the screen on the lines and who had them, in one transaction with the
+  expense; a receipt that is not ready is refused whole. Someone outside the
+  group cannot add a receipt to it, or tell that it exists.
+- **Duplicates**: the same photo in the same group, while its expense still
+  counts, is refused unless the person says they mean it.
+- **Limits**: 200 lines a receipt, 200 characters a name, 128 KB a request,
+  15 MB and 12,000 pixels a photo (checked in the browser, where it is read).
+- Checked by: `tests/receipt.test.ts` (parsing in three languages, the word
+  list, 500 generated receipts that must balance), `tests/db/api.test.ts`
+  ("receipts", on a real PostgreSQL), `e2e/scan.spec.ts` (the real recogniser
+  in a real browser), and `scripts/live-check.mjs` against the real database.
+
+## What stage 4 added, and how it is checked
+
+- **Payments** follow the same door as everything else: the session's user
+  must be a current member of the group, and both people in a payment must be
+  current members of that same group. From outside, a group's payments and
+  rates answer exactly like a group that does not exist.
+- **Who may confirm or cancel** is decided on the server by the same function
+  the screen uses to choose which buttons to show (`lib/balances/settle.ts`);
+  hiding a button is never the protection.
+- **A recorded rate cannot be altered**, by the application or by a direct
+  update: the database refuses it.
+- **The export is made in the browser** from what the person can already see.
+  A cell that a spreadsheet would run as a formula is written as plain text.
+- Checked by `tests/debts.test.ts` (2,300 generated cases that must settle to
+  zero, mixed currencies, historical rates, rounding), the "settling up" and
+  "exchange rates" parts of `tests/db/api.test.ts`, `e2e/money.spec.ts`, and
+  `scripts/live-check.mjs` against the real database.
