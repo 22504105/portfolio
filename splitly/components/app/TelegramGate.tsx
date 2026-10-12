@@ -20,7 +20,7 @@ import { AppProvider, type Account } from "./AppProvider";
 type TelegramWebApp = { initData?: string; initDataUnsafe?: { start_param?: string }; ready?: () => void; expand?: () => void };
 type TelegramWindow = Window & { Telegram?: { WebApp?: TelegramWebApp } };
 
-type Session = { token: string; expiresAt: number; displayName: string };
+type Session = { token: string; expiresAt: number; displayName: string; photoUrl: string | null };
 type Phase = "connecting" | "ready" | "outside" | "failed" | "unconfigured" | "offline";
 
 const SESSION_KEY = "splitly-session";
@@ -98,8 +98,16 @@ async function signIn(initData: string): Promise<SignIn> {
   }
   if (response.status === 503) return { phase: "unconfigured" };
   if (!response.ok) return { phase: response.status >= 500 ? "offline" : "failed" };
-  const data = (await response.json()) as { token: string; expiresAt: number; profile: { displayName: string } };
-  return { phase: "ready", session: { token: data.token, expiresAt: data.expiresAt, displayName: data.profile.displayName } };
+  const data = (await response.json()) as { token: string; expiresAt: number; profile: { displayName: string; photoUrl?: string | null } };
+  return {
+    phase: "ready",
+    session: {
+      token: data.token,
+      expiresAt: data.expiresAt,
+      displayName: data.profile.displayName,
+      photoUrl: data.profile.photoUrl ?? null,
+    },
+  };
 }
 
 type GateProps = {
@@ -116,10 +124,12 @@ export function TelegramGate({ locale, dictionary, bot, children }: GateProps) {
   const pathname = usePathname();
   const [phase, setPhase] = useState<Phase>("connecting");
   const [displayName, setDisplayName] = useState("");
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
 
   const open = useCallback((next: Session) => {
     remember(next);
     setDisplayName(next.displayName);
+    setPhotoUrl(next.photoUrl ?? null);
     setPhase("ready");
   }, []);
 
@@ -186,6 +196,7 @@ export function TelegramGate({ locale, dictionary, bot, children }: GateProps) {
   const account = useMemo<Account>(
     () => ({
       displayName,
+      photoUrl,
       bot,
       async remove() {
         const response = await fetch("/api/v1/me", {
@@ -197,7 +208,7 @@ export function TelegramGate({ locale, dictionary, bot, children }: GateProps) {
         setPhase("outside");
       },
     }),
-    [displayName, bot],
+    [displayName, photoUrl, bot],
   );
 
   if (phase === "ready") {

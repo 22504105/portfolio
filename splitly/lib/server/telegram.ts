@@ -10,7 +10,15 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 //
 // https://core.telegram.org/bots/webapps#validating-data-received-via-the-mini-app
 
-export type TelegramUser = { id: number; firstName: string; lastName: string | null; username: string | null; languageCode: string | null };
+export type TelegramUser = {
+  id: number;
+  firstName: string;
+  lastName: string | null;
+  username: string | null;
+  languageCode: string | null;
+  /** The address of their profile photo on Telegram's own servers, if Telegram sent one. */
+  photoUrl: string | null;
+};
 
 export type Verified =
   { ok: true; user: TelegramUser; authDate: number } | { ok: false; reason: "malformed" | "signature" | "expired" | "no_user" };
@@ -20,6 +28,20 @@ export const MAX_AGE_SECONDS = 60 * 60;
 /** How far ahead of the server's clock a sign-in may claim to be: clocks differ a little, never much. */
 const MAX_SKEW_SECONDS = 60;
 const MAX_LENGTH = 4096;
+
+/** Where Telegram serves profile photos from. An address anywhere else is not taken, signed or not. */
+const PHOTO_HOSTS = /^(t\.me|([a-z0-9-]+\.)*telegram\.org|([a-z0-9-]+\.)*telesco\.pe|([a-z0-9-]+\.)*telegram-cdn\.org)$/;
+
+/** A photo address worth keeping: https, on Telegram's servers, of a sane length. Anything else is no photo. */
+export function telegramPhoto(value: unknown): string | null {
+  if (typeof value !== "string" || value.length > 500) return null;
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" && PHOTO_HOSTS.test(url.hostname) && !url.username && !url.password ? url.toString() : null;
+  } catch {
+    return null;
+  }
+}
 
 export function verifyInitData(initData: unknown, botToken: string, nowSeconds = Math.floor(Date.now() / 1000)): Verified {
   if (typeof initData !== "string" || initData.length === 0 || initData.length > MAX_LENGTH || !botToken)
@@ -63,6 +85,7 @@ export function verifyInitData(initData: unknown, botToken: string, nowSeconds =
       lastName: text(user.last_name, 64),
       username: text(user.username, 32),
       languageCode: text(user.language_code, 8),
+      photoUrl: telegramPhoto(user.photo_url),
     },
   };
 }

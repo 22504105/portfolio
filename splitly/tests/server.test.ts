@@ -1,7 +1,7 @@
 import { createHmac } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import { issueSession, readSession, SESSION_SECONDS } from "@/lib/server/session";
-import { MAX_AGE_SECONDS, verifyInitData } from "@/lib/server/telegram";
+import { MAX_AGE_SECONDS, telegramPhoto, verifyInitData } from "@/lib/server/telegram";
 
 const TOKEN = "1234567890:TEST-ONLY-token-for-signing-fixtures-0";
 const NOW = 1_800_000_000;
@@ -25,7 +25,7 @@ describe("verifying Telegram sign-in data", () => {
     expect(result).toEqual({
       ok: true,
       authDate: NOW - 30,
-      user: { id: 42, firstName: "Ayşe", lastName: "Yılmaz", username: "ayse", languageCode: "tr" },
+      user: { id: 42, firstName: "Ayşe", lastName: "Yılmaz", username: "ayse", languageCode: "tr", photoUrl: null },
     });
   });
 
@@ -80,6 +80,44 @@ describe("verifying Telegram sign-in data", () => {
     const long = JSON.stringify({ id: 7, first_name: "x".repeat(300), last_name: "   " });
     const result = verifyInitData(sign({ auth_date: String(NOW), user: long }), TOKEN, NOW);
     expect(result.ok && [result.user.firstName.length, result.user.lastName, result.user.username]).toEqual([64, null, null]);
+  });
+});
+
+describe("a person's Telegram photo", () => {
+  it("is taken from signed sign-in data when it is on Telegram's own servers", () => {
+    const withPhoto = JSON.stringify({ id: 42, first_name: "Ayşe", photo_url: "https://t.me/i/userpic/320/abc.svg" });
+    const result = verifyInitData(sign({ auth_date: String(NOW), user: withPhoto }), TOKEN, NOW);
+    expect(result.ok && result.user.photoUrl).toBe("https://t.me/i/userpic/320/abc.svg");
+  });
+
+  it("accepts Telegram's servers and nothing else, whatever the sign-in data says", () => {
+    for (const good of [
+      "https://t.me/i/userpic/320/x.jpg",
+      "https://cdn4.telesco.pe/file/abc.jpg",
+      "https://api.telegram.org/file/x.jpg",
+      "https://cdn5.telegram-cdn.org/file/x.jpg",
+    ]) {
+      expect(telegramPhoto(good)).toBe(good);
+    }
+    for (const bad of [
+      "http://t.me/i/userpic/320/x.jpg",
+      "https://evil.example/t.me/x.jpg",
+      "https://t.me.evil.example/x.jpg",
+      "https://nott.me/x.jpg",
+      "https://user:pass@t.me/x.jpg",
+      "javascript:alert(1)",
+      "data:image/svg+xml,<svg onload=alert(1)>",
+      "//t.me/x.jpg",
+      "t.me/x.jpg",
+      `https://t.me/${"x".repeat(600)}`,
+      "",
+      null,
+      undefined,
+      42,
+      { url: "https://t.me/x.jpg" },
+    ]) {
+      expect([String(bad).slice(0, 40), telegramPhoto(bad)]).toEqual([String(bad).slice(0, 40), null]);
+    }
   });
 });
 

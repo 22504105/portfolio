@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Logo } from "@/components/brand/Logo";
 import { LocaleSwitch } from "@/components/shell/LocaleSwitch";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
+import { ILLUSTRATIONS } from "@/lib/illustrations";
 import { pageLocale } from "@/lib/page";
 
 // What each of the four promises looks like, and whether it is kept yet.
@@ -66,13 +67,15 @@ export default async function OnboardingPage({ params }: PageProps<"/[locale]">)
           </div>
 
           <Image
-            src="/concept/friends.webp"
+            src={ILLUSTRATIONS.friends.src}
             alt={t.illustration}
-            width={808}
-            height={480}
+            width={ILLUSTRATIONS.friends.width}
+            height={ILLUSTRATIONS.friends.height}
             priority
-            sizes="(min-width: 768px) 28rem, 100vw"
-            className="w-full rounded-[24px] object-cover"
+            // A vector file is sharp at any size and is served as it is.
+            unoptimized={ILLUSTRATIONS.friends.src.endsWith(".svg")}
+            sizes="(min-width: 768px) 30rem, 100vw"
+            className="h-auto w-full rounded-[24px]"
           />
         </section>
 

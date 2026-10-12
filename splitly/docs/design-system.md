@@ -119,10 +119,12 @@ shows the plan; it has no controls that do nothing.
   wide screen's rail: `#17513F → #0C392C` (light), `#1D5544 → #123A2E` (dark).
   It stays dark in both themes and always carries white text (11:1 or better).
 - **The mark** is a white S on that green, drawn in `components/brand/Logo.tsx`.
-- **Faces** (`components/ui/Avatar.tsx`): drawn, chosen by a person's ID so the
-  same person always has the same face. The concept shows portrait photos;
-  Splitly keeps no photos of anyone. Decoration only: the name is always
-  written beside a face.
+- **Faces** (`components/ui/Avatar.tsx`). A person signed in through
+  Telegram is shown with their Telegram photo, loaded straight from Telegram:
+  Splitly keeps the address and never the picture. With no photo, or when the
+  address has stopped working, and for people added by name, and everywhere in
+  the demo, the face is drawn, chosen by the person's ID so that it is always
+  the same. Decoration only: the name is always written beside a face.
 - **Category tiles** (`components/ui/CategoryIcon.tsx`): a soft fill and a
   darker mark of the same hue per category, the same in both themes; the
   category's name is always written beside the tile.
@@ -131,6 +133,8 @@ shows the plan; it has no controls that do nothing.
   "owes". The currency is its code, not a symbol: a group can hold several.
 - **Navigation**: on a phone, Home, Groups, the plus, Analytics, Profile; on a
   wide screen the rail adds Receipts and calls the profile Settings.
-- **The cover illustration** (`public/concept/friends.webp`) is cut from the
-  concept board at 404×240 px and doubled: it is soft on a large screen until
-  the original is supplied.
+- **The cover illustration** is a vector drawing made for Splitly
+  (`public/illustrations/friends.svg`), sharp at any size; nothing is cut out
+  of the concept board or scaled up. Pictures are named in
+  `lib/illustrations.ts`: to use a finished illustration later, add the file
+  and change that one entry.

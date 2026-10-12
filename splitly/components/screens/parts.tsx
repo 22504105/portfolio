@@ -92,6 +92,8 @@ export function GroupCard({ group }: { group: GroupSummary }) {
 type ExpenseRowProps = {
   expense: Expense;
   names: ReadonlyMap<string, string>;
+  /** Members' Telegram photos, for the payer's face. */
+  photos?: ReadonlyMap<string, string | null | undefined>;
   /** What stands at the start of the row: the payer's face (Home) or the category's picture (a group). */
   face: "payer" | "category";
   /** A second line under the amount, and anything after it (a chevron). */
@@ -100,7 +102,7 @@ type ExpenseRowProps = {
 };
 
 /** One expense as the concept draws it: a picture, what it was, who paid and when, and the amount. */
-export function ExpenseRow({ expense, names, face, under, after }: ExpenseRowProps) {
+export function ExpenseRow({ expense, names, photos, face, under, after }: ExpenseRowProps) {
   const { t, locale } = useApp();
   const live = expense.status === "active";
   const payer = expense.payers[0];
@@ -109,7 +111,7 @@ export function ExpenseRow({ expense, names, face, under, after }: ExpenseRowPro
   return (
     <span className="flex items-center gap-3 py-3">
       {face === "payer" ? (
-        <Avatar name={payerName} seed={payer?.memberId} className="size-11" />
+        <Avatar name={payerName} seed={payer?.memberId} photo={photos?.get(payer?.memberId ?? "")} className="size-11" />
       ) : (
         <CategoryIcon category={expense.category} />
       )}

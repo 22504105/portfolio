@@ -26,7 +26,7 @@ export function HomeScreen() {
   return (
     <>
       <div className="flex items-center gap-3">
-        <Avatar name={self?.name ?? name ?? "Splitly"} seed={self?.id} className="size-11" />
+        <Avatar name={self?.name ?? name ?? "Splitly"} seed={self?.id} photo={self?.photoUrl ?? account?.photoUrl} className="size-11" />
         <h1 className="type-heading text-[1.25rem]">
           {name ? fill(t.home.greeting, { name }) : t.home.greetingPlain} <span aria-hidden="true">👋</span>
         </h1>
@@ -96,6 +96,7 @@ function GroupHero({ group }: { group: GroupSummary }) {
   const { data: full } = useLoad((store) => store.getGroup(group.id), `group:${group.id}`);
   const people = group.members.filter((member) => !member.removedAt);
   const names = new Map(group.members.map((member) => [member.id, member.name]));
+  const photos = new Map(group.members.map((member) => [member.id, member.photoUrl]));
   const spent = Object.entries(full ? spentOf(full.expenses) : {}).sort(
     ([a], [b]) => Number(b === group.baseCurrency) - Number(a === group.baseCurrency) || a.localeCompare(b),
   );
@@ -154,7 +155,7 @@ function GroupHero({ group }: { group: GroupSummary }) {
           <ul className="divide-line divide-y">
             {recent.map((expense) => (
               <li key={expense.id}>
-                <ExpenseRow expense={expense} names={names} face="payer" />
+                <ExpenseRow expense={expense} names={names} photos={photos} face="payer" />
               </li>
             ))}
           </ul>

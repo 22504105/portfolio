@@ -161,7 +161,12 @@ function Balances({ group }: { group: Group }) {
             .filter(([, net]) => net !== 0);
           return (
             <li key={member.id} className="flex items-center gap-3 py-2.5">
-              <Avatar name={member.name} seed={member.id} className={cn("size-10", member.removedAt && "opacity-60")} />
+              <Avatar
+                name={member.name}
+                seed={member.id}
+                photo={member.photoUrl}
+                className={cn("size-10", member.removedAt && "opacity-60")}
+              />
               <MemberName member={member} className="flex-1" />
               <span className="shrink-0 text-right">
                 {lines.length === 0 ? (
@@ -369,7 +374,7 @@ function People({ group, me, manages, onFailure }: SectionProps) {
             return (
               <li key={member.id} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-4 py-3">
                 <span className="flex min-w-0 items-center gap-3">
-                  <Avatar name={member.name} seed={member.id} className="size-9" />
+                  <Avatar name={member.name} seed={member.id} photo={member.photoUrl} className="size-9" />
                   <MemberName member={member} />
                 </span>
                 {(canRole || canRemove) && !group.archivedAt && (

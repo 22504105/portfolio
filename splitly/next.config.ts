@@ -12,7 +12,8 @@ const contentSecurityPolicy = [
   // it is how a Mini App learns who opened it, and it is loaded only when Telegram opened the page.
   `script-src 'self' 'unsafe-inline' https://telegram.org${development ? " 'unsafe-eval'" : ""}`,
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob:",
+  // Profile photos come straight from Telegram's servers; nothing else outside the site may be shown.
+  "img-src 'self' data: blob: https://t.me https://*.telegram.org https://*.telesco.pe https://*.telegram-cdn.org",
   "font-src 'self'",
   `connect-src 'self'${development ? " ws://localhost:* http://localhost:*" : ""}`,
   "worker-src 'self' blob:",

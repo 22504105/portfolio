@@ -367,6 +367,42 @@ test("the look of the concept: the deep green card and rail, faces for people, p
   expect(new Set(faces).size).toBe(faces.length);
 });
 
+test("a face is the person's photo when there is one, and a drawing when there is not or it fails to load", async ({ page }) => {
+  // The demo has only drawings. To see a photo and a dead address, two are written into the demo's own stored data.
+  await page.goto("/en/demo/groups/demo-istanbul", { waitUntil: "networkidle" });
+  await page.getByRole("tab", { name: "Settings", exact: true }).click();
+  await page.getByLabel("Role of Mira").selectOption("admin");
+  await expect(page.getByRole("status").filter({ hasText: "Role changed" })).toBeVisible();
+  const pixel = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
+  await page.evaluate((photo) => {
+    const state = JSON.parse(localStorage.getItem("splitly-demo-v1")!);
+    const members = state.groups.find((group: { id: string }) => group.id === "demo-istanbul").members;
+    members.find((member: { id: string }) => member.id === "t-deniz").photoUrl = photo;
+    members.find((member: { id: string }) => member.id === "t-mira").photoUrl = "/no-such-photo.jpg";
+    localStorage.setItem("splitly-demo-v1", JSON.stringify(state));
+  }, pixel);
+  await page.reload({ waitUntil: "networkidle" });
+
+  const row = (name: string) => page.getByRole("region", { name: "People", exact: true }).getByRole("listitem").filter({ hasText: name });
+  await expect(row("Deniz").locator("img")).toHaveAttribute("src", pixel);
+  await expect(row("Deniz").locator("img")).toHaveAttribute("referrerpolicy", "no-referrer");
+  await expect(row("Deniz").locator("svg")).toHaveCount(0);
+  // The dead address: the picture is dropped and the drawn face takes its place.
+  await expect(row("Mira").locator("img")).toHaveCount(0);
+  await expect(row("Mira").locator("svg")).toHaveCount(1);
+  // No photo at all: a drawing from the start.
+  await expect(row("Alex").locator("svg")).toHaveCount(1);
+});
+
+test("the pictures a page may load: its own, and profile photos from Telegram's servers", async ({ request }) => {
+  const policy = (await request.get("/en")).headers()["content-security-policy"];
+  expect(policy).toMatch(
+    /img-src 'self' data: blob: https:\/\/t\.me https:\/\/\*\.telegram\.org https:\/\/\*\.telesco\.pe https:\/\/\*\.telegram-cdn\.org;/,
+  );
+  const cover = await request.get("/illustrations/friends.svg");
+  expect([cover.status(), cover.headers()["content-type"]]).toEqual([200, "image/svg+xml"]);
+});
+
 test("outside Telegram, a person's own groups stay shut and the way to the demo is shown", async ({ page }) => {
   for (const path of ["/en/app", "/en/app/groups", "/en/app/join?t=" + "A".repeat(43)]) {
     await page.goto(path, { waitUntil: "networkidle" });

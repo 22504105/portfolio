@@ -83,6 +83,8 @@ lists what the concept shows, what it leaves out, and which stage builds what.
 - Balances are shown per currency and per person. Who should pay whom, and
   converting between currencies, are stage 4.
 - The demo has no invitations: there are no other accounts in it to invite.
+- A person's Telegram photo is loaded from Telegram by address; when the
+  address stops working their face is drawn until they next open the app.
 - A person who deletes their account stays in shared groups as "Former member"
   (in English, whatever the viewer's language): the name is data.
 - Checked in Chrome on an emulated phone and a desktop; not on real devices.

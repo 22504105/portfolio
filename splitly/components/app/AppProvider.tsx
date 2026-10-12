@@ -9,7 +9,12 @@ import { StoreError, type Store, type StoreErrorCode } from "@/lib/store/types";
 // What every screen of the app can reach: where its data lives (the demo's
 // browser storage or the server), its words, and a way to say "saved".
 
-export type Account = { displayName: string; /** The bot's @name, for invitation links. */ bot: string | null; remove(): Promise<void> };
+export type Account = {
+  displayName: string;
+  /** Their Telegram photo, if any. */ photoUrl: string | null;
+  /** The bot's @name, for invitation links. */ bot: string | null;
+  remove(): Promise<void>;
+};
 
 type App = {
   store: Store;

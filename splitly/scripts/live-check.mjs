@@ -63,6 +63,20 @@ const ANN = { id: 9_900_000_001, first_name: "Check Ann", language_code: "en" };
 const BOB = { id: 9_900_000_002, first_name: "Check Bob", language_code: "ru" };
 const tokens = [];
 
+// The database holds real people's data too. The check counts what is there before it starts and must leave exactly that.
+const COUNTS =
+  "select (select count(*)::int from splitly.users) users, (select count(*)::int from splitly.groups) groups, (select count(*)::int from splitly.expenses) expenses, (select count(*)::int from splitly.telegram_identities) identities";
+async function counts() {
+  const db = new pg.Client({ connectionString: env.DATABASE_URL, ssl: { rejectUnauthorized: false } });
+  await db.connect();
+  try {
+    return (await db.query(COUNTS)).rows[0];
+  } finally {
+    await db.end();
+  }
+}
+const before = await counts();
+
 try {
   for (let attempt = 0; attempt < 80; attempt++) {
     try {
@@ -201,17 +215,12 @@ try {
     "delete from splitly.users where id in (select user_id from splitly.telegram_identities where telegram_user_id in ($1, $2))",
     [ANN.id, BOB.id],
   );
-  const left = (
-    await db.query(
-      "select (select count(*)::int from splitly.users) users, (select count(*)::int from splitly.groups) groups, (select count(*)::int from splitly.expenses) expenses, (select count(*)::int from splitly.telegram_identities) identities",
-    )
-  ).rows[0];
-  await db.query("delete from splitly.rate_limits");
+  const left = (await db.query(COUNTS)).rows[0];
   await db.end();
   check(
-    "the test accounts and their data are gone from the database",
-    left.users === 0 && left.groups === 0 && left.expenses === 0 && left.identities === 0,
-    JSON.stringify(left),
+    "the test accounts and their data are gone, and everything that was there before is still there",
+    JSON.stringify(left) === JSON.stringify(before),
+    `before ${JSON.stringify(before)} after ${JSON.stringify(left)}`,
   );
   server?.kill();
 }

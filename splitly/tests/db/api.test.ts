@@ -19,7 +19,7 @@ let t: TestDatabase;
 
 /** Sign-in data as Telegram would issue it for a user, signed with the test bot's token. */
 function initData(
-  user: { id: number; first_name: string; language_code?: string },
+  user: { id: number; first_name: string; language_code?: string; photo_url?: string },
   authDate = Math.floor(Date.now() / 1000),
   token = BOT_TOKEN,
 ): string {
@@ -715,5 +715,65 @@ describe("deleting an account", () => {
       ["Bob", "owner", false],
     ]);
     expect(after.expenses).toHaveLength(1);
+  });
+});
+
+describe("faces", () => {
+  it("a person's Telegram photo is shown to the people of their groups, kept fresh, and never taken from anywhere but Telegram", async () => {
+    const signIn = (photo_url?: string) =>
+      call("POST", "session", {
+        body: { initData: initData({ id: 7001, first_name: "Photo Ann", ...(photo_url ? { photo_url } : {}) }) },
+        headers: { "x-real-ip": "10.9.9.1" },
+      });
+    const first = await signIn("https://t.me/i/userpic/320/ann-1.jpg");
+    expect(first.body.profile.photoUrl).toBe("https://t.me/i/userpic/320/ann-1.jpg");
+    const ann = first.body.token as string;
+    const bob = await person("Bob");
+
+    const id = (await call("POST", "groups", { token: ann, body: { name: "Faces", baseCurrency: "TRY" } })).body.id;
+    const guest = (await call("POST", `groups/${id}/members`, { token: ann, body: { name: "Guest" } })).body.id;
+    const invite = (await call("POST", `groups/${id}/invites`, { token: ann, body: {} })).body.invite.token;
+    await call("POST", "invites/accept", { token: bob.token, body: { token: invite } });
+
+    // Bob sees Ann's photo; Bob has none, and neither has someone added by name.
+    const photos = async (token: string) =>
+      Object.fromEntries((await groupOf(token, id)).members.map((member: any) => [member.name, member.photoUrl]));
+    expect(await photos(bob.token)).toEqual({ "Photo Ann": "https://t.me/i/userpic/320/ann-1.jpg", Guest: null, Bob: null });
+    expect((await call("GET", "groups", { token: bob.token })).body.groups[0].members[0].photoUrl).toBe(
+      "https://t.me/i/userpic/320/ann-1.jpg",
+    );
+    expect(guest).toBeTruthy();
+
+    // The address is whatever Telegram says at the latest sign-in: replaced, then cleared.
+    await signIn("https://t.me/i/userpic/320/ann-2.jpg");
+    expect((await photos(bob.token))["Photo Ann"]).toBe("https://t.me/i/userpic/320/ann-2.jpg");
+    // An address that is not Telegram's is no photo at all, even in correctly signed data.
+    const hostile = await signIn("https://evil.example/track.gif");
+    expect(hostile.body.profile.photoUrl).toBeNull();
+    expect((await photos(bob.token))["Photo Ann"]).toBeNull();
+    await signIn();
+    expect((await photos(bob.token))["Photo Ann"]).toBeNull();
+
+    // Nobody outside the group learns it.
+    const stranger = await person("Stranger");
+    await signIn("https://t.me/i/userpic/320/ann-3.jpg");
+    expect((await call("GET", `groups/${id}`, { token: stranger.token })).status).toBe(404);
+
+    // Only the address is stored, and it goes with the account.
+    expect((await t.db.query("select photo_url from splitly.users where id = $1", [first.body.profile.id])).rows[0].photo_url).toBe(
+      "https://t.me/i/userpic/320/ann-3.jpg",
+    );
+    await call("DELETE", "me", { token: ann });
+    expect((await photos(bob.token))["Former member"]).toBeNull();
+  });
+
+  it("the database refuses an address that is not https", async () => {
+    const ann = await person("Ann");
+    await expect(t.db.query("update splitly.users set photo_url = 'http://t.me/x.jpg' where id = $1", [ann.userId])).rejects.toMatchObject({
+      code: "23514",
+    });
+    await expect(
+      t.db.query("update splitly.users set photo_url = $2 where id = $1", [ann.userId, `https://t.me/${"x".repeat(600)}`]),
+    ).rejects.toMatchObject({ code: "23514" });
   });
 });

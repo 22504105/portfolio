@@ -137,8 +137,16 @@ Next.js starts pages with them.
 
 ## Privacy
 
-- Stored about a person: a display name, a Telegram user ID, a language.
-  No phone number, no contact list, no location.
+- Stored about a person: a display name, a Telegram user ID, a language, and
+  the address of their Telegram profile photo if Telegram sent one. No phone
+  number, no contact list, no location, and no photo: the picture stays on
+  Telegram's servers and is loaded from there by the browsers of the people in
+  that person's groups, without a referrer.
+- The photo address is read only from verified sign-in data, kept only if it
+  is `https` on Telegram's own hosts (anything else is treated as no photo),
+  replaced or cleared at every sign-in, and shown only to members of the
+  person's groups. The content policy lets pages load images from the site
+  itself and those hosts, nowhere else.
 - Deleting an account (Profile) and deleting a group (its owner) are built and
   tested. An account's groups that are theirs alone go with it; in shared
   groups their member row stays, detached from the person and renamed "Former

@@ -13,6 +13,8 @@ export type Member = {
   role: Role;
   /** This member is the person looking at the screen. */
   self: boolean;
+  /** Their Telegram photo's address, if they signed in through Telegram and have one. Never set in the demo. */
+  photoUrl?: string | null;
   /** Set when they left or were removed. Their history stays; they take no part in new expenses. */
   removedAt: string | null;
 };

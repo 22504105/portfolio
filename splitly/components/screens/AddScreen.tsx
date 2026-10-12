@@ -282,7 +282,12 @@ function Editor({ group, editing }: { group: Group; editing: Expense | undefined
         {!form.several ? (
           <div className="relative">
             {payer && (
-              <Avatar name={payer.name} seed={payer.id} className="pointer-events-none absolute top-1/2 left-2.5 size-8 -translate-y-1/2" />
+              <Avatar
+                name={payer.name}
+                seed={payer.id}
+                photo={payer.photoUrl}
+                className="pointer-events-none absolute top-1/2 left-2.5 size-8 -translate-y-1/2"
+              />
             )}
             <select
               aria-label={t.expense.paidBy}
@@ -301,7 +306,7 @@ function Editor({ group, editing }: { group: Group; editing: Expense | undefined
           <ul className="flex flex-col gap-2">
             {members.map((member) => (
               <li key={member.id} className="flex items-center gap-3">
-                <Avatar name={member.name} seed={member.id} className="size-9" />
+                <Avatar name={member.name} seed={member.id} photo={member.photoUrl} className="size-9" />
                 <span className="min-w-0 flex-1 font-medium break-words">{member.name}</span>
                 <input
                   aria-label={fill(t.expense.paidAmount, { name: member.name })}
@@ -354,6 +359,7 @@ function Editor({ group, editing }: { group: Group; editing: Expense | undefined
                     <Avatar
                       name={member.name}
                       seed={member.id}
+                      photo={member.photoUrl}
                       className={cn(
                         "size-12 transition",
                         on ? "ring-primary ring-offset-canvas ring-2 ring-offset-2" : "opacity-45 grayscale",

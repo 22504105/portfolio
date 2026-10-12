@@ -67,12 +67,24 @@ async function log(
 /** Finds the person behind a verified Telegram account, or creates them. The ID comes only from verified sign-in data. */
 export async function signInWithTelegram(db: Db, telegram: TelegramUser): Promise<string> {
   const known = (await db.query("select user_id from splitly.telegram_identities where telegram_user_id = $1", [telegram.id])).rows[0];
-  if (known) return known.user_id;
+  if (known) {
+    // The photo's address is whatever Telegram says now: a new one replaces the old, none clears it.
+    await db.query("update splitly.users set photo_url = $2 where id = $1 and photo_url is distinct from $2", [
+      known.user_id,
+      telegram.photoUrl,
+    ]);
+    return known.user_id;
+  }
 
   const display = [telegram.firstName, telegram.lastName].filter(Boolean).join(" ").slice(0, LIMITS.nameLength);
   const locale = telegram.languageCode?.toLowerCase().startsWith("ru") ? "ru" : "en";
-  const userId = (await db.query("insert into splitly.users (display_name, locale) values ($1, $2) returning id", [display, locale]))
-    .rows[0].id as string;
+  const userId = (
+    await db.query("insert into splitly.users (display_name, locale, photo_url) values ($1, $2, $3) returning id", [
+      display,
+      locale,
+      telegram.photoUrl,
+    ])
+  ).rows[0].id as string;
   // Two requests at once for a new person: the second finds the first's row instead of making another.
   const identity = await db.query(
     "insert into splitly.telegram_identities (user_id, telegram_user_id) values ($1, $2) on conflict (telegram_user_id) do nothing returning user_id",
@@ -86,10 +98,13 @@ export async function signInWithTelegram(db: Db, telegram: TelegramUser): Promis
   return (await db.query("select user_id from splitly.telegram_identities where telegram_user_id = $1", [telegram.id])).rows[0].user_id;
 }
 
-export async function profile(db: Db, userId: string): Promise<{ id: string; displayName: string; locale: string }> {
-  const row = (await db.query("select id, display_name, locale from splitly.users where id = $1", [userId])).rows[0];
+export async function profile(
+  db: Db,
+  userId: string,
+): Promise<{ id: string; displayName: string; locale: string; photoUrl: string | null }> {
+  const row = (await db.query("select id, display_name, locale, photo_url from splitly.users where id = $1", [userId])).rows[0];
   if (!row) throw new ServiceError("not_found");
-  return { id: row.id, displayName: row.display_name, locale: row.locale };
+  return { id: row.id, displayName: row.display_name, locale: row.locale, photoUrl: row.photo_url ?? null };
 }
 
 /**
@@ -131,7 +146,7 @@ export async function deleteAccount(db: Db, userId: string): Promise<void> {
 // ------------------------------------------------------------------- groups
 
 const MEMBERS_SQL = `
-  select m.id, coalesce(m.guest_name, u.display_name) as name, m.user_id is null as guest, m.role, m.user_id = $2 as self, m.removed_at
+  select m.id, coalesce(m.guest_name, u.display_name) as name, m.user_id is null as guest, m.role, m.user_id = $2 as self, m.removed_at, u.photo_url
   from splitly.group_members m left join splitly.users u on u.id = m.user_id
   where m.group_id = $1
   order by m.joined_at, m.id`;
@@ -142,6 +157,7 @@ const toMember = (row: Record<string, unknown>): Member => ({
   guest: row.guest as boolean,
   role: row.role as Role,
   self: row.self === true,
+  photoUrl: (row.photo_url as string | null) ?? null,
   removedAt: row.removed_at ? new Date(row.removed_at as string).toISOString() : null,
 });
 
