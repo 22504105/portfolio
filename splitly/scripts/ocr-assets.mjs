@@ -16,9 +16,10 @@ const files = [
     `node_modules/tesseract.js-core/${name}`,
     `core/${name}`,
   ]),
-  // The smaller reading data: about 2 to 3 MB a language, loaded only when that language is chosen.
+  // The compact reading data ("best_int"): about 2 to 3 MB a language, loaded only when that language is chosen.
+  // The packages also carry a fuller set at 8 to 11 MB a language: too much to ask of a phone's connection.
   ...["eng", "tur", "rus"].map((language) => [
-    `node_modules/@tesseract.js-data/${language}/4.0.0/${language}.traineddata.gz`,
+    `node_modules/@tesseract.js-data/${language}/4.0.0_best_int/${language}.traineddata.gz`,
     `lang/${language}.traineddata.gz`,
   ]),
 ];
