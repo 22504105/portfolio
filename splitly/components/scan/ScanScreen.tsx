@@ -10,10 +10,10 @@ import type { Group } from "@/lib/domain/types";
 import { fill } from "@/lib/i18n";
 import { checkFile, hashOf, prepare, type ImageProblem, type ImageType, type Turn } from "@/lib/receipt/image";
 import { OCR_LANGUAGES, OcrError, recognise, type OcrFailure, type OcrLanguage } from "@/lib/receipt/ocr";
-import { parseReceipt } from "@/lib/receipt/parse";
+import { mergeReadings, parseReceipt } from "@/lib/receipt/parse";
 import { cn } from "@/lib/utils";
 import { AssignStep, ResultStep, type Outcome } from "./AssignStep";
-import { draftFrom, readCorrections, type Draft } from "./draft";
+import { draftFrom, readCorrections, readTranslate, rememberTranslate, withTranslation, type Draft } from "./draft";
 import { ReviewStep } from "./ReviewStep";
 
 // The scanner, after the concept's screens 4 to 7: a photo of a receipt, read
@@ -76,6 +76,10 @@ function Flow({ group, groups, onGroup }: { group: Group; groups: { id: string; 
   const [photo, setPhoto] = useState<Photo | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
   const [camera, setCamera] = useState(false);
+  // Names are shown as printed unless this person has asked, here before, for them to be translated.
+  // (Their choice is kept on the device and looked up when a receipt is read; null until it is changed here.)
+  const [chosen, setTranslate] = useState<boolean | null>(null);
+  const wantsTranslation = () => chosen ?? readTranslate();
   const picker = useRef<HTMLInputElement>(null);
   const currency = group.baseCurrency;
 
@@ -124,13 +128,15 @@ function Flow({ group, groups, onGroup }: { group: Group; groups: { id: string; 
     setProblem(null);
     setStep({ name: "reading", fraction: 0 });
     try {
-      const ready = await prepare(photo.file, photo.turn, photo.enhance);
-      const lines = await recognise(ready.blob, language, (fraction) => setStep({ name: "reading", fraction }));
-      const parsed = parseReceipt(lines, currency);
+      // Read twice, prepared in two ways: each way loses different rows, and together they find more.
+      const plain = await prepare(photo.file, photo.turn, photo.enhance);
+      const evened = await prepare(photo.file, photo.turn, false, "evened");
+      const readings = await recognise([plain.blob, evened.blob], language, (fraction) => setStep({ name: "reading", fraction }));
+      const parsed = readings.map((lines) => parseReceipt(lines, currency)).reduce(mergeReadings);
       if (parsed.lines.length === 0) throw new OcrError("empty");
       setStep({
         name: "review",
-        draft: draftFrom(parsed, currency, locale, readCorrections()),
+        draft: draftFrom(parsed, currency, locale, readCorrections(), wantsTranslation(), (n) => `${t.scan.kinds.item} ${n}`),
         hash: photo.hash,
         type: photo.type,
         fromPhoto: true,
@@ -162,6 +168,12 @@ function Flow({ group, groups, onGroup }: { group: Group; groups: { id: string; 
         group={group}
         draft={step.draft}
         fromPhoto={step.fromPhoto}
+        translate={wantsTranslation()}
+        onTranslate={(on) => {
+          setTranslate(on);
+          rememberTranslate(on);
+          setStep({ ...step, draft: withTranslation(step.draft, locale, readCorrections(), on) });
+        }}
         onChange={(draft) => setStep({ ...step, draft })}
         onBack={() => setStep({ name: "capture" })}
         onContinue={() => setStep({ ...step, name: "assign" })}

@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { allocateLines, buildReceiptExpense, totalsByMember } from "@/lib/receipt/build";
 import { GLOSSARY_SIZE, translateLabel } from "@/lib/receipt/glossary";
+import { enlargedSize, evenOut } from "@/lib/receipt/image";
 import { linesFromTsv } from "@/lib/receipt/ocr";
-import { likelyDuplicates, parseReceipt, reconcile } from "@/lib/receipt/parse";
+import { likelyDuplicates, mergeReadings, parseReceipt, reconcile } from "@/lib/receipt/parse";
 import type { ReceiptLine } from "@/lib/receipt/types";
 
 const text = (receipt: string) => receipt.split("\n").map((line) => ({ text: line, confidence: 90 }));
@@ -435,8 +436,9 @@ TEŞEKKÜR EDERİZ`;
     const parsed = parseReceipt(text(READ), "TRY");
     expect(parsed.lines.map((line) => [line.label, line.quantity, line.lineTotalMinor])).toEqual([
       ["UZUM SULTANI", "0.866", 9451],
-      ["3090021 Töğc67 isi", "1", 3999],
-      ["ERLER m", "1", 16_999],
+      // Two names lost to print showing through: the code and its debris go, what is left is for the person to correct.
+      ["isi", "1", 3999],
+      ["ERLER", "1", 16_999],
       ["PİN COOL LIME 1LT PE", "1", 6499],
       ["JIMMY GÜMMY WATERMEL", "1", 2999],
       ["NEKTARİN", "1.060", 8999],
@@ -493,5 +495,172 @@ TEŞEKKÜR EDERİZ`;
       "MIST BUZDOLABI %5 x39,99",
       "BONHAIR WAX %5 x169,99",
     ]);
+  });
+});
+
+describe("the till's own numbers are not what was bought", () => {
+  const read = (rows: string, confidence = 90) =>
+    parseReceipt(
+      rows.split("\n").map((row) => ({ text: row, confidence })),
+      "TRY",
+    );
+  const named = (rows: string) => read(rows).lines.map((line) => [line.label, line.lineTotalMinor]);
+
+  it("a code or a barcode beside a name, or on the row above it, is left out", () => {
+    expect(named("8690997032959\nJIMMY GUMMY WATERMEL %10 *29,99")).toEqual([["JIMMY GUMMY WATERMEL", 2999]]);
+    expect(named("8690997032959 JIMMY GUMMY WATERMEL %10 *29,99")).toEqual([["JIMMY GUMMY WATERMEL", 2999]]);
+    expect(named("JIMMY GUMMY WATERMEL 8690997032959 *29,99")).toEqual([["JIMMY GUMMY WATERMEL", 2999]]);
+    expect(named("2901268\n0.860 KG x 109,90 TL/KG\nUZUM SULTANI %5 *94,51")).toEqual([["UZUM SULTANI", 9451]]);
+    // A code read badly, with its debris glued on, goes whole.
+    expect(named("3690021 Töğe7 MIST BUZDOLABI *39,99")).toEqual([["MIST BUZDOLABI", 3999]]);
+    // A row that is nothing but a code is neither a purchase nor "text that could not be placed".
+    expect(read("EKMEK 40,00\n8690997032959\n8690997032959 ği\n3690021 Töğe7\nSU 15,00")).toMatchObject({
+      lines: [{ label: "EKMEK" }, { label: "SU" }],
+      unmatched: [],
+    });
+  });
+
+  it("scraps read from the paper's edge after a name in capitals are dropped; a name in small letters is left alone", () => {
+    expect(named("MACRO ALISVERIS POSE ys *4,00")).toEqual([["MACRO ALISVERIS POSE", 400]]);
+    expect(named("ERLER KS Ee *169,99")).toEqual([["ERLER KS", 16_999]]);
+    expect(named("BUZDOLABI POSETI yds x39,99")).toEqual([["BUZDOLABI POSETI", 3999]]);
+    expect(named("Lentil soup of the day 9,00")).toEqual([["Lentil soup of the day", 900]]);
+    expect(named("Хлеб бородинский на 54,00")).toEqual([["Хлеб бородинский на", 5400]]);
+    expect(named("COLA ZERO 1LT 12,50")).toEqual([["COLA ZERO 1LT", 1250]]);
+  });
+
+  it("sizes and counts that belong to a name stay in it", () => {
+    for (const name of ["PIN COOL LIME 1LT PE", "MIST 20x30 BUZDOLABI", "SÜT 3,2% 1L", "YUMURTA 30'lu", "COLA 330ML 6'li", "KAĞIT A4 500"])
+      expect([name, named(`${name} *12,50`)]).toEqual([name, [[name, 1250]]]);
+  });
+
+  it("a price whose name could not be read is kept without one, marked as doubtful, never given a made-up name", () => {
+    const parsed = read("8690997032959 *169,99\n— | *4,00\nEKMEK 40,00");
+    expect(parsed.lines.map((line) => [line.label, line.lineTotalMinor, line.confidence])).toEqual([
+      ["", 16_999, 30],
+      ["", 400, 30],
+      ["EKMEK", 4000, 90],
+    ]);
+  });
+
+  it("text the recogniser itself doubted is not paraded as something that mattered", () => {
+    expect(read("EKMEK 40,00\nCRMEERET\nZEYTIN SIYAH", 20).unmatched).toEqual([]);
+    expect(read("EKMEK 40,00\nZEYTIN SIYAH", 80).unmatched).toEqual(["ZEYTIN SIYAH"]);
+  });
+});
+
+describe("two readings of one photo, made into one", () => {
+  const rows = (lines: string) => lines.split("\n").map((row) => ({ text: row, confidence: /Töğ|ERLER|TMM|o4/.test(row) ? 25 : 85 }));
+  // The real receipt as read from the photo as it is…
+  const plain = parseReceipt(
+    rows(`0.860 KG x 109,90 TL/KG
+UZUM SULTANI           Vis)       x94,51
+3690021 Töğe7        isi                  39,99
+ERLER m     x169,99
+— PİN COOL LIME 1LT PE   X10      x64 99
+JIMMY GÜMMY WATERMEL   X10     x29, 99.
+1.060 KG X 84,90 TL/KG                 &
+NEKTARİN              x5       x89,99 |
+MACRO ALİSVERİS POSE — X5        <4,00 Öl
+TOPKDV                  x42,96
+TOPLAM               «493.46 Bl`),
+    "TRY",
+  );
+  // …and with the paper's tone evened out: one name recovered, two prices and the total lost.
+  const evened = parseReceipt(
+    rows(`0.860 KG — x 109,90 TL/KG
+UZUM SULTANI          45       x94,51
+MIST 20x30 BUZDOLABI — X5        x39,99 |
+PIN COOL LİME İLT PE K10        o4 99
+TMM GÜMMY WATERMEL 10       x29,99
+1.060 KG x 84,90 TL./KG
+NEKTARIN                           VA)              x89,99
+MACRO ALISVERİS POSE    VAS)        x4,00
+TOPLAM               x493,AdAb`),
+    "TRY",
+  );
+
+  it("each reading alone is incomplete", () => {
+    expect(plain.lines.map((line) => line.label)).toEqual([
+      "UZUM SULTANI",
+      "isi",
+      "ERLER",
+      "PİN COOL LIME 1LT PE",
+      "JIMMY GÜMMY WATERMEL",
+      "NEKTARİN",
+      "MACRO ALİSVERİS POSE",
+    ]);
+    expect([evened.lines.length, evened.printedTotalMinor]).toEqual([5, null]);
+  });
+
+  it("together: every price, the better name for each row, and the total they add up to", () => {
+    const merged = mergeReadings(plain, evened);
+    expect(merged.lines.map((line) => [line.label, line.quantity, line.lineTotalMinor])).toEqual([
+      ["UZUM SULTANI", "0.860", 9451],
+      // Read as rubbish from the plain photo, properly from the evened one.
+      ["MIST 20x30 BUZDOLABI", "1", 3999],
+      ["ERLER", "1", 16_999],
+      ["PİN COOL LIME 1LT PE", "1", 6499],
+      // The other way round: the plain reading has the better name.
+      ["JIMMY GÜMMY WATERMEL", "1", 2999],
+      ["NEKTARİN", "1.060", 8999],
+      ["MACRO ALİSVERİS POSE", "1", 400],
+    ]);
+    expect([merged.printedTotalMinor, merged.includedTaxMinor, merged.unmatched]).toEqual([49_346, 4296, []]);
+    expect(reconcile(merged.lines, merged.printedTotalMinor).differenceMinor).toBe(0);
+    // The order of the two readings does not change what is found.
+    expect(mergeReadings(evened, plain).lines.map((line) => line.lineTotalMinor)).toEqual(merged.lines.map((line) => line.lineTotalMinor));
+  });
+
+  it("a row one reading invented does not spoil a reading that adds up on its own", () => {
+    const good = parseReceipt(rows("EKMEK 40,00\nSU 15,00\nTOPLAM 55,00"), "TRY");
+    const noisy = parseReceipt(rows("EKMEK 40,00\nSU 15,00\nGOLGE 7,00"), "TRY");
+    for (const merged of [mergeReadings(good, noisy), mergeReadings(noisy, good)]) {
+      expect(merged.lines.map((line) => line.label)).toEqual(["EKMEK", "SU"]);
+      expect(merged.printedTotalMinor).toBe(5500);
+    }
+  });
+
+  it("when nothing adds up, everything found is shown and the difference is left for the person", () => {
+    const one = parseReceipt(rows("EKMEK 40,00\nTOPLAM 100,00"), "TRY");
+    const other = parseReceipt(rows("SU 15,00"), "TRY");
+    const merged = mergeReadings(one, other);
+    expect(merged.lines.map((line) => line.label).sort()).toEqual(["EKMEK", "SU"]);
+    expect(reconcile(merged.lines, merged.printedTotalMinor)).toEqual({ sumMinor: 5500, differenceMinor: 4500 });
+    expect(mergeReadings(parseReceipt([], "TRY"), parseReceipt([], "TRY")).lines).toEqual([]);
+  });
+});
+
+describe("evening out the paper", () => {
+  it("a shadow across the page goes, and print stays darker than the paper around it everywhere", () => {
+    // A page lit from the left: bright on one side, in shadow on the other, with the same grey print on both.
+    const [width, height] = [200, 60];
+    const pixels = new Uint8ClampedArray(width * height * 4);
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const paper = 230 - Math.round((x / width) * 130);
+        const ink = y >= 28 && y < 32 && x % 20 < 3;
+        const value = ink ? Math.round(paper * 0.45) : paper;
+        pixels.set([value, value, value, 255], (y * width + x) * 4);
+      }
+    }
+    const at = (x: number, y: number) => pixels[(y * width + x) * 4];
+    // Before: the paper in the shadow is as dark as the print in the light.
+    expect(at(190, 10)).toBeLessThan(at(1, 30) + 10);
+
+    evenOut(pixels, width, height);
+    const paperLight = at(10, 10);
+    const paperShadow = at(190, 10);
+    expect(Math.abs(paperLight - paperShadow)).toBeLessThan(12);
+    expect(paperLight).toBeGreaterThan(215);
+    for (const x of [1, 101, 181]) expect([x, at(x, 30) < paperShadow - 60]).toEqual([x, true]);
+    // Greys, and nothing see-through.
+    expect([pixels[0] === pixels[1] && pixels[1] === pixels[2], pixels[3]]).toEqual([true, 255]);
+  });
+
+  it("a small photo is enlarged for reading, a large one is not, and never more than doubled", () => {
+    expect(enlargedSize(960, 1280)).toEqual({ width: 1500, height: 2000 });
+    expect(enlargedSize(3000, 4000)).toEqual({ width: 1500, height: 2000 });
+    expect(enlargedSize(300, 400)).toEqual({ width: 600, height: 800 });
   });
 });

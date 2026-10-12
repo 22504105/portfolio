@@ -80,15 +80,56 @@ function quantityOf(text: string): { quantity: string; rest: string } | null {
   };
 }
 
+/** A size or a count that belongs in a name: "1LT", "500GR", "3,2%", "20x30", "6'li". */
+const SIZE =
+  /^\d{1,4}(?:[.,]\d{1,3})?(?:kg|gr?|lt?|ml|cl|cm|mm|m|шт|кг|г|л|мл|см|%|'?l[iıuü])?$|^\d{1,4}[x×*]\d{1,4}(?:[x×*]\d{1,4})?(?:cm|mm|см|мм)?$/iu;
+
+/**
+ * A name without the till's own numbers. Receipts print a product code or a
+ * barcode beside or above each name ("8690997032959", "2901268"): it means
+ * nothing to the people splitting the bill, and badly read it turns into
+ * rubbish ("3690021 Töğe7"). A long run of digits is a code; so is whatever
+ * is glued to digits right after one. Sizes ("1LT", "20x30") are kept.
+ */
+function withoutCodes(label: string): string {
+  const kept: string[] = [];
+  let afterCode = false;
+  for (const token of label.split(" ")) {
+    const digits = (token.match(/\d/g) ?? []).length;
+    const size = SIZE.test(token);
+    const code: boolean = digits >= 5 || (afterCode && digits >= 1 && !size);
+    afterCode = code;
+    if (!code) kept.push(token);
+  }
+  // A lone mark or letter left at either end is the paper's edge or a shadow, not part of a name.
+  while (kept.length > 0 && /^[^\p{L}\d]+$|^\p{L}$/u.test(kept[0])) kept.shift();
+  while (kept.length > 0 && /^[^\p{L}\d]+$|^\p{Ll}$/u.test(kept[kept.length - 1])) kept.pop();
+  // Tills print names in capitals. In such a name, a short scrap with small letters at the end ("ys", "Ee", "yds")
+  // is the recogniser reading the paper's edge or a shadow, not a word.
+  const letters = kept.join("").replace(/[^\p{L}]/gu, "");
+  const capitals = letters.replace(/[^\p{Lu}]/gu, "").length;
+  if (letters.length >= 6 && capitals / letters.length >= 0.7) {
+    while (kept.length > 1 && kept[kept.length - 1].length <= 3 && /\p{Ll}/u.test(kept[kept.length - 1])) kept.pop();
+  }
+  return kept.join(" ");
+}
+
+/** Whether a name has anything in it that reads as a word. */
+const hasWord = (label: string) => /\p{L}{2,}/u.test(label);
+
 const tidy = (label: string) =>
-  label
-    .replace(/^[\s*#.:\-–—]+|[\s*#.:\-–—]+$/g, "")
-    .replace(/\s{2,}/g, " ")
-    // A last word that is only marks and brackets (a tax class misread: "Vis)", "VAS)").
-    .replace(/\s\S*[)(|\]}\[{]\S*$/, "")
-    // The tax class a till prints after a name: "%08", "%1", "*5", read also as "X10" or "v5".
-    .replace(/\s[%*xXvV]\s?\d{1,2}$/, "")
-    .replace(/^[\s*#.:\-–—“”"'|]+|[\s*#.:\-–—“”"'|]+$/g, "")
+  withoutCodes(
+    label
+      .replace(/^[\s*#.:\-–—]+|[\s*#.:\-–—]+$/g, "")
+      .replace(/\s{2,}/g, " ")
+      // A last word that is only marks and brackets (a tax class misread: "Vis)", "VAS)").
+      .replace(/\s\S*[)(|\]}\[{]\S*$/, "")
+      // The tax class a till prints after a name: "%08", "%1", "*5", read also as "X10" or "v5".
+      .replace(/\s[%*xXvV]\s?\d{1,2}$/, "")
+      .replace(/^[\s*#.:\-–—“”"'|]+|[\s*#.:\-–—“”"'|]+$/g, "")
+      .trim(),
+  )
+    .replace(/^[\s*#.:,\-–—“”"'|]+|[\s*#.:,\-–—“”"'|]+$/g, "")
     .trim();
 
 /**
@@ -102,9 +143,10 @@ function mend(text: string): string {
       // Tills mark a price with a star ("*94,51"), which is read as a letter or a bracket stuck to the digits ("x94,51",
       // "<4,00", "x64 99"). At the end of a row, such a mark and what follows it is a price: the mark goes, and the
       // decimal comma is put back if it was lost.
-      // (Not after a bare number: "3 X 4.00" is three of something at 4.00 each.)
+      // (Not when the row is only a number before it: "3 X 4.00" is three of something at 4.00 each. A number after
+      // a name is another matter: "UZUM 45 x94,51" is a tax class read as "45", then the price.)
       .replace(
-        /(?<!(?:^|\s)\d{1,4}(?:[.,]\d{1,3})?\s?(?:kg|ad|adet|шт|pcs?)?\.?)(^|\s)[*x×<«»~+]{1,2} ?(\d{1,3}(?:[.,]\d{3})*) ?[.,]? ?(\d{2})(?=[.,]?\s*[^\d\s.,]{0,3}$)/iu,
+        /(?<!^\W{0,3}\d{1,4}(?:[.,]\d{1,3})?\s?(?:kg|ad|adet|шт|pcs?)?\.?)(^|\s)[*x×<«»~+]{1,2} ?(\d{1,3}(?:[.,]\d{3})*) ?[.,]? ?(\d{2})(?=[.,]?\s*[^\d\s.,]{0,3}$)/iu,
         "$1$2,$3",
       )
       .replace(/(\d) ?[‚‘’`´'] ?(\d{2})(?!\d)/g, "$1,$2")
@@ -191,7 +233,9 @@ export function parseReceipt(ocr: readonly OcrLine[], currency: string): ParsedR
       // "2 X 15,00" alone on a row is the quantity of a neighbouring line; a row of letters may be a name whose price was lost.
       const alone = /^(\d{1,4}(?:[.,]\d{1,3})?)\s?(?:ad|adet|шт|pcs?|kg|кг)?\.?\s?[x×*]\s?\d/iu.exec(text);
       if (alone) pendingQuantity = alone[1].replace(",", ".");
-      else if (/\p{L}{3,}/u.test(text) && lines.length > 0) unmatched.push(text);
+      // Worth showing only if it reads as words: not a code row, and not something the recogniser itself doubted.
+      else if (lines.length > 0 && /\p{L}{4,}/u.test(withoutCodes(text)) && (confidence === null || confidence >= 35))
+        unmatched.push(withoutCodes(text));
       continue;
     }
     if (amount.minor <= 0) {
@@ -204,15 +248,23 @@ export function parseReceipt(ocr: readonly OcrLine[], currency: string): ParsedR
     // A row that is only "2 X 15,00   30,00": the quantity and total of the item named on the row above.
     const counted = quantityOf(amount.before);
     const label = tidy(counted ? counted.rest : amount.before);
-    if (!/\p{L}{2,}/u.test(label)) {
+    if (counted && !/\p{L}{2,}/u.test(label)) {
       const previous = lines[lines.length - 1];
-      if (counted && previous && previous.kind === "item" && previous.lineTotalMinor === amount.minor) previous.quantity = counted.quantity;
-      else if (counted && unmatched.length > 0 && /\p{L}{3,}/u.test(unmatched[unmatched.length - 1])) {
+      if (previous && previous.kind === "item" && previous.lineTotalMinor === amount.minor) previous.quantity = counted.quantity;
+      else if (unmatched.length > 0 && hasWord(unmatched[unmatched.length - 1])) {
         lines.push({ kind: "item", label: tidy(unmatched.pop()!), quantity: counted.quantity, lineTotalMinor: amount.minor, confidence });
       } else unmatched.push(text);
       continue;
     }
-    lines.push({ kind: "item", label, quantity: counted?.quantity ?? pendingQuantity ?? "1", lineTotalMinor: amount.minor, confidence });
+    // A price whose name could not be read (only a code, or nothing that is a word) is still something that was
+    // bought: it is kept, without a name, for the person to name. The price is real; a made-up name would not be.
+    lines.push({
+      kind: "item",
+      label: hasWord(label) ? label : "",
+      quantity: counted?.quantity ?? pendingQuantity ?? "1",
+      lineTotalMinor: amount.minor,
+      confidence: hasWord(label) ? confidence : Math.min(confidence ?? 30, 30),
+    });
     pendingQuantity = null;
   }
 
@@ -236,4 +288,86 @@ export function likelyDuplicates(lines: readonly { displayLabel?: string; label?
       ? [index]
       : [],
   );
+}
+
+/** How much of a name reads as words, weighted by how sure the recogniser was: for choosing between two readings of one row. */
+function nameQuality(line: ParsedLine): number {
+  const marks = line.label.replace(/\s/g, "").length;
+  if (marks === 0) return 0;
+  const words = (line.label.match(/\p{L}{3,}/gu) ?? []).join("").length;
+  return (line.confidence ?? 50) * (words / marks);
+}
+
+/**
+ * Two readings of the same receipt, made into one. The photo is read twice,
+ * prepared in two ways (as it is, and with the paper's tone and shadows
+ * evened out): each way loses different rows, and a price lost by one is
+ * often found by the other. Rows are matched by their amounts, in order;
+ * a row found by only one reading is kept; of two names for one row, the one
+ * that reads more like words wins. If one reading alone adds up to the
+ * printed total and the combination does not, that reading's rows are used,
+ * with the better names.
+ */
+export function mergeReadings(first: ParsedReceipt, second: ParsedReceipt): ParsedReceipt {
+  const a = first.lines;
+  const b = second.lines;
+  const same = (x: ParsedLine, y: ParsedLine) => x.kind === y.kind && x.lineTotalMinor === y.lineTotalMinor;
+
+  // The longest run of rows the two readings have in common, in order.
+  const common: number[][] = Array.from({ length: a.length + 1 }, () => new Array<number>(b.length + 1).fill(0));
+  for (let i = a.length - 1; i >= 0; i--) {
+    for (let j = b.length - 1; j >= 0; j--)
+      common[i][j] = same(a[i], b[j]) ? common[i + 1][j + 1] + 1 : Math.max(common[i + 1][j], common[i][j + 1]);
+  }
+  const better = (x: ParsedLine, y: ParsedLine): ParsedLine => {
+    const named = nameQuality(y) > nameQuality(x) ? y : x;
+    return { ...named, quantity: x.quantity !== "1" ? x.quantity : y.quantity, confidence: named.confidence };
+  };
+
+  const together: ParsedLine[] = [];
+  const firstNamed: ParsedLine[] = [];
+  const secondNamed: ParsedLine[] = [];
+  let i = 0;
+  let j = 0;
+  while (i < a.length || j < b.length) {
+    if (i < a.length && j < b.length && same(a[i], b[j])) {
+      const line = better(a[i++], b[j++]);
+      together.push(line);
+      firstNamed.push(line);
+      secondNamed.push(line);
+    } else if (j >= b.length || (i < a.length && common[i + 1][j] >= common[i][j + 1])) {
+      together.push(a[i]);
+      firstNamed.push(a[i++]);
+    } else {
+      together.push(b[j]);
+      secondNamed.push(b[j++]);
+    }
+  }
+
+  const sum = (lines: readonly ParsedLine[]) => lines.reduce((total, line) => total + line.lineTotalMinor, 0);
+  const totals = [first.printedTotalMinor, second.printedTotalMinor].filter((total): total is number => total !== null);
+  // The rows and the total that agree with each other, if any do: the combination first, then either reading alone.
+  const candidates: [ParsedLine[], ParsedReceipt][] = [
+    [together, first],
+    [firstNamed, first],
+    [secondNamed, second],
+  ];
+  for (const [lines, source] of candidates) {
+    const total = totals.find((printed) => printed === sum(lines));
+    if (total !== undefined && lines.length > 0) {
+      return {
+        lines,
+        printedTotalMinor: total,
+        includedTaxMinor: first.includedTaxMinor ?? second.includedTaxMinor,
+        unmatched: source === second ? second.unmatched : [],
+      };
+    }
+  }
+  // Nothing adds up: everything found is shown, and the person sees the difference.
+  return {
+    lines: together,
+    printedTotalMinor: first.printedTotalMinor ?? second.printedTotalMinor,
+    includedTaxMinor: first.includedTaxMinor ?? second.includedTaxMinor,
+    unmatched: [...new Set([...first.unmatched, ...second.unmatched])].slice(0, 40),
+  };
 }

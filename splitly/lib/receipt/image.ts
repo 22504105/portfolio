@@ -37,6 +37,12 @@ export function workSize(width: number, height: number): { width: number; height
   return { width: Math.max(1, Math.round(width * scale)), height: Math.max(1, Math.round(height * scale)) };
 }
 
+/** The working size with a small photo brought up to it (at most doubled): a messenger's copy of a photo has letters too small to read well. */
+export function enlargedSize(width: number, height: number): { width: number; height: number } {
+  const scale = Math.min(2, IMAGE_LIMITS.workSide / Math.max(width, height));
+  return { width: Math.max(1, Math.round(width * scale)), height: Math.max(1, Math.round(height * scale)) };
+}
+
 /** SHA-256 of the file as it came, in hex. */
 export async function hashOf(file: Blob): Promise<string> {
   const digest = await crypto.subtle.digest("SHA-256", await file.arrayBuffer());
@@ -73,8 +79,55 @@ export function stretchContrast(pixels: Uint8ClampedArray): void {
   }
 }
 
+/**
+ * The paper's tone and the shadows on it evened out: each point is set
+ * against the average of its surroundings, so that paper comes out the same
+ * light grey everywhere and ink stays as much darker than it as it was. This
+ * is what brings back a name lost under a shadow or under print showing
+ * through from the other side. `pixels` is RGBA and is changed in place (to
+ * greys); `width` and `height` are the picture's.
+ */
+export function evenOut(pixels: Uint8ClampedArray, width: number, height: number): void {
+  const grey = new Float32Array(width * height);
+  for (let index = 0; index < grey.length; index++)
+    grey[index] = pixels[index * 4] * 0.299 + pixels[index * 4 + 1] * 0.587 + pixels[index * 4 + 2] * 0.114;
+
+  // Sums over any rectangle in four look-ups: the average around every point without adding its neighbours up each time.
+  const stride = width + 1;
+  const sums = new Float64Array(stride * (height + 1));
+  for (let y = 0; y < height; y++) {
+    let row = 0;
+    for (let x = 0; x < width; x++) {
+      row += grey[y * width + x];
+      sums[(y + 1) * stride + x + 1] = sums[y * stride + x + 1] + row;
+    }
+  }
+  // The surroundings: wide enough to span several letters, so that a letter is judged against paper, not against itself.
+  const half = Math.max(12, Math.round(Math.max(width, height) / 60));
+  for (let y = 0; y < height; y++) {
+    const top = Math.max(0, y - half);
+    const bottom = Math.min(height, y + half + 1);
+    for (let x = 0; x < width; x++) {
+      const left = Math.max(0, x - half);
+      const right = Math.min(width, x + half + 1);
+      const around =
+        (sums[bottom * stride + right] - sums[top * stride + right] - sums[bottom * stride + left] + sums[top * stride + left]) /
+        ((right - left) * (bottom - top));
+      const value = Math.max(0, Math.min(255, Math.round((grey[y * width + x] / Math.max(1, around)) * 235)));
+      const at = (y * width + x) * 4;
+      pixels[at] = pixels[at + 1] = pixels[at + 2] = value;
+    }
+  }
+}
+
 /** The photo redrawn: sized for reading, turned, optionally enhanced, with nothing of the original file's own data. */
-export async function prepare(file: Blob, turn: Turn, enhance: boolean): Promise<{ blob: Blob; width: number; height: number }> {
+export async function prepare(
+  file: Blob,
+  turn: Turn,
+  enhance: boolean,
+  /** "evened": enlarged if small (small print reads badly) and with the paper's tone evened out; a second way to read the same photo. */
+  way: "plain" | "evened" = "plain",
+): Promise<{ blob: Blob; width: number; height: number }> {
   let bitmap: ImageBitmap;
   try {
     // "from-image": a phone photo taken upright is drawn upright.
@@ -85,17 +138,21 @@ export async function prepare(file: Blob, turn: Turn, enhance: boolean): Promise
   try {
     const problem = checkSize(bitmap.width, bitmap.height);
     if (problem) throw new Error(problem);
-    const size = workSize(bitmap.width, bitmap.height);
+    const size = way === "evened" ? enlargedSize(bitmap.width, bitmap.height) : workSize(bitmap.width, bitmap.height);
     const sideways = turn === 90 || turn === 270;
     const canvas = document.createElement("canvas");
     canvas.width = sideways ? size.height : size.width;
     canvas.height = sideways ? size.width : size.height;
-    const context = canvas.getContext("2d", { willReadFrequently: enhance });
+    const context = canvas.getContext("2d", { willReadFrequently: enhance || way === "evened" });
     if (!context) throw new Error("unreadable" satisfies ImageProblem);
     context.translate(canvas.width / 2, canvas.height / 2);
     context.rotate((turn * Math.PI) / 180);
     context.drawImage(bitmap, -size.width / 2, -size.height / 2, size.width, size.height);
-    if (enhance) {
+    if (way === "evened") {
+      const data = context.getImageData(0, 0, canvas.width, canvas.height);
+      evenOut(data.data, canvas.width, canvas.height);
+      context.putImageData(data, 0, 0);
+    } else if (enhance) {
       const data = context.getImageData(0, 0, canvas.width, canvas.height);
       stretchContrast(data.data);
       context.putImageData(data, 0, 0);

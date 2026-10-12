@@ -88,10 +88,15 @@ lists what the concept shows, what it leaves out, and which stage builds what.
   shared equally among the people chosen for it; unequal shares of one line
   (amounts, percentages) are not offered in the scanner, only in a
   hand-entered expense.
-- The word list knows about 120 everyday things. Anything else is shown as
-  printed and marked as not translated. Only the first known word of a name
-  is translated ("Grilled salmon" is shown as "Salmon", with the printed name
-  under it).
+- Names are shown as the receipt prints them. Translating is a choice the
+  person makes on the review screen (remembered on the device); it uses a
+  word list of about 120 everyday things and leaves the rest as printed.
+- Product codes and barcodes printed beside or above a name are left out.
+  Where print shows through from the back of the paper a name can still come
+  out as rubbish; its price is kept and the line is marked for a look.
+- A photo is read twice (as it is, and with the paper's tone evened out) and
+  the two readings are combined: about three seconds instead of one and a
+  half on a desktop, longer on a phone.
 - There is no list of past receipts as such: a receipt is its expense, and
   its lines are shown under that expense in the group.
 - Balances are shown per currency and per person. Who should pay whom, and

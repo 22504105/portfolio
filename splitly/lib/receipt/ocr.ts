@@ -83,11 +83,19 @@ export function linesFromTsv(tsv: string): OcrLine[] {
 }
 
 /**
- * Reads the picture in the given language. `onProgress` is told how far along
- * it is, from 0 to 1. The worker is always shut down afterwards: on a phone,
- * the memory matters more than the seconds a second scan would save.
+ * Reads the pictures in the given language, one after another with one
+ * worker, and gives back each one's rows. `onProgress` is told how far along
+ * it is, from 0 to 1. The first picture must be read; if a later one fails
+ * (a phone short of memory), what was read so far is returned. The worker is
+ * always shut down afterwards: on a phone, the memory matters more than the
+ * seconds a second scan would save.
  */
-export async function recognise(image: Blob, language: OcrLanguage, onProgress: (fraction: number) => void = () => {}): Promise<OcrLine[]> {
+export async function recognise(
+  images: readonly Blob[],
+  language: OcrLanguage,
+  onProgress: (fraction: number) => void = () => {},
+): Promise<OcrLine[][]> {
+  let reading = 0;
   const { createWorker } = await import("tesseract.js").catch(() => {
     throw new OcrError("load");
   });
@@ -103,7 +111,7 @@ export async function recognise(image: Blob, language: OcrLanguage, onProgress: 
       // Reading data is kept by the browser after the first scan, so the next one works with a poor connection.
       cacheMethod: "write",
       logger: (message: { status: string; progress: number }) => {
-        if (message.status === "recognizing text") onProgress(0.3 + message.progress * 0.7);
+        if (message.status === "recognizing text") onProgress(0.3 + ((reading + message.progress) / images.length) * 0.7);
         else if (typeof message.progress === "number") onProgress(Math.min(0.3, message.progress * 0.3));
       },
       errorHandler: () => {},
@@ -116,10 +124,19 @@ export async function recognise(image: Blob, language: OcrLanguage, onProgress: 
     // One block of text read row by row. (The "single column" mode reads a receipt as two columns, names and then
     // prices, because of the gap between them: every price loses its name.)
     await worker.setParameters({ tessedit_pageseg_mode: "6" as never, preserve_interword_spaces: "1" });
-    const { data } = await worker.recognize(image, {}, { tsv: true, text: false });
-    const lines = linesFromTsv(data.tsv ?? "");
-    if (lines.length === 0) throw new OcrError("empty");
-    return lines;
+    const readings: OcrLine[][] = [];
+    for (const image of images) {
+      try {
+        const { data } = await worker.recognize(image, {}, { tsv: true, text: false });
+        readings.push(linesFromTsv(data.tsv ?? ""));
+      } catch (error) {
+        if (readings.length === 0) throw error;
+        break;
+      }
+      reading++;
+    }
+    if (readings.every((lines) => lines.length === 0)) throw new OcrError("empty");
+    return readings;
   } catch (error) {
     throw error instanceof OcrError ? error : new OcrError("engine");
   } finally {

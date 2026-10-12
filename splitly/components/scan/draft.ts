@@ -48,16 +48,39 @@ export const emptyLine = (kind: LineKind = "item"): DraftLine => ({
   assigned: {},
 });
 
-/** What was read from the photo, as a draft to check: names translated where the word list knows them. */
+/**
+ * The name to show for a printed one. As printed, unless the person has
+ * asked for names to be translated (then the word list is tried) or has
+ * themselves renamed this very text before (their own name for it is used).
+ */
+function shownName(
+  printed: string,
+  language: DisplayLanguage,
+  mine: Readonly<Record<string, string>>,
+  translate: boolean,
+): { text: string; source: TranslationSource } {
+  const own = mine[correctionKey(printed)];
+  if (own) return { text: own, source: "user" };
+  return translate ? translateLabel(printed, language) : { text: printed, source: "none" };
+}
+
+/**
+ * What was read from the photo, as a draft to check. Names are shown as they
+ * are printed; `translate` is the person's choice to have them put into
+ * their language where the word list can. A price whose name could not be
+ * read gets a plain "Line 3": `unnamed` makes it.
+ */
 export function draftFrom(
   parsed: ParsedReceipt,
   currency: string,
   language: DisplayLanguage,
   mine: Readonly<Record<string, string>>,
+  translate: boolean,
+  unnamed: (position: number) => string,
 ): Draft {
   return {
-    lines: parsed.lines.map((line) => {
-      const shown = translateLabel(line.label, language, mine);
+    lines: parsed.lines.map((line, index) => {
+      const shown = line.label ? shownName(line.label, language, mine, translate) : { text: unnamed(index + 1), source: "none" as const };
       return {
         id: newId(),
         kind: line.kind,
@@ -75,6 +98,42 @@ export function draftFrom(
     includedTaxMinor: parsed.includedTaxMinor,
     unmatched: parsed.unmatched,
   };
+}
+
+/** The same draft with names translated or as printed. Lines the person has renamed themselves are left alone. */
+export function withTranslation(
+  draft: Draft,
+  language: DisplayLanguage,
+  mine: Readonly<Record<string, string>>,
+  translate: boolean,
+): Draft {
+  return {
+    ...draft,
+    lines: draft.lines.map((line) => {
+      if (line.kind !== "item" || !line.originalLabel || line.source === "user") return line;
+      const shown = shownName(line.originalLabel, language, mine, translate);
+      return { ...line, displayLabel: shown.text, source: shown.source };
+    }),
+  };
+}
+
+const TRANSLATE_KEY = "splitly-translate-v1";
+
+/** Whether this person, on this device, wants names translated. Not unless they said so. */
+export function readTranslate(): boolean {
+  try {
+    return window.localStorage.getItem(TRANSLATE_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+export function rememberTranslate(on: boolean): void {
+  try {
+    window.localStorage.setItem(TRANSLATE_KEY, on ? "1" : "0");
+  } catch {
+    // No storage: the choice holds for this receipt.
+  }
 }
 
 /** A line's amount in minor units with its sign (a discount takes off), or null if what is typed is not an amount above zero. */

@@ -16,6 +16,9 @@ type ReviewProps = {
   group: Group;
   draft: Draft;
   /** False when the lines are being typed in from nothing. */ fromPhoto: boolean;
+  /** Whether names are being translated, and the way to change that. */
+  translate: boolean;
+  onTranslate: (on: boolean) => void;
   onChange: (draft: Draft) => void;
   onBack: () => void;
   onContinue: () => void;
@@ -29,7 +32,7 @@ const ADJUSTMENTS: readonly LineKind[] = ["discount", "service", "tip", "tax", "
  * an amount, and the lines add up to what the receipt says (or the person
  * has said, with a line of its own, what the difference is).
  */
-export function ReviewStep({ group, draft, fromPhoto, onChange, onBack, onContinue }: ReviewProps) {
+export function ReviewStep({ group, draft, fromPhoto, translate, onTranslate, onChange, onBack, onContinue }: ReviewProps) {
   const { t, locale } = useApp();
   const currency = group.baseCurrency;
   const [tried, setTried] = useState(false);
@@ -77,6 +80,21 @@ export function ReviewStep({ group, draft, fromPhoto, onChange, onBack, onContin
         </div>
       </div>
 
+      {fromPhoto && (
+        <label className="mt-3 flex min-h-11 cursor-pointer items-start gap-2.5 py-1.5">
+          <input
+            type="checkbox"
+            className="accent-primary mt-0.5 size-5 shrink-0"
+            checked={translate}
+            onChange={(event) => onTranslate(event.target.checked)}
+          />
+          <span>
+            <span className="type-small block font-semibold">{t.scan.translate}</span>
+            <span className="type-small text-ink-muted block">{t.scan.translateHint}</span>
+          </span>
+        </label>
+      )}
+
       <ul aria-label={t.scan.lines} className="mt-4 flex flex-col gap-2.5">
         {draft.lines.map((line, index) => {
           const amount = amountOf(line, currency);
@@ -103,7 +121,7 @@ export function ReviewStep({ group, draft, fromPhoto, onChange, onBack, onContin
                       {fill(t.scan.original, { text: line.originalLabel })}
                     </p>
                   )}
-                  {line.kind === "item" && line.source === "none" && line.originalLabel && (
+                  {translate && line.kind === "item" && line.source === "none" && line.originalLabel && (
                     <p className="type-small text-ink-muted mt-1">{t.scan.untranslated}</p>
                   )}
                   {line.kind !== "item" && <p className="type-small text-ink-muted mt-1">{t.scan.kinds[line.kind]}</p>}

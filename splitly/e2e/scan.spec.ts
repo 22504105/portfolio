@@ -49,10 +49,18 @@ test("the concept's receipt, start to finish: read on the device, checked, given
   await read(page, "receipt-tr", "tur");
   await expect(page.getByRole("heading", { level: 1, name: "Check the receipt" })).toBeVisible();
   await expect(page.getByText("The receipt was read")).toBeVisible();
-  // Five things bought, named in English from the word list, each with the printed Turkish kept under it.
-  expect(await names(page)).toEqual(["Milk 1 l", "Chicken breast", "Bread", "Cheese", "Laundry detergent"]);
+  // Five things bought, named exactly as the receipt prints them: nothing is translated unless asked for.
+  expect(await names(page)).toEqual(["SÜT 1L", "TAVUK GÖĞSÜ", "EKMEK", "PEYNIR", "DETERJAN"]);
   expect(await amounts(page)).toEqual(["80.00", "360.00", "40.00", "240.00", "480.00"]);
+  await expect(page.getByText(/^As printed:/)).toHaveCount(0);
+  // Asked for: the names the word list knows are put into English, each with the printed Turkish kept under it.
+  await page.getByLabel("Translate the names into English").check();
+  expect(await names(page)).toEqual(["Milk 1 l", "Chicken breast", "Bread", "Cheese", "Laundry detergent"]);
   await expect(page.getByText("As printed: TAVUK GÖĞSÜ")).toBeVisible();
+  // And taken back: as printed again.
+  await page.getByLabel("Translate the names into English").uncheck();
+  expect(await names(page)).toEqual(["SÜT 1L", "TAVUK GÖĞSÜ", "EKMEK", "PEYNIR", "DETERJAN"]);
+  await page.getByLabel("Translate the names into English").check();
   await expect(page.getByTestId("scan-sum")).toHaveText(/1,200\.00\sTRY/);
   await expect(page.getByText("The lines add up to the receipt's total.")).toBeVisible();
   await expect(page.getByText(/reports 96\.12\sTRY of tax already inside its prices/)).toBeVisible();
@@ -105,7 +113,7 @@ test("an English bill and a Russian receipt are read with their discounts, and R
   await read(page, "receipt-en", "eng");
   await expect(page.getByRole("heading", { level: 1, name: "Check the receipt" })).toBeVisible();
   expect(await amounts(page)).toEqual(["9.00", "24.50", "12.00", "34.50", "4.55", "5.12"]);
-  expect((await names(page)).slice(0, 4)).toEqual(["Lentil soup", "Salmon", "Cola", "Wine"]);
+  expect((await names(page)).slice(0, 4)).toEqual(["Lentil soup", "Grilled salmon", "Cola", "House wine"]);
   // 9.00 + 24.50 + 12.00 + 34.50 − 4.55 + 5.12.
   await expect(page.getByTestId("scan-sum")).toHaveText(/^80\.57\sTRY$/);
   await expect(page.getByText("The lines add up to the receipt's total.")).toBeVisible();
@@ -114,9 +122,13 @@ test("an English bill and a Russian receipt are read with their discounts, and R
   expect(await amounts(page)).toEqual(["89.90", "54.00", "116.40", "312.50", "30.00"]);
   await expect(page.getByTestId("scan-sum")).toHaveText(/^542\.80\sTRY$/);
 
-  // The Turkish receipt, for someone reading in Russian.
+  // The Turkish receipt, for someone reading in Russian: as printed, and in Russian once they ask.
   await read(page, "receipt-tr", "tur", "/ru/demo/scan?group=demo-istanbul");
   await expect(page.getByRole("heading", { level: 1, name: "Проверка чека" })).toBeVisible();
+  expect(
+    await page.getByLabel(/^Название строки/).evaluateAll((inputs) => inputs.map((input) => (input as HTMLInputElement).value)),
+  ).toEqual(["SÜT 1L", "TAVUK GÖĞSÜ", "EKMEK", "PEYNIR", "DETERJAN"]);
+  await page.getByLabel("Переводить названия на русский").check();
   expect(
     await page.getByLabel(/^Название строки/).evaluateAll((inputs) => inputs.map((input) => (input as HTMLInputElement).value)),
   ).toEqual(["Молоко 1 л", "Куриное филе", "Хлеб", "Сыр", "Средство для стирки"]);
@@ -126,16 +138,16 @@ test("an English bill and a Russian receipt are read with their discounts, and R
 
 test("a receipt that does not add up cannot go on until the difference is corrected or recorded", async ({ page }) => {
   await read(page, "receipt-tr", "tur");
-  await page.getByLabel("Amount of Bread").fill("45");
+  await page.getByLabel("Amount of EKMEK").fill("45");
   await expect(page.getByText(/The lines add up to 5\.00\sTRY more than the receipt says\./)).toBeVisible();
   await page.getByRole("button", { name: "Continue" }).click();
   await expect(main(page).getByRole("alert")).toHaveText("The lines must add up to the receipt's total before going on.");
   await expect(page.getByRole("heading", { level: 1, name: "Check the receipt" })).toBeVisible();
 
   // An amount that is not one is refused, not guessed at.
-  await page.getByLabel("Amount of Bread").fill("4O");
+  await page.getByLabel("Amount of EKMEK").fill("4O");
   await expect(main(page).getByRole("alert").first()).toHaveText("Type an amount above zero, like 1250 or 12,50.");
-  await page.getByLabel("Amount of Bread").fill("30");
+  await page.getByLabel("Amount of EKMEK").fill("30");
   await expect(page.getByText(/The receipt says 10\.00\sTRY more than the lines\./)).toBeVisible();
 
   // The other way out: say what the difference is, as a line of its own.
@@ -145,7 +157,7 @@ test("a receipt that does not add up cannot go on until the difference is correc
 
   // A line renamed by the person, a line removed and one added.
   await page.getByLabel("Name of line 1").fill("Oat milk");
-  await page.getByRole("button", { name: "Remove Cheese" }).click();
+  await page.getByRole("button", { name: "Remove PEYNIR" }).click();
   await page.getByRole("button", { name: "Add a line" }).click();
   await page.getByLabel("Name of line 6").fill("Kashar");
   await page.getByLabel("Amount of Kashar").fill("240,00");
@@ -201,7 +213,7 @@ test("the same photo twice is noticed, and added again only on purpose", async (
   const once = async () => {
     await read(page, "receipt-en", "eng");
     await page.getByRole("button", { name: "Continue" }).click();
-    for (const item of ["Lentil soup", "Salmon", "Cola", "Wine"])
+    for (const item of ["Lentil soup", "Grilled salmon", "Cola", "House wine"])
       await who(page, item).getByRole("button", { name: "Everyone (4)" }).click();
     await page.getByRole("button", { name: "Create the expense" }).click();
   };
@@ -281,4 +293,19 @@ test("the reader is served by the site itself, and the page may compile it but n
   expect(policy).not.toContain("'unsafe-eval'");
   expect(policy).toMatch(/connect-src 'self';/);
   expect(policy).toMatch(/worker-src 'self' blob:;/);
+});
+
+test("the choice to translate is remembered on the device, and a name the person gave is kept either way", async ({ page }) => {
+  await read(page, "receipt-tr", "tur");
+  await page.getByLabel("Translate the names into English").check();
+  await page.getByLabel("Name of line 3").fill("Sourdough");
+  await page.getByLabel("Translate the names into English").uncheck();
+  // Their own name for the bread stays; the rest go back to the print.
+  expect(await names(page)).toEqual(["SÜT 1L", "TAVUK GÖĞSÜ", "Sourdough", "PEYNIR", "DETERJAN"]);
+  await page.getByLabel("Translate the names into English").check();
+
+  // The next receipt on this device is translated without asking again.
+  await read(page, "receipt-tr", "tur");
+  await expect(page.getByLabel("Translate the names into English")).toBeChecked();
+  expect(await names(page)).toEqual(["Milk 1 l", "Chicken breast", "Bread", "Cheese", "Laundry detergent"]);
 });

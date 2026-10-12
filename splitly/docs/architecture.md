@@ -178,5 +178,19 @@ Rules worth knowing:
 - **The reader's files are not in the repository.** `scripts/ocr-assets.mjs`
   copies the worker, the engine and three languages' data (about 21 MB) from
   the pinned packages into `public/ocr` before every `dev` and `build`.
+- **Two readings, one result.** The photo is prepared twice (`plain`, and
+  `evened`: enlarged if small, paper tone and shadows divided out) and read
+  twice by one worker; `mergeReadings` matches rows by their amounts, keeps a
+  row either reading found, and of two names takes the one that reads more
+  like words. If one reading alone adds up to the printed total and the
+  combination does not, that reading's rows are used.
+- **A slanted photo**: words are put into rows by position after the page's
+  slant is found (the angle at which they fall into the fewest rows).
+- **Till numbers are not names**: a run of five or more digits is a code and
+  is dropped, with whatever is glued to digits right after it; sizes ("1LT",
+  "20x30") stay. A price whose name cannot be read is kept without a name,
+  marked as doubtful, for the person to name.
+- **Starred prices** ("*94,51") come out of the recogniser as "x94,51" or
+  "<4,00": the mark is recognised at the end of a row and removed.
 - **Layout mode**: one block read row by row. The "single column" mode read a
   receipt as two columns, names and then prices.
