@@ -8,7 +8,7 @@ import type { DemoGroup } from "./demo";
 
 const TEXT = {
   en: {
-    you: "You",
+    you: "Alex",
     trip: "Istanbul weekend",
     flat: "Flat in Moda",
     kerem: "Kerem",
@@ -25,7 +25,7 @@ const TEXT = {
     supplies: "Cleaning supplies",
   },
   ru: {
-    you: "Вы",
+    you: "Алексей",
     trip: "Выходные в Стамбуле",
     flat: "Квартира в Моде",
     kerem: "Керем",
@@ -88,7 +88,7 @@ export function seedGroups(locale: string, now = new Date()): DemoGroup[] {
 
   const everyone = (ids: string[]): [string, number][] => ids.map((id) => [id, 1]);
   const trip = ["t-you", "t-deniz", "t-mira", "t-kerem"];
-  const flat = ["f-you", "f-alex", "f-sam"];
+  const flat = ["f-you", "f-nika", "f-sam"];
 
   return [
     {
@@ -140,15 +140,15 @@ export function seedGroups(locale: string, now = new Date()): DemoGroup[] {
       name: t.flat,
       baseCurrency: "EUR",
       archivedAt: null,
-      members: [member("f-you", t.you, { self: true, role: "owner" }), member("f-alex", "Alex"), member("f-sam", "Sam")],
+      members: [member("f-you", t.you, { self: true, role: "owner" }), member("f-nika", "Nika"), member("f-sam", "Sam")],
       keys: {},
       expenses: [
         expense("f-e1", t.supplies, "groceries", 1, "TRY", 64_000, [["f-you", 64_000]], "equal", everyone(flat)),
         expense("f-e2", t.groceries, "groceries", 2, "EUR", 8_640, [["f-sam", 8_640]], "equal", everyone(flat)),
         expense("f-e3", t.internet, "other", 5, "EUR", 3_500, [["f-you", 3_500]], "equal", everyone(flat)),
-        expense("f-e4", t.rent, "lodging", 11, "EUR", 120_000, [["f-alex", 120_000]], "percent", [
+        expense("f-e4", t.rent, "lodging", 11, "EUR", 120_000, [["f-nika", 120_000]], "percent", [
           ["f-you", 4000],
-          ["f-alex", 3000],
+          ["f-nika", 3000],
           ["f-sam", 3000],
         ]),
       ],

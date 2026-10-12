@@ -1,14 +1,26 @@
-import { ArrowRight, Send } from "lucide-react";
+import { HandCoins, Languages, MonitorSmartphone, ScanLine, Send, Split, type LucideIcon } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { Logo } from "@/components/brand/Logo";
 import { LocaleSwitch } from "@/components/shell/LocaleSwitch";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { pageLocale } from "@/lib/page";
 
-// The front door: what Splitly is, and the way into the demo.
+// What each of the four promises looks like, and whether it is kept yet.
+const FEATURES: readonly { icon: LucideIcon; built: boolean }[] = [
+  { icon: ScanLine, built: false },
+  { icon: Languages, built: false },
+  { icon: Split, built: false },
+  { icon: HandCoins, built: true },
+];
+
+// The front door, after the concept's cover: the mark, the promise, the
+// friends with their bill, four things Splitly does, and two ways in.
 export default async function OnboardingPage({ params }: PageProps<"/[locale]">) {
   const { locale, dictionary } = await pageLocale(params);
   const t = dictionary.onboarding;
+  // The bot's public @name. With it the first button opens Telegram; without it, the page that explains how.
+  const bot = /^[A-Za-z0-9_]{5,32}$/.test(process.env.TELEGRAM_BOT_USERNAME ?? "") ? process.env.TELEGRAM_BOT_USERNAME : null;
 
   return (
     <div className="mx-auto flex min-h-dvh w-full max-w-5xl flex-col px-4 pt-[env(safe-area-inset-top)] sm:px-6">
@@ -19,7 +31,7 @@ export default async function OnboardingPage({ params }: PageProps<"/[locale]">)
         {dictionary.nav.skip}
       </a>
       <header className="flex h-16 items-center justify-between gap-3 md:h-20">
-        <Logo />
+        <Logo className="text-[1.5rem]" markClassName="size-10" />
         <div className="flex items-center gap-2">
           <LocaleSwitch locale={locale} labels={dictionary.language} />
           <ThemeToggle labels={dictionary.theme} />
@@ -27,45 +39,57 @@ export default async function OnboardingPage({ params }: PageProps<"/[locale]">)
       </header>
 
       <main id="main" tabIndex={-1} className="flex-1 pb-12 outline-none">
-        <section className="grid items-center gap-x-12 gap-y-10 py-8 md:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] md:py-16">
+        <section className="grid items-center gap-x-12 gap-y-8 py-6 md:grid-cols-2 md:py-14">
           <div>
-            <p className="type-label text-positive">{dictionary.brand.tagline}</p>
-            <h1 className="type-display mt-4 text-balance">{t.title}</h1>
+            <p className="text-ink-muted text-[1.0625rem]" lang="en">
+              {dictionary.brand.tagline}
+            </p>
+            <h1 className="type-display mt-3 text-balance">{t.title}</h1>
             <p className="type-lead text-ink-muted mt-5 max-w-xl">{t.lead}</p>
-            <div className="mt-8">
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <a
+                href={bot ? `https://t.me/${bot}` : `/${locale}/app`}
+                className="bg-hero text-on-hero shadow-raised inline-flex h-14 items-center justify-center gap-2.5 rounded-full px-7 text-[1.0625rem] font-semibold transition-opacity hover:opacity-92"
+              >
+                <Send aria-hidden="true" className="size-5" />
+                {t.openTelegram}
+              </a>
               <Link
                 href={`/${locale}/demo`}
-                className="rounded-control bg-primary text-on-primary hover:bg-primary-hover inline-flex h-14 w-full items-center justify-center gap-2 px-6 text-[1.0625rem] font-semibold transition-colors sm:w-auto"
+                className="border-field bg-surface text-ink hover:bg-surface-2 inline-flex h-14 items-center justify-center gap-2.5 rounded-full border px-7 text-[1.0625rem] font-semibold transition-colors"
               >
+                <MonitorSmartphone aria-hidden="true" className="size-5" />
                 {t.openDemo}
-                <ArrowRight aria-hidden="true" className="size-5" />
               </Link>
-              <p className="type-small text-ink-muted mt-3">{t.demoHint}</p>
             </div>
+            <p className="type-small text-ink-muted mt-3">{t.demoHint}</p>
           </div>
 
-          {/* Not a button: sign-in does not exist yet, and nothing here pretends that it does. */}
-          <aside className="card p-5 sm:p-6">
-            <p className="type-heading flex items-center gap-2">
-              <span className="bg-accent text-on-accent flex size-9 items-center justify-center rounded-full">
-                <Send aria-hidden="true" className="size-4" />
-              </span>
-              {t.telegram}
-            </p>
-            <p className="type-small text-ink-muted mt-3">{t.telegramHint}</p>
-          </aside>
+          <Image
+            src="/concept/friends.webp"
+            alt={t.illustration}
+            width={808}
+            height={480}
+            priority
+            sizes="(min-width: 768px) 28rem, 100vw"
+            className="w-full rounded-[24px] object-cover"
+          />
         </section>
 
-        <ul className="grid gap-4 md:grid-cols-3">
-          {t.points.map((point) => (
-            <li key={point.title} className="card p-5">
-              <h2 className="type-heading">{point.title}</h2>
-              <p className="type-small text-ink-muted mt-2">{point.body}</p>
+        <ul className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          {FEATURES.map((feature, index) => (
+            <li key={t.features[index]} className="card flex flex-col items-center gap-3 p-4 text-center">
+              <span aria-hidden="true" className="bg-accent text-on-accent flex size-12 items-center justify-center rounded-full">
+                <feature.icon className="size-6" />
+              </span>
+              <span className="font-semibold text-balance">{t.features[index]}</span>
+              {!feature.built && <span className="type-small border-field text-ink-muted rounded-full border px-2 py-px">{t.soon}</span>}
             </li>
           ))}
         </ul>
 
-        <p className="type-small text-ink-muted mt-8 max-w-2xl">{t.limits}</p>
+        <p className="type-small text-ink-muted mt-8 max-w-2xl">{t.built}</p>
+        <p className="type-small text-ink-muted mt-3 max-w-2xl">{t.limits}</p>
       </main>
     </div>
   );

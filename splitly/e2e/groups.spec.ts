@@ -1,12 +1,20 @@
 import { expect, test, type Page } from "@playwright/test";
 
-// Stage 2 in a real browser, on the demo: groups, people and expenses typed
-// in by hand. The demo applies the same rules as the server (the server's own
-// are tested against a real database in tests/db/api.test.ts).
+// Stage 2 in a real browser, on the demo, in the concept's design: groups,
+// people and expenses typed in by hand. The demo applies the same rules as
+// the server (the server's own are tested against a real database in
+// tests/db/api.test.ts).
 
 const overflow = (page: Page) => page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+const main = (page: Page) => page.getByRole("main");
+const tab = (page: Page, name: string) => page.getByRole("tab", { name, exact: true });
+/** The list of people with what each is owed or owes, on a group's Expenses tab. */
+const balances = (page: Page) => page.getByRole("region", { name: "People", exact: true }).getByRole("listitem");
+const said = (page: Page, text: string) => page.getByRole("status").filter({ hasText: text });
+const openAdd = (page: Page) => main(page).getByRole("link", { name: "Add expense" }).click();
+const save = (page: Page) => page.getByRole("button", { name: "Add expense", exact: true }).click();
 
-/** Creates a group with two guests and lands on its page. */
+/** Creates a group with two people added by name and lands on its Expenses tab. */
 async function newGroup(page: Page, name: string) {
   await page.goto("/en/demo/groups", { waitUntil: "networkidle" });
   await page.getByRole("button", { name: "New group" }).click();
@@ -14,29 +22,66 @@ async function newGroup(page: Page, name: string) {
   await page.getByLabel("Main currency").selectOption("EUR");
   await page.getByRole("button", { name: "Create group" }).click();
   await expect(page.getByRole("heading", { level: 1, name })).toBeVisible();
+  await tab(page, "Settings").click();
   for (const guest of ["Lena", "Omar"]) {
     await page.getByLabel("Add someone by name").fill(guest);
     await page.getByRole("button", { name: "Add", exact: true }).click();
-    await expect(page.getByRole("status").filter({ hasText: `${guest} added` })).toBeVisible();
+    await expect(said(page, `${guest} added`)).toBeVisible();
   }
+  await tab(page, "Expenses").click();
 }
 
-const balances = (page: Page) => page.getByRole("region", { name: "Balances" }).getByRole("listitem");
-
-test("the demo opens on invented groups with the visitor's balance worked out", async ({ page }) => {
+test("home, as in the concept: a greeting, one group on the green card, its latest expenses", async ({ page }) => {
   await page.goto("/en/demo", { waitUntil: "networkidle" });
-  const mine = page.getByRole("region", { name: "Where you stand" });
-  // Both groups together, each currency on its own line: 1,462.37 + 426.66 TRY owed to you, 485.47 EUR owed by you.
-  await expect(mine.getByRole("listitem")).toHaveText(["You owe485.47 EUR", "You are owed1,889.03 TRY"]);
-  await expect(mine).toContainText("Each currency is kept apart");
-  await expect(page.getByRole("link", { name: /Istanbul weekend/ })).toContainText("People: 4 · Expenses: 6 · TRY");
+  await expect(page.getByRole("heading", { level: 1, name: "Hi, Alex!" })).toBeVisible();
 
+  const card = page.getByRole("region", { name: "Istanbul weekend" });
+  await expect(card).toContainText("Total spent");
+  // 420 − 450 + 2,480 + 1,800 + 360.50 + 950: the cancelled deposit does not count.
+  await expect(card).toContainText("5,560.50 TRY");
+  await expect(card.getByRole("link", { name: "Add expense" })).toHaveAttribute("href", "/en/demo/add?group=demo-istanbul");
+  const recent = page.getByRole("region", { name: "Recent expenses" });
+  await expect(recent.getByRole("listitem")).toHaveCount(5);
+  await expect(recent.getByRole("listitem").first()).toContainText("Baklava and tea");
+
+  // The other group, picked from the switch above the card.
+  await page.getByRole("radiogroup", { name: "Group" }).getByText("Flat in Moda").click();
+  const flat = page.getByRole("region", { name: "Flat in Moda" });
+  await expect(flat).toContainText("1,321.40 EUR");
+  await expect(flat).toContainText("640.00 TRY");
+
+  // Both groups together, each currency on its own line: 1,462.37 + 426.66 TRY owed to you, 485.47 EUR owed by you.
+  await expect(page.getByRole("region", { name: "Where you stand" }).getByRole("listitem")).toHaveText([
+    "You owe485.47 EUR",
+    "You are owed1,889.03 TRY",
+  ]);
+  await expect(page.getByText("Each currency is kept apart")).toBeVisible();
+
+  // Scanning is the next stage: the button leads to a page that says so.
+  await flat.getByRole("link", { name: "Scan receipt" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Scan a receipt" })).toBeVisible();
+  await expect(page.getByText("This screen is built in stage 3")).toBeVisible();
+});
+
+test("a group, as in the concept: faces, tabs, and everyone's balance with its sign", async ({ page }) => {
+  await page.goto("/en/demo/groups", { waitUntil: "networkidle" });
+  await expect(page.getByRole("link", { name: /Istanbul weekend/ })).toContainText("People: 4 · Expenses: 6 · TRY");
   await page.getByRole("link", { name: /Flat in Moda/ }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Flat in Moda" })).toBeVisible();
-  // Rent 1,200.00 at 40 / 30 / 30, paid by Alex; internet 35.00 by you; groceries 86.40 by Sam.
-  await expect(balances(page).filter({ hasText: "Alex" })).toContainText("gets back 799.53 EUR");
-  await expect(balances(page).filter({ hasText: "You" })).toContainText("owes 485.47 EUR");
-  await expect(balances(page).filter({ hasText: "You" })).toContainText("gets back 426.66 TRY");
+  await expect(page.getByText("People: 3 · EUR")).toBeVisible();
+
+  // Rent 1,200.00 at 40 / 30 / 30, paid by Nika; internet 35.00 by you; groceries 86.40 by Sam.
+  await expect(balances(page).filter({ hasText: "Nika" })).toContainText(/gets back \+799\.53\sEUR/);
+  await expect(balances(page).filter({ hasText: "Alex" })).toContainText(/owes -485\.47\sEUR/);
+  await expect(balances(page).filter({ hasText: "Alex" })).toContainText(/gets back \+426\.66\sTRY/);
+
+  // What a later stage builds says so, in its own tab.
+  await tab(page, "Debts").click();
+  await expect(page.getByRole("tabpanel")).toContainText("built in stage 4");
+  await tab(page, "Analytics").click();
+  await expect(page.getByRole("tabpanel")).toContainText("built in stage 4");
+  await tab(page, "Settings").click();
+  await expect(page.getByRole("region", { name: "Group settings" })).toBeVisible();
   expect(await overflow(page)).toBe(0);
 });
 
@@ -46,87 +91,96 @@ test("the demo never talks to the server about data", async ({ page }) => {
     if (new URL(request.url()).pathname.startsWith("/api/v1")) calls.push(request.url());
   });
   await newGroup(page, "Offline trip");
-  await page.getByRole("link", { name: "Add expense" }).first().click();
-  await page.getByLabel("What was it").fill("Coffee");
+  await openAdd(page);
+  await page.getByLabel("Description").fill("Coffee");
   await page.getByLabel("Amount", { exact: true }).fill("9");
-  await page.getByRole("button", { name: "Save expense" }).click();
-  await expect(page.getByRole("status").filter({ hasText: "Expense saved" })).toBeVisible();
+  await save(page);
+  await expect(said(page, "Expense saved")).toBeVisible();
   expect(calls).toEqual([]);
 });
 
 test("a new group, two people added by name, and an expense split equally to the last cent", async ({ page }) => {
   await newGroup(page, "Road trip");
-  await page.getByRole("link", { name: "Add expense" }).first().click();
-  await expect(page.getByLabel("Group")).toHaveValue(/.+/);
+  await openAdd(page);
+  await expect(page.getByRole("heading", { level: 1, name: "New expense" })).toBeVisible();
   await expect(page.getByLabel("Currency")).toHaveValue("EUR");
 
-  await page.getByLabel("What was it").fill("Petrol");
+  await page.getByRole("button", { name: "Transport" }).click();
+  await expect(page.getByRole("button", { name: "Transport" })).toHaveAttribute("aria-pressed", "true");
+  await page.getByLabel("Description").fill("Petrol");
   await page.getByLabel("Amount", { exact: true }).fill("100");
   // 100.00 between three: the extra cent goes to the first person listed.
   await expect(page.getByTestId(/^share-/)).toHaveText(["33.34 EUR", "33.33 EUR", "33.33 EUR"]);
-  await page.getByRole("button", { name: "Save expense" }).click();
+  await save(page);
 
   await expect(page).toHaveURL(/\/en\/demo\/groups\/[0-9a-f-]{36}$/);
   await expect(page.getByRole("region", { name: "Where you stand" })).toContainText("You are owed");
   await expect(page.getByRole("region", { name: "Where you stand" })).toContainText("66.66 EUR");
-  await expect(balances(page)).toContainText([/You.*gets back 66\.66\sEUR/, /Lena.*owes 33\.33\sEUR/, /Omar.*owes 33\.33\sEUR/]);
+  await expect(balances(page)).toContainText([/Alex.*gets back \+66\.66\sEUR/, /Lena.*owes -33\.33\sEUR/, /Omar.*owes -33\.33\sEUR/]);
 
   // It is still there after a reload: kept in this browser.
   await page.reload({ waitUntil: "networkidle" });
   await expect(page.getByRole("button", { name: /Petrol/ })).toContainText("100.00 EUR");
   await expect(page.getByRole("button", { name: /Petrol/ })).toContainText("your share 33.34 EUR");
+  await page.getByRole("button", { name: /Petrol/ }).click();
+  await expect(page.getByText("Transport", { exact: true })).toBeVisible();
 });
 
 test("the form says what is wrong, in words, and saves nothing until it is right", async ({ page }) => {
   await newGroup(page, "Checks");
-  await page.getByRole("link", { name: "Add expense" }).first().click();
-  await page.getByRole("button", { name: "Save expense" }).click();
-  await expect(page.getByRole("main").getByRole("alert")).toContainText(["Say what it was", "Type an amount above zero"]);
-  await expect(page.getByLabel("What was it")).toHaveAttribute("aria-invalid", "true");
+  await openAdd(page);
+  await save(page);
+  await expect(main(page).getByRole("alert")).toContainText(["Type an amount above zero", "Say what it was"]);
+  await expect(page.getByLabel("Description")).toHaveAttribute("aria-invalid", "true");
 
-  await page.getByLabel("What was it").fill("Hotel");
+  await page.getByLabel("Description").fill("Hotel");
   // An amount that could be read two ways is refused, not guessed.
   await page.getByLabel("Amount", { exact: true }).fill("1.234");
-  await expect(page.getByRole("main").getByRole("alert")).toContainText(["Type an amount above zero"]);
+  await expect(main(page).getByRole("alert")).toContainText(["Type an amount above zero"]);
   await page.getByLabel("Amount", { exact: true }).fill("300");
-  await expect(page.getByRole("main").getByRole("alert")).toHaveCount(0);
+  await expect(main(page).getByRole("alert")).toHaveCount(0);
+
+  // Someone who did not take part is tapped out, and back in.
+  await page.getByLabel("Omar takes part").uncheck({ force: true });
+  await expect(page.getByTestId(/^share-/)).toHaveText(["150.00 EUR", "150.00 EUR"]);
+  await page.getByLabel("Omar takes part").check({ force: true });
 
   // By amounts: the form says how much is left as it is typed.
-  await page.getByText("Amounts", { exact: true }).click();
-  await page.getByLabel("You: Amounts").fill("100");
-  await page.getByLabel("Lena: Amounts").fill("150");
-  await page.getByLabel("Omar: Amounts").fill("0");
+  await page.getByText("By amounts", { exact: true }).click();
+  await page.getByLabel("Alex: By amounts").fill("100");
+  await page.getByLabel("Lena: By amounts").fill("150");
+  await page.getByLabel("Omar: By amounts").fill("0");
   await expect(page.getByText("50.00 EUR still to assign")).toBeVisible();
-  await page.getByRole("button", { name: "Save expense" }).click();
-  await expect(page.getByRole("main").getByRole("alert")).toContainText(["The amounts must add up to the total."]);
-  await page.getByLabel("Omar: Amounts").fill("60");
+  await save(page);
+  await expect(main(page).getByRole("alert")).toContainText(["The amounts must add up to the total."]);
+  await page.getByLabel("Omar: By amounts").fill("60");
   await expect(page.getByText("10.00 EUR too much")).toBeVisible();
-  await page.getByLabel("Omar: Amounts").fill("50");
-  await expect(page.getByRole("main").getByRole("alert")).toHaveCount(0);
+  await page.getByLabel("Omar: By amounts").fill("50");
+  await expect(main(page).getByRole("alert")).toHaveCount(0);
 
   // By percent.
-  await page.getByText("Percent", { exact: true }).click();
-  await page.getByLabel("You: Percent").fill("50");
-  await page.getByLabel("Lena: Percent").fill("25");
-  await page.getByLabel("Omar: Percent").fill("20");
+  await page.getByText("By percent", { exact: true }).click();
+  await page.getByLabel("Alex: By percent").fill("50");
+  await page.getByLabel("Lena: By percent").fill("25");
+  await page.getByLabel("Omar: By percent").fill("20");
   await expect(page.getByText("5% still to assign")).toBeVisible();
-  await page.getByLabel("Omar: Percent").fill("25");
+  await page.getByLabel("Omar: By percent").fill("25");
   await expect(page.getByTestId(/^share-/)).toHaveText(["150.00 EUR", "75.00 EUR", "75.00 EUR"]);
 
   // Several people paid.
   await page.getByLabel("Several people paid").check();
-  await page.getByLabel("You paid").fill("200");
+  await page.getByLabel("Alex paid").fill("200");
   await expect(page.getByText("100.00 EUR still to assign")).toBeVisible();
   await page.getByLabel("Lena paid").fill("100");
 
-  await page.getByRole("button", { name: "Save expense" }).click();
-  await expect(page.getByRole("status").filter({ hasText: "Expense saved" })).toBeVisible();
+  await save(page);
+  await expect(said(page, "Expense saved")).toBeVisible();
   // You paid 200 and owe 150; Lena paid 100 and owes 75; Omar owes 75.
-  await expect(balances(page)).toContainText([/You.*gets back 50\.00\sEUR/, /Lena.*gets back 25\.00\sEUR/, /Omar.*owes 75\.00\sEUR/]);
+  await expect(balances(page)).toContainText([/Alex.*gets back \+50\.00\sEUR/, /Lena.*gets back \+25\.00\sEUR/, /Omar.*owes -75\.00\sEUR/]);
 
   await page.getByRole("button", { name: /Hotel/ }).click();
   await expect(page.getByRole("button", { name: /Hotel/ })).toContainText("2 people paid");
-  await expect(page.getByText("Owes · Percent")).toBeVisible();
+  await expect(page.getByText("Owes · By percent")).toBeVisible();
 });
 
 test("an expense is changed by replacing it and cancelled without erasing it", async ({ page }) => {
@@ -135,12 +189,13 @@ test("an expense is changed by replacing it and cancelled without erasing it", a
   await page.getByRole("link", { name: "Change" }).click();
 
   await expect(page.getByRole("heading", { level: 1, name: "Change expense" })).toBeVisible();
-  await expect(page.getByLabel("What was it")).toHaveValue("Dinner in Karaköy");
+  await expect(page.getByLabel("Description")).toHaveValue("Dinner in Karaköy");
   await expect(page.getByLabel("Amount", { exact: true })).toHaveValue("2480.00");
+  await expect(page.getByRole("button", { name: "Eating out" })).toHaveAttribute("aria-pressed", "true");
   await page.getByLabel("Amount", { exact: true }).fill("2000");
-  await page.getByLabel("What was it").fill("Dinner in Karaköy, corrected");
+  await page.getByLabel("Description").fill("Dinner in Karaköy, corrected");
   await page.getByRole("button", { name: "Save changes" }).click();
-  await expect(page.getByRole("status").filter({ hasText: "Expense changed" })).toBeVisible();
+  await expect(said(page, "Expense changed")).toBeVisible();
 
   await expect(page.getByRole("button", { name: /Dinner in Karaköy/ })).toHaveCount(1);
   await expect(page.getByRole("button", { name: /corrected/ })).toContainText("2,000.00 TRY");
@@ -156,7 +211,7 @@ test("an expense is changed by replacing it and cancelled without erasing it", a
   await expect(page.getByRole("button", { name: /corrected/ })).not.toContainText("cancelled");
   await page.getByRole("button", { name: "Cancel expense" }).click();
   await page.getByRole("button", { name: "Yes", exact: true }).click();
-  await expect(page.getByRole("status").filter({ hasText: "Expense cancelled" })).toBeVisible();
+  await expect(said(page, "Expense cancelled")).toBeVisible();
   await expect(page.getByRole("button", { name: /corrected/ })).toContainText("cancelled");
   // Without the dinner you paid 500.00 of the taxi and owe 450 + 90.13 + 237.50 + 120.
   await expect(page.getByRole("region", { name: "Where you stand" })).toContainText("You owe");
@@ -165,38 +220,43 @@ test("an expense is changed by replacing it and cancelled without erasing it", a
 
 test("people: roles, removing someone, and an honest word about invitations", async ({ page }) => {
   await page.goto("/en/demo/groups/demo-istanbul", { waitUntil: "networkidle" });
-  const people = page.getByRole("region", { name: "People" });
+  await tab(page, "Settings").click();
+  const people = page.getByRole("region", { name: "Manage people" });
   await expect(people.getByRole("listitem").filter({ hasText: "Deniz" })).toContainText("Manager");
   await expect(people.getByRole("listitem").filter({ hasText: "Kerem" })).toContainText("no account");
   // A guest cannot be made a manager; the owner's own role is not on offer.
   await expect(people.getByLabel("Role of Kerem")).toHaveCount(0);
-  await expect(people.getByLabel("Role of You")).toHaveCount(0);
+  await expect(people.getByLabel("Role of Alex")).toHaveCount(0);
 
   await people.getByLabel("Role of Mira").selectOption("admin");
-  await expect(page.getByRole("status").filter({ hasText: "Role changed" })).toBeVisible();
+  await expect(said(page, "Role changed")).toBeVisible();
   await expect(people.getByRole("listitem").filter({ hasText: "Mira" })).toContainText("Manager");
 
   await people.getByRole("button", { name: "Remove: Mira" }).click();
   await people.getByRole("button", { name: "Yes", exact: true }).click();
   await expect(people.getByRole("listitem").filter({ hasText: "Mira" })).toHaveCount(0);
-  // What Mira paid and owes is still in the balances, and she is not offered for new expenses.
-  await expect(balances(page).filter({ hasText: "Mira" })).toContainText("left the group");
   await expect(people).toContainText("the demo has none");
-  await page.getByRole("link", { name: "Add expense" }).first().click();
+
+  // What Mira paid and owes is still in the balances, and she is not offered for new expenses.
+  await tab(page, "Expenses").click();
+  await expect(balances(page).filter({ hasText: "Mira" })).toContainText("left the group");
+  await openAdd(page);
   await expect(page.getByLabel("Mira takes part")).toHaveCount(0);
   await expect(page.getByLabel("Deniz takes part")).toBeChecked();
 });
 
 test("a group can be renamed, archived, searched for and deleted", async ({ page }) => {
   await newGroup(page, "Temporary");
+  await tab(page, "Settings").click();
   await page.getByRole("region", { name: "Group settings" }).getByLabel("Group name").fill("Renamed group");
   await page.getByRole("button", { name: "Rename" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Renamed group" })).toBeVisible();
 
   await page.getByRole("button", { name: "Archive group" }).click();
   await expect(page.getByText("This group is archived")).toBeVisible();
-  await expect(page.getByRole("link", { name: "Add expense" }).filter({ visible: true })).toHaveCount(1); // only the one in the navigation
   await expect(page.getByLabel("Add someone by name")).toHaveCount(0);
+  await tab(page, "Expenses").click();
+  await expect(main(page).getByRole("link", { name: "Add expense" })).toHaveCount(0);
 
   await page.goto("/en/demo/groups", { waitUntil: "networkidle" });
   await page.getByLabel("Search groups").fill("renamed");
@@ -207,6 +267,7 @@ test("a group can be renamed, archived, searched for and deleted", async ({ page
 
   await page.getByLabel("Search groups").fill("renamed");
   await page.getByRole("link", { name: /Renamed group/ }).click();
+  await tab(page, "Settings").click();
   await page.getByRole("button", { name: "Delete group" }).click();
   await page.getByRole("button", { name: "Yes", exact: true }).click();
   await expect(page).toHaveURL(/\/en\/demo\/groups$/);
@@ -219,7 +280,7 @@ test("the demo can be started over, and a group that is not there says so", asyn
   await page.goto("/en/demo/profile", { waitUntil: "networkidle" });
   await page.getByRole("button", { name: "Start the demo over" }).click();
   await page.getByRole("button", { name: "Yes", exact: true }).click();
-  await expect(page.getByRole("status").filter({ hasText: "The demo is as it started" })).toBeVisible();
+  await expect(said(page, "The demo is as it started")).toBeVisible();
   await page.goto("/en/demo/groups", { waitUntil: "networkidle" });
   await expect(page.getByRole("link", { name: /Mine/ })).toHaveCount(0);
   await expect(page.getByRole("link", { name: /Istanbul weekend/ })).toBeVisible();
@@ -229,17 +290,23 @@ test("the demo can be started over, and a group that is not there says so", asyn
 });
 
 test("in Russian the same screens speak Russian, amounts included", async ({ page }) => {
+  await page.goto("/ru/demo", { waitUntil: "networkidle" });
+  await expect(page.getByRole("heading", { level: 1, name: "Привет, Алексей!" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Выходные в Стамбуле" })).toContainText(/Общие расходы5\s560,50\sTRY/);
+
   await page.goto("/ru/demo/groups/demo-istanbul", { waitUntil: "networkidle" });
   await expect(page.getByRole("heading", { level: 1, name: "Выходные в Стамбуле" })).toBeVisible();
+  await expect(page.getByRole("tab")).toHaveText(["Расходы", "Долги", "Аналитика", "Настройки"]);
   await expect(page.getByRole("region", { name: "Ваш баланс" })).toContainText("Вам должны");
   await expect(page.getByRole("region", { name: "Ваш баланс" })).toContainText(/1\s462,37\sTRY/);
-  await page.getByRole("link", { name: "Добавить расход" }).first().click();
-  await page.getByRole("button", { name: "Сохранить расход" }).click();
-  await expect(page.getByRole("main").getByRole("alert")).toContainText(["Напишите, на что потрачено", "Введите сумму больше нуля"]);
+  await main(page).getByRole("link", { name: "Добавить расход" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Новый расход" })).toBeVisible();
+  await page.getByRole("button", { name: "Добавить расход", exact: true }).click();
+  await expect(main(page).getByRole("alert")).toContainText(["Введите сумму больше нуля", "Напишите, на что потрачено"]);
   expect(await overflow(page)).toBe(0);
 });
 
-test("no stage-2 screen is wider than the display, and its controls are big enough for a thumb", async ({ page, isMobile }) => {
+test("no screen is wider than the display, and its controls are big enough for a thumb", async ({ page, isMobile }) => {
   for (const path of [
     "/en/demo",
     "/en/demo/groups",
@@ -247,13 +314,16 @@ test("no stage-2 screen is wider than the display, and its controls are big enou
     "/en/demo/add?group=demo-istanbul",
     "/ru/demo/groups/demo-flat",
     "/ru/demo/add?group=demo-flat",
+    "/ru",
   ]) {
     await page.goto(path, { waitUntil: "networkidle" });
     await expect(page.locator("main h1")).toBeVisible();
     if (path.includes("/add")) {
-      await page.getByRole("radio").nth(1).check({ force: true });
-      await page.getByRole("checkbox").nth(1).check();
+      // The widest the form gets: a box per person and a row per payer.
+      await page.locator("label:has(input[name=split-mode])").nth(1).click();
+      await page.locator("label:has(input[type=checkbox])").nth(1).click();
     }
+    if (path.includes("/groups/demo-")) await page.getByRole("tab").last().click();
     expect([path, await overflow(page)]).toEqual([path, 0]);
     if (!isMobile) continue;
     const small = await page.evaluate(() =>
@@ -271,6 +341,30 @@ test("no stage-2 screen is wider than the display, and its controls are big enou
     );
     expect([path, small]).toEqual([path, []]);
   }
+});
+
+test("the look of the concept: the deep green card and rail, faces for people, pictures for categories", async ({ page, isMobile }) => {
+  await page.goto("/en/demo", { waitUntil: "networkidle" });
+  const card = page.getByRole("region", { name: "Istanbul weekend" });
+  // Deep green in the light theme and in the dark one: the card does not turn pale when the page turns dark.
+  for (const scheme of ["light", "dark"] as const) {
+    await page.emulateMedia({ colorScheme: scheme });
+    const [background, color] = await card.evaluate((element) => [
+      getComputedStyle(element).backgroundImage,
+      getComputedStyle(element).color,
+    ]);
+    expect([scheme, /gradient/.test(background), color]).toEqual([scheme, true, "rgb(255, 255, 255)"]);
+  }
+  // Three faces and "+1" for the four people of the group.
+  await expect(card.locator("svg[viewBox='0 0 40 40']")).toHaveCount(3);
+  await expect(card).toContainText("+1");
+  if (!isMobile)
+    expect(await page.locator("aside").evaluate((element) => /gradient/.test(getComputedStyle(element).backgroundImage))).toBe(true);
+
+  // Different people get different faces.
+  await page.goto("/en/demo/groups/demo-istanbul", { waitUntil: "networkidle" });
+  const faces = await balances(page).evaluateAll((rows) => rows.map((row) => row.querySelector("svg")?.innerHTML));
+  expect(new Set(faces).size).toBe(faces.length);
 });
 
 test("outside Telegram, a person's own groups stay shut and the way to the demo is shown", async ({ page }) => {

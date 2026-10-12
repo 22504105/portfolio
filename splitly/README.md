@@ -54,6 +54,9 @@ language; the demo is at `/en/demo`.
 | `npm test`                        | Unit tests, and database tests on a real PostgreSQL (no Docker needed) |
 | `npm run test:e2e`                | End-to-end tests (Playwright; builds first, uses the installed Chrome) |
 
+The screens follow the owner's design concept: `docs/concept.md` (in Russian)
+lists what the concept shows, what it leaves out, and which stage builds what.
+
 ## Documents
 
 - [`docs/brief.md`](docs/brief.md) — the specification.

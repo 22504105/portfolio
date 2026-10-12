@@ -89,7 +89,7 @@ describe("the demo keeps what you do, in this browser only", () => {
 
     const reloaded = createDemoStore(shelfOf({ ...shelf.data }), "en");
     const group = (await reloaded.getGroup(id))!;
-    expect([group.name, group.members.map((member) => member.name), group.myNet]).toEqual(["Road trip", ["You", "Lena"], { TRY: 500 }]);
+    expect([group.name, group.members.map((member) => member.name), group.myNet]).toEqual(["Road trip", ["Alex", "Lena"], { TRY: 500 }]);
     expect((await reloaded.listGroups())[0].id).toBe(id);
   });
 

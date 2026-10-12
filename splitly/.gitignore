@@ -47,3 +47,6 @@ next-env.d.ts
 /.tmp/
 /test-results/
 /playwright-report/
+
+# The owner's design reference (a generated board and crops of it): kept locally, not published.
+/Concept/

@@ -21,10 +21,11 @@ test("an address without a language goes to the visitor's own", async ({ browser
 
 test("the front page leads into the demo, which says that it is one", async ({ page }) => {
   await page.goto("/en");
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Share the bill, not the awkwardness");
-  await page.getByRole("link", { name: "Try the demo" }).click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Split expenses, not friendships");
+  await expect(page.getByRole("img", { name: "Four friends looking at a shared bill on their phones" })).toBeVisible();
+  await page.getByRole("link", { name: "Web demo" }).click();
   await expect(page).toHaveURL(/\/en\/demo$/);
-  await expect(page.getByRole("heading", { level: 1, name: "Home" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Hi, Alex!" })).toBeVisible();
   await expect(page.getByText("Demo data")).toBeVisible();
 });
 
@@ -33,13 +34,20 @@ test("every place in the navigation opens its screen and is marked as current", 
   // The bar at the bottom on a phone, the column on the left elsewhere: whichever is showing.
   const nav = page.getByRole("navigation", { name: "Main" }).filter({ visible: true });
   await expect(nav).toHaveCount(1);
-  for (const [name, path, heading] of [
+  // The concept's places: four and the plus on a phone; on a wide screen the rail adds receipts and calls the profile "Settings".
+  const places = [
     ["Groups", "/en/demo/groups", "Groups"],
-    ["Activity", "/en/demo/activity", "Activity"],
-    ["Profile", "/en/demo/profile", "Profile"],
-    ["Add expense", "/en/demo/add", "Add expense"],
-    ["Home", "/en/demo", "Home"],
-  ]) {
+    ["Analytics", "/en/demo/analytics", "Analytics"],
+    ...(isMobile
+      ? [["Profile", "/en/demo/profile", "Profile"]]
+      : [
+          ["Receipts", "/en/demo/scan", "Scan a receipt"],
+          ["Settings", "/en/demo/profile", "Profile"],
+        ]),
+    ["Add expense", "/en/demo/add", "New expense"],
+    ["Home", "/en/demo", "Hi, Alex!"],
+  ];
+  for (const [name, path, heading] of places) {
     await nav.getByRole("link", { name, exact: true }).click();
     await expect(page).toHaveURL(new RegExp(`${path}$`));
     await expect(page.getByRole("heading", { level: 1, name: heading })).toBeVisible();
@@ -98,6 +106,8 @@ test("no screen is wider than the display, in either language or theme", async (
       "/ru/demo",
       "/ru/demo/groups",
       "/ru/demo/activity",
+      "/ru/demo/analytics",
+      "/ru/demo/scan",
       "/ru/demo/add",
       "/ru/demo/profile",
       "/en/demo/profile",
@@ -166,7 +176,16 @@ test("an address that is not a page says so", async ({ page }) => {
 });
 
 test("nothing on any screen pretends to work: no dead buttons or empty links", async ({ page }) => {
-  for (const path of ["/en", "/en/demo", "/en/demo/groups", "/en/demo/activity", "/en/demo/add", "/en/demo/profile"]) {
+  for (const path of [
+    "/en",
+    "/en/demo",
+    "/en/demo/groups",
+    "/en/demo/activity",
+    "/en/demo/analytics",
+    "/en/demo/scan",
+    "/en/demo/add",
+    "/en/demo/profile",
+  ]) {
     await page.goto(path);
     const dead = await page.evaluate(() =>
       [...document.querySelectorAll("a")]

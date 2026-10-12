@@ -17,14 +17,15 @@ type AppFrameProps = {
   children: ReactNode;
 };
 
-// The frame around every screen of the app. On a phone: a slim top bar, the
-// screen, and the bottom bar. From tablet width up: the navigation moves to a
-// column on the left and the content keeps a comfortable reading width.
+// The frame around every screen of the app, after the concept. On a phone: a
+// slim top bar, the screen, and the bottom bar with the plus in the middle.
+// From tablet width up: the concept's browser version, a deep green rail on
+// the left and the content on warm paper beside it.
 export function AppFrame({ locale, dictionary, base, demo = false, children }: AppFrameProps) {
   const { nav } = dictionary;
 
   return (
-    <div className="mx-auto flex min-h-dvh w-full max-w-6xl md:gap-8 md:px-6">
+    <div className="flex min-h-dvh w-full">
       <a
         href="#main"
         className="rounded-control bg-primary text-on-primary fixed top-3 left-3 z-50 -translate-y-24 px-4 py-3 font-semibold transition-transform focus:translate-y-0"
@@ -32,9 +33,9 @@ export function AppFrame({ locale, dictionary, base, demo = false, children }: A
         {nav.skip}
       </a>
 
-      <aside className="w-rail sticky top-0 hidden h-dvh shrink-0 flex-col py-6 md:flex print:hidden">
-        <Link href={`/${locale}`} aria-label={nav.toHome} className="mb-8 inline-flex h-11 items-center self-start">
-          <Logo />
+      <aside className="bg-hero w-rail sticky top-0 hidden h-dvh shrink-0 flex-col px-4 py-6 text-white md:flex print:hidden">
+        <Link href={`/${locale}`} aria-label={nav.toHome} className="mb-8 inline-flex h-11 items-center self-start px-1.5">
+          <Logo className="text-white" markClassName="ring-1 ring-white/25 rounded-[8px]" />
         </Link>
         <SideNav base={base} labels={nav} />
         <div className="mt-auto flex items-center gap-2">
@@ -44,7 +45,7 @@ export function AppFrame({ locale, dictionary, base, demo = false, children }: A
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="border-line bg-canvas/95 sticky top-0 z-20 flex h-16 items-center gap-3 border-b px-4 pt-[env(safe-area-inset-top)] backdrop-blur md:h-20 md:border-0 md:px-0 print:hidden">
+        <header className="border-line bg-canvas/95 sticky top-0 z-20 flex h-16 items-center gap-3 border-b px-4 pt-[env(safe-area-inset-top)] backdrop-blur md:h-14 md:border-0 md:px-10 print:hidden">
           <Link href={`/${locale}`} aria-label={nav.toHome} className="inline-flex size-11 items-center justify-center md:hidden">
             <LogoMark />
           </Link>
@@ -67,9 +68,9 @@ export function AppFrame({ locale, dictionary, base, demo = false, children }: A
         <main
           id="main"
           tabIndex={-1}
-          className="flex-1 px-4 pt-5 pb-[calc(var(--spacing-nav)+env(safe-area-inset-bottom)+2rem)] outline-none md:px-0 md:pt-2 md:pb-12"
+          className="flex-1 px-4 pt-5 pb-[calc(var(--spacing-nav)+env(safe-area-inset-bottom)+2rem)] outline-none md:px-10 md:pt-2 md:pb-12"
         >
-          <div className="mx-auto w-full max-w-2xl md:mx-0">{children}</div>
+          <div className="mx-auto w-full max-w-2xl md:mx-0 md:max-w-3xl">{children}</div>
         </main>
       </div>
 

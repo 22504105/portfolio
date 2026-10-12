@@ -1,8 +1,11 @@
 # Splitly — Design system: "calm fintech"
 
 Warm, trustworthy, editorial, uncluttered. Forest green and mint on a warm
-paper white; one typeface; amounts large and tabular. Not a crypto dashboard:
-no gradients, no glow, no charts where a number will do.
+paper white; one typeface; amounts large and tabular. Since 2026-10-12 the
+screens follow the owner's concept board (`docs/concept.md`, in Russian, says
+what the board shows, what it lacks and which stage builds what). Not a crypto
+dashboard: no glow, no charts where a number will do, and one gradient only,
+the deep green of the concept's balance card and browser rail.
 
 All values live in `app/globals.css` as tokens. Components use the names.
 
@@ -109,3 +112,25 @@ shows the plan; it has no controls that do nothing.
 
 150–200 ms colour and transform transitions. Nothing moves on its own.
 `prefers-reduced-motion` turns transitions off.
+
+## From the concept
+
+- **`hero`** — the deep green of the balance card, the plus button and the
+  wide screen's rail: `#17513F → #0C392C` (light), `#1D5544 → #123A2E` (dark).
+  It stays dark in both themes and always carries white text (11:1 or better).
+- **The mark** is a white S on that green, drawn in `components/brand/Logo.tsx`.
+- **Faces** (`components/ui/Avatar.tsx`): drawn, chosen by a person's ID so the
+  same person always has the same face. The concept shows portrait photos;
+  Splitly keeps no photos of anyone. Decoration only: the name is always
+  written beside a face.
+- **Category tiles** (`components/ui/CategoryIcon.tsx`): a soft fill and a
+  darker mark of the same hue per category, the same in both themes; the
+  category's name is always written beside the tile.
+- **Balances carry a sign and a colour** in a group's list of people
+  ("+1,462.37 TRY", "-677.13 TRY"); a screen reader hears "gets back" or
+  "owes". The currency is its code, not a symbol: a group can hold several.
+- **Navigation**: on a phone, Home, Groups, the plus, Analytics, Profile; on a
+  wide screen the rail adds Receipts and calls the profile Settings.
+- **The cover illustration** (`public/concept/friends.webp`) is cut from the
+  concept board at 404×240 px and doubled: it is soft on a large screen until
+  the original is supplied.

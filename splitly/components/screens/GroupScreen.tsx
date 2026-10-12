@@ -1,19 +1,20 @@
 "use client";
 
-import { ArrowLeft, ChevronDown, Copy, Plus } from "lucide-react";
+import { ArrowLeft, ChevronDown, Copy, Plus, ScanLine } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { errorText, useApp, useLoad } from "@/components/app/AppProvider";
+import { Avatar, AvatarStack } from "@/components/ui/Avatar";
 import { Button, buttonClass, Confirm, Field, inputClass, Loading, Problem } from "@/components/ui/controls";
 import { netsOf } from "@/lib/balances/net";
 import type { Expense, Group, Invite, Member } from "@/lib/domain/types";
 import { fill } from "@/lib/i18n";
 import { formatMoney } from "@/lib/money/amount";
 import { cn } from "@/lib/utils";
-import { formatDay, MyBalance } from "./parts";
+import { ExpenseRow, formatDay, MyBalance } from "./parts";
 
-/** One group: where everyone stands, what was spent, who is in it. */
+/** One group, after the concept: its people's faces, tabs, everyone's balance and what was spent. */
 export function GroupScreen() {
   const { t, base } = useApp();
   const id = String(useParams<{ group: string }>().group);
@@ -35,32 +36,34 @@ export function GroupScreen() {
   return <GroupView group={group} />;
 }
 
+const TABS = ["expenses", "debts", "analytics", "settings"] as const;
+type Tab = (typeof TABS)[number];
+
 function GroupView({ group }: { group: Group }) {
-  const { t, base, locale } = useApp();
+  const { t, base } = useApp();
   const me = group.members.find((member) => member.self);
   const manages = me?.role === "owner" || me?.role === "admin";
-  const nets = netsOf(group.expenses);
+  const people = group.members.filter((member) => !member.removedAt);
+  const [tab, setTab] = useState<Tab>("expenses");
   const [failure, setFailure] = useState<string | null>(null);
-
-  // Everyone still in the group, and anyone who left with something still owed either way.
-  const standing = group.members.filter(
-    (member) => !member.removedAt || Object.values(nets).some((byMember) => (byMember[member.id] ?? 0) !== 0),
-  );
+  const section = { group, me, manages, onFailure: setFailure };
 
   return (
     <>
-      <Link
-        href={`${base}/groups`}
-        className="type-small text-ink-muted hover:text-ink -ml-1 inline-flex h-11 items-center gap-1.5 font-medium"
-      >
-        <ArrowLeft aria-hidden="true" className="size-4" />
-        {t.group.toGroups}
-      </Link>
-      <h1 className="type-title break-words">{group.name}</h1>
-      <p className="type-small text-ink-muted mt-1.5">
-        {fill(t.group.base, { currency: group.baseCurrency })} ·{" "}
-        {fill(t.groups.people, { n: group.members.filter((member) => !member.removedAt).length })}
-      </p>
+      <div className="relative flex flex-col items-center text-center">
+        <Link
+          href={`${base}/groups`}
+          aria-label={t.group.toGroups}
+          className="text-ink-muted hover:text-ink absolute top-0 left-0 inline-flex size-11 items-center justify-center rounded-full"
+        >
+          <ArrowLeft aria-hidden="true" className="size-5" />
+        </Link>
+        <h1 className="type-heading max-w-full px-12 pt-2 text-[1.25rem] break-words">{group.name}</h1>
+        <p className="type-small text-ink-muted mt-0.5">
+          {fill(t.groups.people, { n: people.length })} · {group.baseCurrency}
+        </p>
+        <AvatarStack people={people} max={3} className="mt-4 [&>*]:size-11" ring="ring-canvas" />
+      </div>
 
       {group.archivedAt && (
         <p className="type-small border-warning/40 bg-warning/10 text-warning rounded-control mt-4 border p-3.5 font-medium">
@@ -69,61 +72,122 @@ function GroupView({ group }: { group: Group }) {
       )}
       {failure && <Problem className="mt-4">{failure}</Problem>}
 
-      <section aria-labelledby="group-mine" className="card mt-5 p-5 sm:p-6">
-        <h2 id="group-mine" className="type-label text-ink-muted mb-3">
-          {t.balance.title}
-        </h2>
-        <MyBalance net={group.myNet} large />
-      </section>
+      <div role="tablist" aria-label={group.name} className="bg-surface-2 rounded-control mt-5 grid grid-cols-4 gap-1 p-1">
+        {TABS.map((name) => (
+          <button
+            key={name}
+            type="button"
+            role="tab"
+            id={`tab-${name}`}
+            aria-selected={tab === name}
+            aria-controls={`panel-${name}`}
+            onClick={() => setTab(name)}
+            className={cn(
+              "type-small h-11 min-w-0 truncate rounded-[9px] px-1 font-semibold transition-colors",
+              tab === name ? "bg-surface text-ink shadow-card" : "text-ink-muted hover:text-ink",
+            )}
+          >
+            {t.group.tabs[name]}
+          </button>
+        ))}
+      </div>
 
-      {!group.archivedAt && (
-        <Link href={`${base}/add?group=${group.id}`} className={cn(buttonClass("primary"), "mt-4 w-full sm:w-auto")}>
-          <Plus aria-hidden="true" className="size-5" />
-          {t.group.addExpense}
-        </Link>
-      )}
-
-      <section aria-labelledby="group-balances" className="mt-8">
-        <h2 id="group-balances" className="type-heading mb-3">
-          {t.group.balances}
-        </h2>
-        <ul className="card divide-line divide-y">
-          {standing.map((member) => {
-            const lines = Object.entries(nets)
-              .sort(([a], [b]) => a.localeCompare(b))
-              .map(([currency, byMember]) => [currency, byMember[member.id] ?? 0] as const)
-              .filter(([, net]) => net !== 0);
-            return (
-              <li key={member.id} className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5 px-4 py-3">
-                <MemberName member={member} />
-                <span className="type-small text-right">
-                  {lines.length === 0 ? (
-                    <span className="text-ink-muted">{t.balance.settled}</span>
-                  ) : (
-                    lines.map(([currency, net]) => (
-                      <span key={currency} className={cn("block font-medium tabular-nums", net > 0 ? "text-positive" : "text-danger")}>
-                        {fill(net > 0 ? t.balance.getsBack : t.balance.owes, { amount: formatMoney(Math.abs(net), currency, { locale }) })}
-                      </span>
-                    ))
-                  )}
-                </span>
-              </li>
-            );
-          })}
-        </ul>
-      </section>
-
-      <Expenses group={group} me={me} manages={manages} onFailure={setFailure} />
-      <People group={group} me={me} manages={manages} onFailure={setFailure} />
-      <Settings group={group} me={me} manages={manages} onFailure={setFailure} />
+      <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`}>
+        {tab === "expenses" && (
+          <>
+            <section
+              aria-labelledby="group-mine"
+              className="card mt-5 flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6"
+            >
+              <div>
+                <h2 id="group-mine" className="type-label text-ink-muted mb-3">
+                  {t.balance.title}
+                </h2>
+                <MyBalance net={group.myNet} large />
+              </div>
+              {!group.archivedAt && (
+                <div className="flex flex-col gap-2 sm:w-56">
+                  <Link href={`${base}/add?group=${group.id}`} className={buttonClass("primary")}>
+                    <Plus aria-hidden="true" className="size-5" />
+                    {t.group.addExpense}
+                  </Link>
+                  <Link href={`${base}/scan`} className={buttonClass("secondary")}>
+                    <ScanLine aria-hidden="true" className="size-5" />
+                    {t.home.scan}
+                  </Link>
+                </div>
+              )}
+            </section>
+            <Balances group={group} />
+            <Expenses {...section} />
+          </>
+        )}
+        {tab === "debts" && <Later text={t.group.debtsLater} />}
+        {tab === "analytics" && <Later text={t.group.analyticsLater} />}
+        {tab === "settings" && (
+          <>
+            <People {...section} />
+            <Settings {...section} />
+          </>
+        )}
+      </div>
     </>
   );
 }
 
-function MemberName({ member }: { member: Member }) {
+/** A part of the group that a later stage builds: said plainly, with nothing made to look as if it worked. */
+function Later({ text }: { text: string }) {
+  return <p className="card text-ink-muted mt-5 p-5">{text}</p>;
+}
+
+function Balances({ group }: { group: Group }) {
+  const { t, locale } = useApp();
+  const nets = netsOf(group.expenses);
+  // Everyone still in the group, and anyone who left with something still owed either way.
+  const standing = group.members.filter(
+    (member) => !member.removedAt || Object.values(nets).some((byMember) => (byMember[member.id] ?? 0) !== 0),
+  );
+
+  return (
+    <section aria-labelledby="group-balances" className="mt-8">
+      <h2 id="group-balances" className="type-heading mb-1">
+        {t.group.balances}
+      </h2>
+      <ul className="divide-line divide-y">
+        {standing.map((member) => {
+          const lines = Object.entries(nets)
+            .sort(([a], [b]) => a.localeCompare(b))
+            .map(([currency, byMember]) => [currency, byMember[member.id] ?? 0] as const)
+            .filter(([, net]) => net !== 0);
+          return (
+            <li key={member.id} className="flex items-center gap-3 py-2.5">
+              <Avatar name={member.name} seed={member.id} className={cn("size-10", member.removedAt && "opacity-60")} />
+              <MemberName member={member} className="flex-1" />
+              <span className="shrink-0 text-right">
+                {lines.length === 0 ? (
+                  <span className="type-small text-ink-muted">{t.balance.settled}</span>
+                ) : (
+                  lines.map(([currency, net]) => (
+                    <span key={currency} className={cn("block font-semibold tabular-nums", net > 0 ? "text-positive" : "text-danger")}>
+                      {/* The sign says the direction; the words say it to a screen reader. */}
+                      <span className="sr-only">{net > 0 ? t.balance.owedTo : t.balance.owedBy} </span>
+                      {formatMoney(net, currency, { locale, sign: true })}
+                    </span>
+                  ))
+                )}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
+}
+
+function MemberName({ member, className }: { member: Member; className?: string }) {
   const { t } = useApp();
   return (
-    <span className="min-w-0">
+    <span className={cn("min-w-0", className)}>
       <span className={cn("font-medium break-words", member.removedAt && "text-ink-muted")}>{member.name}</span>
       {member.self && <span className="text-ink-muted"> ({t.common.you})</span>}
       {(member.guest || member.removedAt || member.role !== "member") && (
@@ -146,11 +210,6 @@ function Expenses({ group, me, manages, onFailure }: SectionProps) {
   const hidden = group.expenses.some((expense) => expense.status !== "active");
   const shown = group.expenses.filter((expense) => all || expense.status === "active");
 
-  const payerLine = (expense: Expense) =>
-    expense.payers.length === 1
-      ? fill(t.expense.paidLine, { name: names.get(expense.payers[0].memberId) ?? "?" })
-      : fill(t.expense.paidSeveral, { n: expense.payers.length });
-
   async function cancel(expense: Expense) {
     onFailure(null);
     try {
@@ -164,19 +223,19 @@ function Expenses({ group, me, manages, onFailure }: SectionProps) {
 
   return (
     <section aria-labelledby="group-expenses" className="mt-8">
-      <h2 id="group-expenses" className="type-heading mb-3">
+      <h2 id="group-expenses" className="type-heading mb-1">
         {t.group.expenses}
       </h2>
       {hidden && (
-        <label className="type-small mb-3 flex min-h-11 cursor-pointer items-center gap-2.5">
+        <label className="type-small flex min-h-11 cursor-pointer items-center gap-2.5">
           <input type="checkbox" className="accent-primary size-5" checked={all} onChange={(event) => setAll(event.target.checked)} />
           {t.group.showAll}
         </label>
       )}
       {shown.length === 0 ? (
-        <p className="text-ink-muted">{t.group.noExpenses}</p>
+        <p className="text-ink-muted mt-2">{t.group.noExpenses}</p>
       ) : (
-        <ul className="card divide-line divide-y">
+        <ul className="divide-line divide-y">
           {shown.map((expense) => {
             const mine = expense.splits.find((split) => split.memberId === me?.id);
             const live = expense.status === "active";
@@ -189,41 +248,30 @@ function Expenses({ group, me, manages, onFailure }: SectionProps) {
                   aria-expanded={expanded}
                   aria-controls={`expense-${expense.id}`}
                   onClick={() => setOpen(expanded ? null : expense.id)}
-                  className="hover:bg-surface-2/60 flex w-full items-center gap-3 px-4 py-3 text-left transition-colors"
+                  className="hover:bg-surface-2/60 rounded-control -mx-2 block w-[calc(100%+1rem)] px-2 transition-colors"
                 >
-                  <span className="min-w-0 flex-1">
-                    <span className={cn("block font-medium break-words", !live && "text-ink-muted line-through")}>
-                      {expense.description}
-                    </span>
-                    <span className="type-small text-ink-muted block">
-                      {formatDay(expense.date, locale)} · {payerLine(expense)}
-                      {!live && (
-                        <span className="text-warning font-semibold">
-                          {" "}
-                          · {t.expense.status[expense.status as "cancelled" | "replaced"]}
-                        </span>
-                      )}
-                      {expense.totalMinor < 0 && <span className="font-semibold"> · {t.expense.refundTag}</span>}
-                    </span>
-                  </span>
-                  <span className="shrink-0 text-right">
-                    <span className={cn("block font-semibold tabular-nums", !live && "text-ink-muted line-through")}>
-                      {formatMoney(expense.totalMinor, expense.currency, { locale })}
-                    </span>
-                    <span className="type-small text-ink-muted block">
-                      {mine
-                        ? fill(t.expense.yourShare, { amount: formatMoney(mine.owedMinor, expense.currency, { locale }) })
-                        : t.expense.notYours}
-                    </span>
-                  </span>
-                  <ChevronDown
-                    aria-hidden="true"
-                    className={cn("text-ink-muted size-5 shrink-0 transition-transform", expanded && "rotate-180")}
+                  <ExpenseRow
+                    expense={expense}
+                    names={names}
+                    face="category"
+                    under={
+                      <span className="type-small text-ink-muted block">
+                        {mine
+                          ? fill(t.expense.yourShare, { amount: formatMoney(mine.owedMinor, expense.currency, { locale }) })
+                          : t.expense.notYours}
+                      </span>
+                    }
+                    after={
+                      <ChevronDown
+                        aria-hidden="true"
+                        className={cn("text-ink-muted size-5 shrink-0 transition-transform", expanded && "rotate-180")}
+                      />
+                    }
                   />
                 </button>
 
                 {expanded && (
-                  <div id={`expense-${expense.id}`} className="bg-surface-2/50 border-line border-t px-4 py-4">
+                  <div id={`expense-${expense.id}`} className="bg-surface-2/60 rounded-control mb-3 px-4 py-4">
                     <dl className="type-small grid gap-x-6 gap-y-4 sm:grid-cols-2">
                       <div>
                         <dt className="type-label text-ink-muted mb-1.5">{t.expense.paidOfIt}</dt>
@@ -307,7 +355,7 @@ function People({ group, me, manages, onFailure }: SectionProps) {
     (account?.bot ? `https://t.me/${account.bot}?startapp=${invite.token}` : `${window.location.origin}${base}/join?t=${invite.token}`);
 
   return (
-    <section aria-labelledby="group-people" className="mt-8">
+    <section aria-labelledby="group-people" className="mt-6">
       <h2 id="group-people" className="type-heading mb-3">
         {t.group.people}
       </h2>
@@ -320,7 +368,10 @@ function People({ group, me, manages, onFailure }: SectionProps) {
             const canRemove = manages && !member.self && member.role !== "owner" && (member.role !== "admin" || me?.role === "owner");
             return (
               <li key={member.id} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-4 py-3">
-                <MemberName member={member} />
+                <span className="flex min-w-0 items-center gap-3">
+                  <Avatar name={member.name} seed={member.id} className="size-9" />
+                  <MemberName member={member} />
+                </span>
                 {(canRole || canRemove) && !group.archivedAt && (
                   <span className="flex flex-wrap items-start gap-2">
                     {canRole && (

@@ -1,9 +1,12 @@
 "use client";
 
-import { ChevronRight, UsersRound } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { useApp } from "@/components/app/AppProvider";
-import type { GroupSummary } from "@/lib/domain/types";
+import { Avatar, AvatarStack } from "@/components/ui/Avatar";
+import { CategoryIcon } from "@/components/ui/CategoryIcon";
+import type { Expense, GroupSummary } from "@/lib/domain/types";
 import { fill } from "@/lib/i18n";
 import { formatMoney } from "@/lib/money/amount";
 import { cn } from "@/lib/utils";
@@ -58,16 +61,14 @@ export function MyBalance({ net, large = false }: { net: Record<string, number>;
   );
 }
 
-/** A group in a list: its name, how many people and expenses, and where the viewer stands in it. */
+/** A group in a list: its people's faces, its name, and where the viewer stands in it. */
 export function GroupCard({ group }: { group: GroupSummary }) {
   const { t, base } = useApp();
-  const people = group.members.filter((member) => !member.removedAt).length;
+  const people = group.members.filter((member) => !member.removedAt);
   return (
     <li>
       <Link href={`${base}/groups/${group.id}`} className="card hover:border-field flex items-center gap-3.5 p-4 transition-colors">
-        <span aria-hidden="true" className="bg-accent-soft text-on-accent flex size-11 shrink-0 items-center justify-center rounded-full">
-          <UsersRound className="size-5" />
-        </span>
+        <AvatarStack people={people} max={2} className="shrink-0" />
         <span className="min-w-0 flex-1">
           <span className="flex items-center gap-2">
             <span className="truncate font-semibold">{group.name}</span>
@@ -76,7 +77,7 @@ export function GroupCard({ group }: { group: GroupSummary }) {
             )}
           </span>
           <span className="type-small text-ink-muted block">
-            {fill(t.groups.people, { n: people })} · {fill(t.groups.expenses, { n: group.expenseCount })} · {group.baseCurrency}
+            {fill(t.groups.people, { n: people.length })} · {fill(t.groups.expenses, { n: group.expenseCount })} · {group.baseCurrency}
           </span>
         </span>
         <span className="shrink-0 text-right">
@@ -85,5 +86,48 @@ export function GroupCard({ group }: { group: GroupSummary }) {
         <ChevronRight aria-hidden="true" className="text-ink-muted size-5 shrink-0" />
       </Link>
     </li>
+  );
+}
+
+type ExpenseRowProps = {
+  expense: Expense;
+  names: ReadonlyMap<string, string>;
+  /** What stands at the start of the row: the payer's face (Home) or the category's picture (a group). */
+  face: "payer" | "category";
+  /** A second line under the amount, and anything after it (a chevron). */
+  under?: ReactNode;
+  after?: ReactNode;
+};
+
+/** One expense as the concept draws it: a picture, what it was, who paid and when, and the amount. */
+export function ExpenseRow({ expense, names, face, under, after }: ExpenseRowProps) {
+  const { t, locale } = useApp();
+  const live = expense.status === "active";
+  const payer = expense.payers[0];
+  const payerName = names.get(payer?.memberId ?? "") ?? "?";
+  const paid = expense.payers.length === 1 ? payerName : fill(t.expense.paidSeveral, { n: expense.payers.length });
+  return (
+    <span className="flex items-center gap-3 py-3">
+      {face === "payer" ? (
+        <Avatar name={payerName} seed={payer?.memberId} className="size-11" />
+      ) : (
+        <CategoryIcon category={expense.category} />
+      )}
+      <span className="min-w-0 flex-1 text-left">
+        <span className={cn("block font-semibold break-words", !live && "text-ink-muted line-through")}>{expense.description}</span>
+        <span className="type-small text-ink-muted block">
+          {paid} · {formatDay(expense.date, locale)}
+          {!live && <span className="text-warning font-semibold"> · {t.expense.status[expense.status as "cancelled" | "replaced"]}</span>}
+          {expense.totalMinor < 0 && <span className="font-semibold"> · {t.expense.refundTag}</span>}
+        </span>
+      </span>
+      <span className="shrink-0 text-right">
+        <span className={cn("block font-semibold tabular-nums", !live && "text-ink-muted line-through")}>
+          {formatMoney(expense.totalMinor, expense.currency, { locale })}
+        </span>
+        {under}
+      </span>
+      {after}
+    </span>
   );
 }

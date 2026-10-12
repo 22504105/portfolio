@@ -1,11 +1,14 @@
 "use client";
 
+import { ArrowLeft, Check, Equal, Hash, Percent, PieChart, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useRef, useState, type FormEvent } from "react";
 import { errorText, useApp, useLoad } from "@/components/app/AppProvider";
+import { Avatar } from "@/components/ui/Avatar";
+import { CategoryIcon } from "@/components/ui/CategoryIcon";
 import { Button, buttonClass, Field, inputClass, Loading, Problem } from "@/components/ui/controls";
-import { CATEGORIES, SPLIT_MODES, type Category, type Expense, type Group, type SplitMode } from "@/lib/domain/types";
+import { CATEGORIES, SPLIT_MODES, type Expense, type Group, type SplitMode } from "@/lib/domain/types";
 import { fill } from "@/lib/i18n";
 import { formatMoney } from "@/lib/money/amount";
 import { CURRENCIES } from "@/lib/money/currency";
@@ -15,8 +18,9 @@ import { StoreError } from "@/lib/store/types";
 import { cn } from "@/lib/utils";
 
 /**
- * Adding an expense, or changing one (?group=…&expense=…). The group is
- * chosen first, because who can pay and take part depends on it.
+ * Adding an expense, or changing one (?group=…&expense=…), after the
+ * concept's "New expense" screen. The group is chosen first, because who can
+ * pay and take part depends on it.
  */
 export function AddScreen() {
   const { t, base } = useApp();
@@ -32,8 +36,17 @@ export function AddScreen() {
 
   return (
     <>
-      <h1 className="type-title">{expenseId ? t.expense.editTitle : t.add.title}</h1>
-      <p className="type-lead text-ink-muted mt-2">{expenseId ? t.expense.editLead : t.add.lead}</p>
+      <div className="relative flex min-h-11 items-center justify-center">
+        <Link
+          href={groupId ? `${base}/groups/${groupId}` : base}
+          aria-label={t.common.back}
+          className="text-ink-muted hover:text-ink absolute top-0 left-0 inline-flex size-11 items-center justify-center rounded-full"
+        >
+          <ArrowLeft aria-hidden="true" className="size-5" />
+        </Link>
+        <h1 className="type-heading px-12 text-center text-[1.25rem]">{expenseId ? t.expense.editTitle : t.expense.newTitle}</h1>
+      </div>
+      {expenseId && <p className="type-small text-ink-muted mt-1 text-center">{t.expense.editLead}</p>}
 
       {(error || groupError) && <Problem className="mt-6">{errorText(t, error ?? groupError)}</Problem>}
       {!groups && !error && <Loading label={t.common.loading} />}
@@ -49,8 +62,8 @@ export function AddScreen() {
 
       {groups && open.length > 0 && (
         <>
-          {!expenseId && (
-            <Field label={t.expense.group} className="mt-6">
+          {!expenseId && open.length > 1 && (
+            <Field label={t.expense.group} className="mt-4">
               {(control) => (
                 <select
                   {...control}
@@ -98,6 +111,10 @@ const FIELD_OF: Partial<Record<ExpenseProblem, "description" | "total" | "date" 
   percent_sum: "split",
 };
 
+const MODE_ICON: Record<SplitMode, LucideIcon> = { equal: Equal, exact: Hash, percent: Percent, shares: PieChart };
+
+const LEGEND = "type-small mb-2.5 font-semibold";
+
 function Editor({ group, editing }: { group: Group; editing: Expense | undefined }) {
   const { t, store, base, locale, changed, notify } = useApp();
   const router = useRouter();
@@ -125,6 +142,8 @@ function Editor({ group, editing }: { group: Group; editing: Expense | undefined
       ? buildSplits(input.totalMinor, input.split)
       : null;
   const owed = new Map(preview?.map((split) => [split.memberId, split.owedMinor]));
+  const included = members.filter((member) => form.included[member.id]);
+  const payer = members.find((member) => member.id === form.payerId);
 
   const money = (minor: number) => formatMoney(Math.abs(minor), form.currency, { locale });
   const complaints = (field: (typeof FIELD_OF)[ExpenseProblem]) =>
@@ -142,11 +161,12 @@ function Editor({ group, editing }: { group: Group; editing: Expense | undefined
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const formElement = event.currentTarget;
     setTried(true);
     setFailure(null);
     if (!checked.ok) {
       // Take the person to the first thing that needs fixing.
-      requestAnimationFrame(() => event.currentTarget?.querySelector<HTMLElement>("[role=alert]")?.scrollIntoView({ block: "center" }));
+      requestAnimationFrame(() => formElement.querySelector<HTMLElement>("[role=alert]")?.scrollIntoView({ block: "center" }));
       return;
     }
     const body = JSON.stringify(checked.input);
@@ -165,52 +185,88 @@ function Editor({ group, editing }: { group: Group; editing: Expense | undefined
     }
   }
 
-  const splitHintId = "split-hint";
   const unit = form.mode === "percent" ? "%" : form.mode === "exact" ? form.currency : "";
 
   return (
-    <form onSubmit={submit} noValidate className="mt-5 flex flex-col gap-5">
-      <div className="card flex flex-col gap-4 p-4 sm:p-5">
-        <Field label={t.expense.description} error={complaints("description")[0]}>
+    <form onSubmit={submit} noValidate className="mt-4 flex flex-col gap-6">
+      {/* What kind of expense: tap one, tap it again to take it back. */}
+      <div role="group" aria-label={t.expense.category} className="grid grid-cols-3 gap-x-1 gap-y-2 sm:grid-cols-6">
+        {CATEGORIES.map((category) => {
+          const chosen = form.category === category;
+          return (
+            <button
+              key={category}
+              type="button"
+              aria-pressed={chosen}
+              onClick={() => set("category", chosen ? "" : category)}
+              className="flex min-h-11 min-w-0 flex-col items-center gap-1.5 rounded-[14px] px-1 py-1.5"
+            >
+              <CategoryIcon
+                category={category}
+                round
+                className={cn("size-12 transition-shadow", chosen && "ring-primary ring-offset-canvas ring-2 ring-offset-2")}
+              />
+              <span className={cn("text-center text-[0.75rem] leading-tight", chosen ? "text-ink font-semibold" : "text-ink-muted")}>
+                {t.expense.categories[category]}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      <Field label={t.expense.amount} error={complaints("total")[0]}>
+        {(control) => (
+          <div className="flex gap-2">
+            <input
+              {...control}
+              className={cn(inputClass, "h-14 text-[1.375rem] font-semibold tabular-nums")}
+              inputMode="decimal"
+              value={form.amount}
+              onChange={(event) => set("amount", event.target.value)}
+              placeholder="0.00"
+              autoComplete="off"
+            />
+            <select
+              aria-label={t.expense.currency}
+              className={cn(inputClass, "h-14 w-28 shrink-0 font-semibold")}
+              value={form.currency}
+              onChange={(event) => set("currency", event.target.value)}
+            >
+              {[...new Set([form.currency, group.baseCurrency, ...CURRENCIES])].map((code) => (
+                <option key={code}>{code}</option>
+              ))}
+            </select>
+          </div>
+        )}
+      </Field>
+
+      <Field label={t.expense.description} error={complaints("description")[0]}>
+        {(control) => (
+          <input
+            {...control}
+            className={inputClass}
+            value={form.description}
+            onChange={(event) => set("description", event.target.value)}
+            placeholder={t.expense.descriptionPlaceholder}
+            maxLength={200}
+            autoComplete="off"
+          />
+        )}
+      </Field>
+
+      <div className="grid items-end gap-x-3 gap-y-2 sm:grid-cols-2">
+        <Field label={t.expense.date} error={complaints("date")[0]}>
           {(control) => (
             <input
               {...control}
+              type="date"
               className={inputClass}
-              value={form.description}
-              onChange={(event) => set("description", event.target.value)}
-              placeholder={t.expense.descriptionPlaceholder}
-              maxLength={200}
-              autoComplete="off"
+              value={form.date}
+              onChange={(event) => set("date", event.target.value)}
             />
           )}
         </Field>
-
-        <div className="grid grid-cols-[1fr_7rem] gap-3">
-          <Field label={t.expense.amount} error={complaints("total")[0]}>
-            {(control) => (
-              <input
-                {...control}
-                className={cn(inputClass, "text-lg font-semibold tabular-nums")}
-                inputMode="decimal"
-                value={form.amount}
-                onChange={(event) => set("amount", event.target.value)}
-                placeholder="0"
-                autoComplete="off"
-              />
-            )}
-          </Field>
-          <Field label={t.expense.currency}>
-            {(control) => (
-              <select {...control} className={inputClass} value={form.currency} onChange={(event) => set("currency", event.target.value)}>
-                {[...new Set([form.currency, group.baseCurrency, ...CURRENCIES])].map((code) => (
-                  <option key={code}>{code}</option>
-                ))}
-              </select>
-            )}
-          </Field>
-        </div>
-
-        <label className="type-small flex min-h-11 cursor-pointer items-center gap-2.5">
+        <label className="type-small flex min-h-12 cursor-pointer items-center gap-2.5">
           <input
             type="checkbox"
             className="accent-primary size-5 shrink-0"
@@ -219,62 +275,37 @@ function Editor({ group, editing }: { group: Group; editing: Expense | undefined
           />
           {t.expense.refund}
         </label>
-
-        <div className="grid gap-3 sm:grid-cols-2">
-          <Field label={t.expense.date} error={complaints("date")[0]}>
-            {(control) => (
-              <input
-                {...control}
-                type="date"
-                className={inputClass}
-                value={form.date}
-                onChange={(event) => set("date", event.target.value)}
-              />
-            )}
-          </Field>
-          <Field label={t.expense.category}>
-            {(control) => (
-              <select
-                {...control}
-                className={inputClass}
-                value={form.category}
-                onChange={(event) => set("category", event.target.value as Category | "")}
-              >
-                <option value="">{t.expense.noCategory}</option>
-                {CATEGORIES.map((category) => (
-                  <option key={category} value={category}>
-                    {t.expense.categories[category]}
-                  </option>
-                ))}
-              </select>
-            )}
-          </Field>
-        </div>
       </div>
 
-      <fieldset className="card flex min-w-0 flex-col gap-3 p-4 sm:p-5">
-        <legend className="type-heading float-left mb-1 w-full">{t.expense.paidBy}</legend>
+      <fieldset className="flex min-w-0 flex-col gap-2">
+        <legend className={LEGEND}>{t.expense.paidBy}</legend>
         {!form.several ? (
-          <select
-            aria-label={t.expense.paidBy}
-            className={inputClass}
-            value={form.payerId}
-            onChange={(event) => set("payerId", event.target.value)}
-          >
-            {members.map((member) => (
-              <option key={member.id} value={member.id}>
-                {member.name}
-              </option>
-            ))}
-          </select>
+          <div className="relative">
+            {payer && (
+              <Avatar name={payer.name} seed={payer.id} className="pointer-events-none absolute top-1/2 left-2.5 size-8 -translate-y-1/2" />
+            )}
+            <select
+              aria-label={t.expense.paidBy}
+              className={cn(inputClass, "pl-13 font-medium")}
+              value={form.payerId}
+              onChange={(event) => set("payerId", event.target.value)}
+            >
+              {members.map((member) => (
+                <option key={member.id} value={member.id}>
+                  {member.self ? `${member.name} (${t.common.you})` : member.name}
+                </option>
+              ))}
+            </select>
+          </div>
         ) : (
           <ul className="flex flex-col gap-2">
             {members.map((member) => (
-              <li key={member.id} className="grid grid-cols-[1fr_8.5rem] items-center gap-3">
-                <span className="min-w-0 font-medium break-words">{member.name}</span>
+              <li key={member.id} className="flex items-center gap-3">
+                <Avatar name={member.name} seed={member.id} className="size-9" />
+                <span className="min-w-0 flex-1 font-medium break-words">{member.name}</span>
                 <input
                   aria-label={fill(t.expense.paidAmount, { name: member.name })}
-                  className={cn(inputClass, "text-right tabular-nums")}
+                  className={cn(inputClass, "w-32 shrink-0 text-right tabular-nums")}
                   inputMode="decimal"
                   placeholder="0"
                   autoComplete="off"
@@ -304,77 +335,121 @@ function Editor({ group, editing }: { group: Group; editing: Expense | undefined
         ))}
       </fieldset>
 
-      <fieldset className="card flex min-w-0 flex-col gap-3 p-4 sm:p-5" aria-describedby={splitHintId}>
-        <legend className="type-heading float-left mb-1 w-full">{t.expense.split}</legend>
-        <div role="radiogroup" aria-label={t.expense.split} className="bg-surface-2 rounded-control grid grid-cols-4 gap-1 p-1">
-          {SPLIT_MODES.map((mode: SplitMode) => (
-            <label
-              key={mode}
-              className={cn(
-                "type-small has-focus-visible:outline-primary flex h-11 cursor-pointer items-center justify-center rounded-[9px] px-1 text-center font-semibold transition-colors has-focus-visible:outline-2",
-                form.mode === mode ? "bg-surface text-ink shadow-card" : "text-ink-muted hover:text-ink",
-              )}
-            >
-              <input type="radio" name="split-mode" className="sr-only" checked={form.mode === mode} onChange={() => set("mode", mode)} />
-              {t.expense.modes[mode]}
-            </label>
-          ))}
-        </div>
-        <p id={splitHintId} className="type-small text-ink-muted">
-          {t.expense.modeHints[form.mode]}
-        </p>
-
-        <ul className="flex flex-col gap-2">
+      <fieldset className="min-w-0">
+        <legend className={LEGEND}>{t.expense.participants}</legend>
+        <ul className="grid grid-cols-4 gap-x-1 gap-y-3 sm:grid-cols-6">
           {members.map((member) => {
-            const included = !!form.included[member.id];
-            const share = owed.get(member.id);
+            const on = !!form.included[member.id];
             return (
-              <li key={member.id} className="flex min-h-12 items-center gap-3">
-                <label className="flex min-h-11 min-w-0 flex-1 cursor-pointer items-center gap-2.5">
+              <li key={member.id} className="min-w-0">
+                <label className="has-focus-visible:outline-primary flex min-h-11 cursor-pointer flex-col items-center gap-1.5 rounded-[12px] py-1 has-focus-visible:outline-2">
                   <input
                     type="checkbox"
                     aria-label={fill(t.expense.participant, { name: member.name })}
-                    className="accent-primary size-5 shrink-0"
-                    checked={included}
+                    className="sr-only"
+                    checked={on}
                     onChange={(event) => set("included", { ...form.included, [member.id]: event.target.checked })}
                   />
-                  <span className="flex min-w-0 flex-col">
-                    <span className={cn("font-medium break-words", !included && "text-ink-muted")}>{member.name}</span>
-                    {included && form.mode !== "exact" && form.mode !== "equal" && share !== undefined && (
+                  <span className="relative">
+                    <Avatar
+                      name={member.name}
+                      seed={member.id}
+                      className={cn(
+                        "size-12 transition",
+                        on ? "ring-primary ring-offset-canvas ring-2 ring-offset-2" : "opacity-45 grayscale",
+                      )}
+                    />
+                    {on && (
+                      <span
+                        aria-hidden="true"
+                        className="bg-primary text-on-primary ring-canvas absolute -right-1 -bottom-1 flex size-5 items-center justify-center rounded-full ring-2"
+                      >
+                        <Check className="size-3" strokeWidth={3.5} />
+                      </span>
+                    )}
+                  </span>
+                  <span className={cn("w-full truncate text-center text-[0.75rem]", on ? "text-ink font-medium" : "text-ink-muted")}>
+                    {member.name}
+                  </span>
+                </label>
+              </li>
+            );
+          })}
+        </ul>
+      </fieldset>
+
+      <fieldset className="flex min-w-0 flex-col gap-3">
+        <legend className={LEGEND}>{t.expense.split}</legend>
+        <div role="radiogroup" aria-label={t.expense.split} className="grid grid-cols-2 gap-2">
+          {SPLIT_MODES.map((mode: SplitMode) => {
+            const Icon = MODE_ICON[mode];
+            const on = form.mode === mode;
+            return (
+              <label
+                key={mode}
+                className={cn(
+                  "rounded-control has-focus-visible:outline-primary flex min-h-13 cursor-pointer items-center gap-2.5 border px-3 py-2 transition-colors has-focus-visible:outline-2",
+                  on ? "border-primary bg-accent-soft text-ink" : "border-field bg-surface text-ink-muted hover:text-ink",
+                )}
+              >
+                <input type="radio" name="split-mode" className="sr-only" checked={on} onChange={() => set("mode", mode)} />
+                <span
+                  className={cn(
+                    "flex size-7 shrink-0 items-center justify-center rounded-full",
+                    on ? "bg-primary text-on-primary" : "bg-surface-2",
+                  )}
+                >
+                  <Icon aria-hidden="true" className="size-3.5" strokeWidth={2.6} />
+                </span>
+                <span className="type-small font-semibold">{t.expense.modes[mode]}</span>
+              </label>
+            );
+          })}
+        </div>
+        <p className="type-small text-ink-muted">{t.expense.modeHints[form.mode]}</p>
+
+        {included.length > 0 && (
+          <ul className="card divide-line divide-y px-3.5">
+            {included.map((member) => {
+              const share = owed.get(member.id);
+              return (
+                <li key={member.id} className="flex min-h-14 items-center gap-3 py-1.5">
+                  <span className="flex min-w-0 flex-1 flex-col">
+                    <span className="font-medium break-words">{member.name}</span>
+                    {form.mode !== "exact" && form.mode !== "equal" && share !== undefined && (
                       <span className="type-small text-ink-muted tabular-nums" data-testid={`share-${member.id}`}>
                         {formatMoney(share, form.currency, { locale })}
                       </span>
                     )}
                   </span>
-                </label>
-                {included && form.mode === "equal" && (
-                  <span className="type-small text-ink-muted shrink-0 text-right tabular-nums" data-testid={`share-${member.id}`}>
-                    {share === undefined ? "—" : formatMoney(share, form.currency, { locale })}
-                  </span>
-                )}
-                {included && form.mode !== "equal" && (
-                  <span className="flex shrink-0 items-center gap-1.5">
-                    <input
-                      aria-label={fill(t.expense.valueOf, { name: member.name, what: t.expense.modes[form.mode] })}
-                      className={cn(inputClass, "w-24 text-right tabular-nums")}
-                      inputMode={form.mode === "shares" ? "numeric" : "decimal"}
-                      placeholder={form.mode === "shares" ? "1" : "0"}
-                      autoComplete="off"
-                      value={form.values[form.mode][member.id] ?? ""}
-                      onChange={(event) =>
-                        set("values", {
-                          ...form.values,
-                          [form.mode]: { ...form.values[form.mode as Exclude<SplitMode, "equal">], [member.id]: event.target.value },
-                        })
-                      }
-                    />
-                    {unit && <span className="type-small text-ink-muted w-8">{unit}</span>}
-                  </span>
-                )}
-              </li>
-            );
-          })}
-        </ul>
+                  {form.mode === "equal" ? (
+                    <span className="type-small text-ink shrink-0 text-right font-medium tabular-nums" data-testid={`share-${member.id}`}>
+                      {share === undefined ? "—" : formatMoney(share, form.currency, { locale })}
+                    </span>
+                  ) : (
+                    <span className="flex shrink-0 items-center gap-1.5">
+                      <input
+                        aria-label={fill(t.expense.valueOf, { name: member.name, what: t.expense.modes[form.mode] })}
+                        className={cn(inputClass, "h-11 w-24 text-right tabular-nums")}
+                        inputMode={form.mode === "shares" ? "numeric" : "decimal"}
+                        placeholder={form.mode === "shares" ? "1" : "0"}
+                        autoComplete="off"
+                        value={form.values[form.mode][member.id] ?? ""}
+                        onChange={(event) =>
+                          set("values", {
+                            ...form.values,
+                            [form.mode]: { ...form.values[form.mode as Exclude<SplitMode, "equal">], [member.id]: event.target.value },
+                          })
+                        }
+                      />
+                      {unit && <span className="type-small text-ink-muted w-8">{unit}</span>}
+                    </span>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        )}
         {totalOk && (offBy(differences.split_sum) || offBy(differences.percent_sum, true)) && (
           <p role="status" className="type-small text-warning font-semibold">
             {offBy(differences.split_sum) ?? offBy(differences.percent_sum, true)}
@@ -386,14 +461,9 @@ function Editor({ group, editing }: { group: Group; editing: Expense | undefined
       </fieldset>
 
       {failure && <Problem>{failure}</Problem>}
-      <div className="flex flex-wrap gap-2">
-        <Button type="submit" busy={busy} className="flex-1 sm:flex-none">
-          {busy ? t.expense.saving : editing ? t.expense.saveChanges : t.expense.save}
-        </Button>
-        <Link href={`${base}/groups/${group.id}`} className={buttonClass("ghost")}>
-          {t.common.cancel}
-        </Link>
-      </div>
+      <Button type="submit" busy={busy} className="h-14 w-full text-[1.0625rem]">
+        {busy ? t.expense.saving : editing ? t.expense.saveChanges : t.expense.save}
+      </Button>
     </form>
   );
 }
