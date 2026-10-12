@@ -35,8 +35,10 @@ only. Neither has, or may ever get, a `NEXT_PUBLIC_` name.
 - A session is a signed token (HMAC-SHA256, the server's own secret) holding
   the user's ID and an expiry, a few hours long, renewed by opening the app
   again (which carries fresh `initData`).
-- It is sent in an **`Authorization` header**, not a cookie, and kept in
-  memory by the page. Two reasons: on Telegram Web the Mini App is a frame of
+- It is sent in an **`Authorization` header**, not a cookie, and kept by the
+  page for the life of the tab (in memory and in `sessionStorage`, so that a
+  reload inside Telegram does not need sign-in data that has aged past its
+  hour). Two reasons for the header: on Telegram Web the Mini App is a frame of
   another site, where cookies are often blocked; and a request can only carry
   the header if the page's own script put it there, so another site cannot
   make a signed-in browser act on its behalf (no CSRF by construction).
@@ -50,9 +52,27 @@ only. Neither has, or may ever get, a `NEXT_PUBLIC_` name.
 - A member who has left (`removed_at`) has no access, immediately.
 - Roles: the owner and admins manage the group, its members and invitations;
   every member can add expenses and propose or confirm settlements they are
-  party to. The exact matrix is fixed with the stage 2 code and tested.
-- The stage 2 gate: two real sessions, each denied the other's private group,
-  for every endpoint.
+  party to.
+- The matrix, as built in stage 2 (`lib/server/service.ts`, the one place that
+  decides) and tested route by route (`tests/db/api.test.ts`):
+
+  | Action                                        | Member   | Manager         | Owner        |
+  | --------------------------------------------- | -------- | --------------- | ------------ |
+  | See the group, add an expense                 | yes      | yes             | yes          |
+  | Change or cancel an expense                   | own only | any             | any          |
+  | Add a person by name, invite, rename, archive | no       | yes             | yes          |
+  | Remove a person                               | no       | members, guests | all but self |
+  | Make someone a manager, delete the group      | no       | no              | yes          |
+  | Leave the group                               | yes      | yes             | no           |
+
+- A group someone is not in answers exactly as a group that does not exist
+  (404, the same body), on every route: there is nothing to learn by probing.
+- **The stage 2 gate, passed 2026-10-12**: two people signed in with data
+  signed by the real bot's token, against the real database; each denied the
+  other's private group on every route that names a group; neither able to put
+  the other's member into an expense. 15 of 15 checks (`scripts/live-check.mjs`), the
+  test accounts removed afterwards. The same is tested on every run against an
+  embedded PostgreSQL.
 
 ## The database
 
@@ -119,16 +139,44 @@ Next.js starts pages with them.
 
 - Stored about a person: a display name, a Telegram user ID, a language.
   No phone number, no contact list, no location.
-- Deleting an account and deleting a group are built in stage 2 and stage 5,
-  and remove what they say they remove.
+- Deleting an account (Profile) and deleting a group (its owner) are built and
+  tested. An account's groups that are theirs alone go with it; in shared
+  groups their member row stays, detached from the person and renamed "Former
+  member", so nobody else's balances change. Ownership passes to a manager,
+  or failing that the longest-standing member.
 - No analytics, no tracking, no advertising.
 
 ## Known limits of this design
 
-- A session token in the page's memory can be read by a script running in the
-  page: the content security policy and the absence of third-party scripts
+- A session token kept by the page (memory and `sessionStorage`) can be read
+  by a script running in the page: the content security policy and the absence of third-party scripts
   (other than Telegram's own) are the defence.
 - Anyone who obtains the bot token can forge sign-ins. It is a server secret
   and must be rotated in @BotFather if it leaks.
 - The review in stage 5 will be a self-review by the agent that wrote the
   code unless the owner asks for an independent one.
+
+## What stage 2 added, and how it is checked
+
+- **Sign-in** (`lib/server/telegram.ts`): the HMAC of every field Telegram
+  sent, compared in constant time; `auth_date` no older than an hour and not
+  from the future; the user read only after the signature holds. Every way of
+  being wrong gets one answer (401). Tested with forged, altered, stale and
+  malformed data.
+- **Rate limits** are counted in the database on a connection of their own,
+  before the request's transaction opens: a refused attempt is still counted
+  (the first version counted inside the transaction and lost the count with
+  the rollback; a test caught it). Sign-in: 30 per address per 10 minutes.
+  Writes and invitation attempts: per person.
+- **Idempotency**: every expense submission carries a key made once per
+  filled-in form; the same key again returns the expense already stored.
+- **The API never echoes a database message or a stack trace**: unknown
+  failures answer `server_error` and log the route without its identifiers or
+  body.
+- **Telegram's script** (`https://telegram.org/js/telegram-web-app.js`) is the
+  only outside script the policy allows, and it is loaded only when Telegram
+  opened the page, never for a visitor who arrived any other way.
+- **The demo cannot reach real data**: it has no session and makes no call to
+  `/api/v1` at all (a browser test listens for one).
+- Not done: an independent review. This stage was written and reviewed by the
+  same agent.

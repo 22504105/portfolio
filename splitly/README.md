@@ -10,21 +10,22 @@ Russian. Portfolio project #04, built on free tiers only.
 
 ## Status
 
-**Stage 1 of 5 — foundation.** In place: the design system in two themes, both
-languages, the app shell and navigation (phone first), the money library
-(minor units, parsing, formatting, exact splitting), the database schema with
-its money rules enforced and tested on a real PostgreSQL, the security
-architecture, tests, CI, and a real deployment.
+**Stage 2 of 5 — groups and expenses by hand.** In place, on top of the
+foundation: Telegram sign-in verified by the server, sessions, groups, people
+added by name, invitations, roles, expenses typed in by hand (split equally,
+by amounts, by percent or by shares; one payer or several; refunds), changed
+by replacement and cancelled without being erased, and each person's balance
+per currency. The browser demo runs the same screens and the same rules on
+invented data kept in the visitor's own browser.
 
-Not built yet: groups, people, expenses and Telegram sign-in (stage 2); the
-receipt scanner (stage 3); balances, settlements, currencies and analytics
-(stage 4); launch (stage 5). Screens that are not written say so and show the
-plan; nothing on them pretends to work.
+Not built yet: the receipt scanner (stage 3); settling up, exchange rates,
+analytics and the activity feed (stage 4); launch (stage 5). Screens that are
+not written say so and show the plan; nothing on them pretends to work.
 
 | Stage | Scope                                        | State                 |
 | ----- | -------------------------------------------- | --------------------- |
 | 1     | Foundation, design system, deployment proof  | Done, awaiting review |
-| 2     | Groups, manual expenses, Telegram identity   | Not started           |
+| 2     | Groups, manual expenses, Telegram identity   | Done, awaiting review |
 | 3     | Receipt scanner and item assignment          | Not started           |
 | 4     | Balances, currencies, settlements, analytics | Not started           |
 | 5     | Telegram QA, accessibility, security, launch | Not started           |
@@ -65,13 +66,21 @@ language; the demo is at `/en/demo`.
 - [`docs/deployment.md`](docs/deployment.md) — the deployment proof, with the
   real command and output.
 
-## Known limits (stage 1)
+## Known limits (stages 1–2)
 
 - Built and checked by one agent; the brief's three subagent roles were not
   delegated.
 - Hosted on Vercel by the owner's decision; the brief's Cloudflare Workers
   comparison was not run.
-- Not opened inside Telegram yet: that needs a bot, which comes with stage 2.
+- **Not opened inside Telegram yet.** Sign-in was checked end to end with
+  sign-in data signed by the real bot's token (`scripts/live-check.mjs`, against the
+  real database), but nobody has opened the Mini App in a Telegram client: that
+  needs the Mini App address set in @BotFather and the stage deployed.
+- Balances are shown per currency and per person. Who should pay whom, and
+  converting between currencies, are stage 4.
+- The demo has no invitations: there are no other accounts in it to invite.
+- A person who deletes their account stays in shared groups as "Former member"
+  (in English, whatever the viewer's language): the name is data.
 - Checked in Chrome on an emulated phone and a desktop; not on real devices.
 
 ## Third-party software

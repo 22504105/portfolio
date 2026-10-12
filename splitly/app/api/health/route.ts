@@ -11,7 +11,7 @@ export function GET() {
     {
       ok: true,
       service: "splitly",
-      stage: 1,
+      stage: 2,
       // Where the code is running, as the host reports it: "iad1" and the like on Vercel, absent locally.
       region: process.env.VERCEL_REGION ?? null,
       time: new Date().toISOString(),

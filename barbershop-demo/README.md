@@ -16,9 +16,13 @@ nothing here can be booked, bought or visited.**
 
 ## Status
 
-**Live: https://barbershop-demo-sable.vercel.app** — deployed with its
-database and accounts. Booking emails are not configured yet (no Resend key),
-so a booking made there stops at "check your email".
+**Live: https://barbershop-demo-sable.vercel.app** — since 2026-10-12 the
+deployment runs **without a database**: its Supabase project was paused to
+free the free-tier slot for another project. The site serves its built-in
+catalogue, booking is a labelled preview, accounts say they are not set up,
+and the admin demo works. Everything below about the database describes the
+application as built and tested; to bring it back, resume the Supabase
+project, set `DATABASE_URL` and the two Supabase keys on Vercel and redeploy.
 
 **All five phases are built.** In place: the
 bilingual public site; real booking with email confirmation, rescheduling and

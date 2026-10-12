@@ -19,6 +19,9 @@ export default defineConfig({
   webServer: {
     command: `npm run build && npx next start -p ${PORT}`,
     url: `http://localhost:${PORT}/api/health`,
+    // The suite runs on the demo alone, the same on every machine: whatever .env.local holds is switched off,
+    // so no test can reach a real database or bot.
+    env: { DATABASE_URL: "", TELEGRAM_BOT_TOKEN: "", SESSION_SECRET: "", TELEGRAM_BOT_USERNAME: "" },
     reuseExistingServer: false,
     timeout: 180_000,
   },

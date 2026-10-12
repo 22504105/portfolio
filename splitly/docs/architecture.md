@@ -48,14 +48,25 @@ linkable in either language.
 
 ## 4. One application, two places to keep data
 
-Screens do not know where their data lives. They talk to a `Store` (stage 2):
+Screens do not know where their data lives. They talk to a `Store`
+(`lib/store/types.ts`), given to them by a provider (`components/app`):
 
 - **Demo** — invented data, seeded deterministically, kept in the visitor's
   browser (local storage), with a reset. It never touches the server's data.
 - **Signed in** — the server's API, behind a session, backed by PostgreSQL.
 
 Everything that calculates (splitting, balances, simplifying debts) is pure
-code in `lib/`, shared by both, and by the tests.
+code in `lib/`, shared by both, and by the tests. In particular
+`lib/split/expense.ts` is the single check an expense must pass: the form
+runs it as you type, the demo before it stores, the server before it writes.
+The shares are always worked out there and never accepted from a client.
+
+The server side is three layers: `app/api/v1/[...path]` hands every request to
+`lib/server/api.ts` (parsing, session, limits, one transaction per request),
+which calls `lib/server/service.ts` (the only code that decides who may do
+what, and the only code that writes). The API is listed in `api.ts` itself:
+`POST session`, `GET|DELETE me`, `groups`, `groups/:id`, `…/members`,
+`…/invites`, `invites/preview|accept`, `…/expenses`.
 
 ## 5. Money
 

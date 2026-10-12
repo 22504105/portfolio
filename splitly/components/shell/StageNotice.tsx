@@ -9,7 +9,7 @@ type StageNoticeProps = {
   labels: Dictionary["stage"];
 };
 
-const CURRENT_STAGE = 1;
+const CURRENT_STAGE = 2;
 
 /**
  * A screen whose content is not written yet. It says so plainly, and shows

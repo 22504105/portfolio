@@ -12,6 +12,8 @@ const DATA_ROOT = join(ROOT, ".tmp");
 export type TestDatabase = {
   /** The owner's connection: what the application's server uses. */
   db: Client;
+  /** The connection string, for code under test that opens its own connections. */
+  url: string;
   /** Runs statements in one transaction and commits; a failure rolls everything back and is thrown. */
   tx: <T>(run: (db: Client) => Promise<T>) => Promise<T>;
   /** Runs statements under one of the hosting platform's API roles, then rolls back. */
@@ -34,11 +36,12 @@ function freePort(): Promise<number> {
 export async function startTestDatabase(): Promise<TestDatabase> {
   mkdirSync(DATA_ROOT, { recursive: true });
   const databaseDir = mkdtempSync(join(DATA_ROOT, "pg-"));
+  const port = await freePort();
   const postgres = new EmbeddedPostgres({
     databaseDir,
     user: "postgres",
     password: "postgres",
-    port: await freePort(),
+    port,
     persistent: false,
     // UTF-8 whatever the machine's own locale is: names and comments are not all Latin.
     initdbFlags: ["--encoding=UTF8", "--locale=C"],
@@ -87,7 +90,7 @@ export async function startTestDatabase(): Promise<TestDatabase> {
     } catch {}
   };
 
-  return { db, tx, asApiRole, stop };
+  return { db, url: `postgres://postgres:postgres@127.0.0.1:${port}/splitly_test`, tx, asApiRole, stop };
 }
 
 /** The error code PostgreSQL answers with, or null if the statements went through. */

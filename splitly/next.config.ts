@@ -8,8 +8,9 @@ const development = process.env.NODE_ENV !== "production";
 // "these sites only", so frame-ancestors does the job alone.)
 const contentSecurityPolicy = [
   "default-src 'self'",
-  // Next.js starts pages with inline scripts; Telegram's own script joins in stage 2.
-  `script-src 'self' 'unsafe-inline'${development ? " 'unsafe-eval'" : ""}`,
+  // Next.js starts pages with inline scripts. Telegram's own script is the one outside script allowed:
+  // it is how a Mini App learns who opened it, and it is loaded only when Telegram opened the page.
+  `script-src 'self' 'unsafe-inline' https://telegram.org${development ? " 'unsafe-eval'" : ""}`,
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob:",
   "font-src 'self'",

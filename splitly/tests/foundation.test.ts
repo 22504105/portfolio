@@ -27,12 +27,20 @@ describe("the two languages", () => {
     for (const text of [...texts(en), ...texts(ru)]) expect(text.trim().length).toBeGreaterThan(0);
     // Russian text is in Cyrillic, apart from the product's name and the language names themselves.
     const latinOnly = texts(ru).filter((text) => !/[а-яё]/i.test(text));
-    expect(latinOnly.sort()).toEqual(["English", "Splitly"]);
+    // …and one pattern that is all placeholders.
+    expect(latinOnly.sort()).toEqual(["English", "Splitly", "{name}: {what}"]);
   });
 
   it("use the same placeholders", () => {
     const placeholders = (text: string) => [...text.matchAll(/\{(\w+)\}/g)].map((match) => match[1]).sort();
     expect(placeholders(ru.stage.title)).toEqual(placeholders(en.stage.title));
+    // Every text, wherever it is: a translation that drops or renames a placeholder would show "{amount}" to a person.
+    const walk = (a: unknown, b: unknown, path: string): void => {
+      if (typeof a === "string") return void expect([path, placeholders(b as string)]).toEqual([path, placeholders(a)]);
+      for (const key of Object.keys(a as object))
+        walk((a as Record<string, unknown>)[key], (b as Record<string, unknown>)[key], `${path}.${key}`);
+    };
+    walk(en, ru, "dictionary");
     expect(fill(en.stage.title, { stage: 2 })).toBe("This screen is built in stage 2");
     expect(fill("{a} and {b}", { a: 1 })).toBe("1 and {b}");
   });

@@ -53,9 +53,11 @@ dynamic API route, and response headers all work.
 
 ## What was not proven yet
 
-- Environment variables and secrets on the host (none exist until stage 2).
-- A database connection from the host (stage 2).
-- The site opened inside Telegram (stage 2: needs a bot).
+- Environment variables and secrets on the host: stage 2 needs four
+  (below); they are not set on Vercel yet, and stage 2 is not deployed.
+- A database connection from the host. From this machine the database is
+  reached through Supabase's pooler; the direct host does not resolve here.
+- The site opened inside Telegram.
 - The OCR worker and its language files served from the host (stage 3).
 
 ## Free-tier notes
@@ -78,3 +80,32 @@ npx vercel deploy --prod --yes --scope riddle6
 `.vercelignore` keeps `.env*`, tests and scratch files out of the upload.
 `vercel link` appends to `.gitignore` and writes a token into `.env.local`;
 undo both after linking.
+
+## Stage 2: what the host needs
+
+The stage is built and checked locally, against the real database. It is
+**not deployed**: that waits for the owner's word. To deploy it:
+
+1. Set on the Vercel project `splitly` (Production), none of them with a
+   `NEXT_PUBLIC_` name:
+   - `DATABASE_URL` — the Supabase **transaction pooler** string
+     (`…pooler.supabase.com:6543`), not the direct one.
+   - `TELEGRAM_BOT_TOKEN` — from @BotFather. A secret.
+   - `SESSION_SECRET` — at least 32 random characters. A secret.
+   - `TELEGRAM_BOT_USERNAME` — the bot's @name without the @. Not a secret;
+     it must be present **when the site is built**, because the pages that show
+     it are prepared then.
+2. `npx vercel deploy --prod --yes --scope riddle6`
+3. In @BotFather: Bot Settings → Configure Mini App → set the address to
+   `https://splitly-self.vercel.app/app` (the site picks the language).
+4. Check: `node scripts/live-check.mjs https://splitly-self.vercel.app` runs the
+   two-person isolation check against the deployment, then open the bot in
+   Telegram on a phone.
+
+Without those variables the deployed site is the demo alone, and the data API
+answers `503 not_configured`: that is what the live site does today.
+
+The database: a Supabase project of Splitly's own. Migrations are applied with `npm run db:migrate` (journal in
+`splitly_meta.migrations`); all three are applied. The schema `splitly` is not
+exposed through Supabase's own API, has row security on every table and grants
+nothing to `anon` or `authenticated`: only the server's own connection reads it.

@@ -1,12 +1,17 @@
 import type { Metadata } from "next";
-import { StageNotice } from "@/components/shell/StageNotice";
+import { Suspense } from "react";
+import { AddScreen } from "@/components/screens/AddScreen";
 import { pageLocale } from "@/lib/page";
 
 export async function generateMetadata({ params }: PageProps<"/[locale]/demo/add">): Promise<Metadata> {
   return { title: (await pageLocale(params)).dictionary.add.title };
 }
 
-export default async function Page({ params }: PageProps<"/[locale]/demo/add">) {
-  const { dictionary } = await pageLocale(params);
-  return <StageNotice title={dictionary.add.title} lead={dictionary.add.lead} stage={2} labels={dictionary.stage} />;
+// The screen reads the address (which group, which expense) in the browser, so it is rendered there.
+export default function Page() {
+  return (
+    <Suspense>
+      <AddScreen />
+    </Suspense>
+  );
 }

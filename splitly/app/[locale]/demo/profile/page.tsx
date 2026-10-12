@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { ProfileExtras } from "@/components/screens/ProfileExtras";
 import { LocaleSwitch } from "@/components/shell/LocaleSwitch";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { pageLocale } from "@/lib/page";
@@ -7,7 +8,7 @@ export async function generateMetadata({ params }: PageProps<"/[locale]/demo/pro
   return { title: (await pageLocale(params)).dictionary.profile.title };
 }
 
-// What already works on this screen: the language and the theme. Currency, export and deleting data join them later.
+// The language and the theme, then what depends on where the data lives: the demo can be started over, an account deleted.
 export default async function ProfilePage({ params }: PageProps<"/[locale]/demo/profile">) {
   const { locale, dictionary } = await pageLocale(params);
   const t = dictionary.profile;
@@ -32,6 +33,8 @@ export default async function ProfilePage({ params }: PageProps<"/[locale]/demo/
         <p className="type-small text-ink-muted mt-1 mb-4">{t.themeHint}</p>
         <ThemeToggle labels={dictionary.theme} expanded className="max-w-md" />
       </section>
+
+      <ProfileExtras />
     </>
   );
 }
