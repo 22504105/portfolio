@@ -75,7 +75,8 @@ language; the demo is at `/en/demo`.
 - **Not opened inside Telegram yet.** Sign-in was checked end to end with
   sign-in data signed by the real bot's token (`scripts/live-check.mjs`, against the
   real database), but nobody has opened the Mini App in a Telegram client: that
-  needs the Mini App address set in @BotFather and the stage deployed.
+  needs the Mini App address set in @BotFather (the stage is deployed, and
+  the same check passes against the live site).
 - Balances are shown per currency and per person. Who should pay whom, and
   converting between currencies, are stage 4.
 - The demo has no invitations: there are no other accounts in it to invite.

@@ -53,11 +53,10 @@ dynamic API route, and response headers all work.
 
 ## What was not proven yet
 
-- Environment variables and secrets on the host: stage 2 needs four
-  (below); they are not set on Vercel yet, and stage 2 is not deployed.
-- A database connection from the host. From this machine the database is
-  reached through Supabase's pooler; the direct host does not resolve here.
-- The site opened inside Telegram.
+- The site opened inside Telegram: the Mini App address has to be set in
+  @BotFather by the bot's owner, and then opened on a phone.
+- (Proven since, 2026-10-12, with stage 2: secrets on the host and a database
+  connection from it. See below.)
 - The OCR worker and its language files served from the host (stage 3).
 
 ## Free-tier notes
@@ -83,8 +82,12 @@ undo both after linking.
 
 ## Stage 2: what the host needs
 
-The stage is built and checked locally, against the real database. It is
-**not deployed**: that waits for the owner's word. To deploy it:
+**Deployed 2026-10-12** on the owner's word. The four variables are set on
+Vercel (Production), and the two-person isolation check passes against the
+live site: `node scripts/live-check.mjs https://splitly-self.vercel.app`,
+15 of 15, test accounts removed afterwards. In a browser the live demo takes
+an expense, and `/app` outside Telegram stays shut and points to the bot.
+The steps, for the next time:
 
 1. Set on the Vercel project `splitly` (Production), none of them with a
    `NEXT_PUBLIC_` name:
@@ -102,8 +105,12 @@ The stage is built and checked locally, against the real database. It is
    two-person isolation check against the deployment, then open the bot in
    Telegram on a phone.
 
-Without those variables the deployed site is the demo alone, and the data API
-answers `503 not_configured`: that is what the live site does today.
+Without those variables a deployment is the demo alone, and the data API
+answers `503 not_configured`.
+
+The functions run in Vercel's default region (iad1, US East) while the
+database is in eu-west-1: every request crosses the Atlantic a few times.
+It works; moving the functions next to the database is a stage 5 item.
 
 The database: a Supabase project of Splitly's own. Migrations are applied with `npm run db:migrate` (journal in
 `splitly_meta.migrations`); all three are applied. The schema `splitly` is not
