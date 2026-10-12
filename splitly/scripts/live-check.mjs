@@ -202,6 +202,62 @@ try {
     joined.status === 200 && shared?.myNet.TRY === -500,
     JSON.stringify([joined, shared?.myNet]),
   );
+
+  // Stage 3: a receipt becomes one expense with its lines, shares worked out by the server; the same photo twice is noticed.
+  const line = (displayLabel, lineTotalMinor, assigned, extra = {}) => ({
+    kind: "item",
+    originalLabel: displayLabel.toUpperCase(),
+    displayLabel,
+    translationSource: "glossary",
+    quantity: "1",
+    lineTotalMinor,
+    confidence: 90,
+    manualReviewed: false,
+    assigned: assigned.map((memberId) => ({ memberId, weight: 1 })),
+    ...extra,
+  });
+  const receipt = {
+    description: "Check receipt",
+    category: "groceries",
+    date: "2026-10-12",
+    currency: "TRY",
+    payers: [{ memberId: memberA, paidMinor: 11_001 }],
+    receipt: {
+      contentHash: "c0ffee".padEnd(64, "0"),
+      mimeType: "image/png",
+      lines: [
+        line("Milk", 8001, [memberA, guest]),
+        line("Bread", 4000, [guest]),
+        line("Discount", -1000, [], { kind: "discount", confidence: null }),
+      ],
+    },
+  };
+  const scanned = await call("POST", `groups/${groupA}/receipts`, { token: A, body: { idempotencyKey: randomUUID(), receipt } });
+  const withReceipt = (await call("GET", `groups/${groupA}`, { token: B })).body.group;
+  const stored = withReceipt?.expenses.find((expense) => expense.id === scanned.body.id);
+  const lineSums = stored?.receipt?.lines.map((item) => item.allocations.reduce((sum, share) => sum + share.shareMinor, 0)).join();
+  check(
+    "a receipt is stored as one expense whose lines, shares and total agree",
+    scanned.status === 200 &&
+      stored?.totalMinor === 11_001 &&
+      lineSums === "8001,4000,-1000" &&
+      stored.splits.reduce((sum, split) => sum + split.owedMinor, 0) === 11_001,
+    JSON.stringify([scanned, lineSums, stored?.splits]),
+  );
+  const twice = await call("POST", `groups/${groupA}/receipts`, { token: A, body: { idempotencyKey: randomUUID(), receipt } });
+  check(
+    "the same photo a second time is refused as a duplicate",
+    twice.status === 409 && twice.body.error === "duplicate_receipt",
+    JSON.stringify(twice),
+  );
+  const half = await call("POST", `groups/${groupA}/receipts`, {
+    token: A,
+    body: {
+      idempotencyKey: randomUUID(),
+      receipt: { ...receipt, receipt: { ...receipt.receipt, contentHash: "d".repeat(64), lines: [line("Milk", 8001, [])] } },
+    },
+  });
+  check("a receipt with a line given to nobody is refused whole", half.status === 422, JSON.stringify(half));
 } catch (error) {
   failed++;
   console.log("FAIL the check itself broke:", error.message);

@@ -65,7 +65,10 @@ font:600 30px/1.55 'Courier New',monospace;filter:${blur ? "blur(7px)" : "none"}
 mkdirSync("e2e/fixtures", { recursive: true });
 const browser = await chromium.launch({ channel: process.env.CI ? undefined : "chrome" });
 const tab = await browser.newPage({ deviceScaleFactor: 1.5 });
-for (const [name, text, blur] of [...Object.entries(RECEIPTS).map(([name, text]) => [name, text, false]), ["receipt-tr-blurred", RECEIPTS["receipt-tr"], true]]) {
+for (const [name, text, blur] of [
+  ...Object.entries(RECEIPTS).map(([name, text]) => [name, text, false]),
+  ["receipt-tr-blurred", RECEIPTS["receipt-tr"], true],
+]) {
   await tab.setContent(page(text, blur));
   await tab.locator("#receipt").screenshot({ path: `e2e/fixtures/${name}.png` });
   console.log(`e2e/fixtures/${name}.png`);

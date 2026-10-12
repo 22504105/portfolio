@@ -73,7 +73,7 @@ export function stretchContrast(pixels: Uint8ClampedArray): void {
   }
 }
 
-/** The photo redrawn: sized for reading, turned, optionally enhanced, as a JPEG with nothing of the original file's own data. */
+/** The photo redrawn: sized for reading, turned, optionally enhanced, with nothing of the original file's own data. */
 export async function prepare(file: Blob, turn: Turn, enhance: boolean): Promise<{ blob: Blob; width: number; height: number }> {
   let bitmap: ImageBitmap;
   try {
@@ -100,7 +100,9 @@ export async function prepare(file: Blob, turn: Turn, enhance: boolean): Promise
       stretchContrast(data.data);
       context.putImageData(data, 0, 0);
     }
-    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.92));
+    // Without loss: squeezing the picture again as a JPEG smears the edges of small print, and digits are read wrong
+    // ("12.00" came out as "112.300"). The file never leaves the device, so its size costs nothing.
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/png"));
     // Give the memory back at once: a phone has little to spare.
     const { width, height } = canvas;
     canvas.width = canvas.height = 0;

@@ -10,23 +10,23 @@ Russian. Portfolio project #04, built on free tiers only.
 
 ## Status
 
-**Stage 2 of 5 — groups and expenses by hand.** In place, on top of the
-foundation: Telegram sign-in verified by the server, sessions, groups, people
-added by name, invitations, roles, expenses typed in by hand (split equally,
-by amounts, by percent or by shares; one payer or several; refunds), changed
-by replacement and cancelled without being erased, and each person's balance
-per currency. The browser demo runs the same screens and the same rules on
-invented data kept in the visitor's own browser.
+**Stage 3 of 5 — the receipt scanner.** In place: Telegram sign-in verified by
+the server, groups, people, invitations, roles, expenses typed in by hand, and
+now receipts: a photo is read on the device (Turkish, English or Russian),
+its lines are checked and corrected by the person, translated from a word
+list where the list knows the word, given out line by line, and stored as one
+expense that balances to the last unit. The browser demo runs the same
+screens and the same rules on invented data kept in the visitor's browser.
 
-Not built yet: the receipt scanner (stage 3); settling up, exchange rates,
-analytics and the activity feed (stage 4); launch (stage 5). Screens that are
-not written say so and show the plan; nothing on them pretends to work.
+Not built yet: settling up, exchange rates, analytics and the activity feed
+(stage 4); launch (stage 5). Screens that are not written say so and show the
+plan; nothing on them pretends to work.
 
 | Stage | Scope                                        | State                 |
 | ----- | -------------------------------------------- | --------------------- |
 | 1     | Foundation, design system, deployment proof  | Done, awaiting review |
 | 2     | Groups, manual expenses, Telegram identity   | Done, awaiting review |
-| 3     | Receipt scanner and item assignment          | Not started           |
+| 3     | Receipt scanner and item assignment          | Done, awaiting review |
 | 4     | Balances, currencies, settlements, analytics | Not started           |
 | 5     | Telegram QA, accessibility, security, launch | Not started           |
 
@@ -69,7 +69,7 @@ lists what the concept shows, what it leaves out, and which stage builds what.
 - [`docs/deployment.md`](docs/deployment.md) — the deployment proof, with the
   real command and output.
 
-## Known limits (stages 1–2)
+## Known limits (stages 1–3)
 
 - Built and checked by one agent; the brief's three subagent roles were not
   delegated.
@@ -80,6 +80,20 @@ lists what the concept shows, what it leaves out, and which stage builds what.
   real database), but nobody has opened the Mini App in a Telegram client: that
   needs the Mini App address set in @BotFather (the stage is deployed, and
   the same check passes against the live site).
+- **Reading a receipt is best-effort.** It was tested on receipts drawn for
+  the purpose (clean print, straight on). A real photo of thermal paper, at an
+  angle, in poor light, will read worse; that is what the review screen and
+  the way on by hand are for. Not tried on a real phone's camera yet.
+- The scanner turns and sharpens a photo but does not crop it. A line is
+  shared equally among the people chosen for it; unequal shares of one line
+  (amounts, percentages) are not offered in the scanner, only in a
+  hand-entered expense.
+- The word list knows about 120 everyday things. Anything else is shown as
+  printed and marked as not translated. Only the first known word of a name
+  is translated ("Grilled salmon" is shown as "Salmon", with the printed name
+  under it).
+- There is no list of past receipts as such: a receipt is its expense, and
+  its lines are shown under that expense in the group.
 - Balances are shown per currency and per person. Who should pay whom, and
   converting between currencies, are stage 4.
 - The demo has no invitations: there are no other accounts in it to invite.

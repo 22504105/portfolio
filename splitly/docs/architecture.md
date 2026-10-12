@@ -147,3 +147,36 @@ docs/           Brief, architecture, security, design system, deployment
   no horizontal overflow, touch targets, headers, no dead controls.
 - `npm run typecheck`, `npm run lint`, `npm run format:check`.
 - CI: `.github/workflows/splitly.yml` at the repository root.
+
+## 9. The receipt scanner (stage 3)
+
+One path from paper to expense, each step its own piece of code:
+
+| Step          | Where                      | What it does                                                                                                         |
+| ------------- | -------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| Photo         | `lib/receipt/image.ts`     | Checks type, size and dimensions; redraws on a canvas (dropping the file's own data), turns, sharpens                |
+| Reading       | `lib/receipt/ocr.ts`       | Tesseract in a worker, from files this site serves; words are put into rows by their place on the page               |
+| Understanding | `lib/receipt/parse.ts`     | Rows into bought lines, discounts, service, tip, the printed total, tax already inside prices; never guesses a price |
+| Naming        | `lib/receipt/glossary.ts`  | The word list; the person's own corrections first; unknown names stay as printed                                     |
+| Working draft | `components/scan/draft.ts` | What the person edits; totals and the difference from the printed total                                              |
+| Shares        | `lib/receipt/build.ts`     | Lines and who had them into an expense that balances; the one function the screen, the demo and the server all run   |
+| Storing       | `lib/server/service.ts`    | Receipt, expense, lines and each person's part of each line in one transaction                                       |
+
+Rules worth knowing:
+
+- **A line's leftover unit goes to the first person listed**, as everywhere
+  else. **An adjustment with nobody named** (discount, tax, service, tip,
+  correction) is spread in proportion to what each person took of the bought
+  lines. The expense's total is the sum of its lines, and each person owes the
+  sum of their parts: the three cannot disagree, and the database checks it
+  again (a line partly given out is refused at commit).
+- **Tax printed as already inside the prices** (Turkish KDV, Russian НДС) is
+  shown for information and not added. A receipt whose tax is on top needs a
+  tax line added by hand; the mismatch with the printed total says so.
+- **The photo is prepared without loss** (PNG). Re-encoding it as a JPEG
+  smeared small print enough to change digits.
+- **The reader's files are not in the repository.** `scripts/ocr-assets.mjs`
+  copies the worker, the engine and three languages' data (about 21 MB) from
+  the pinned packages into `public/ocr` before every `dev` and `build`.
+- **Layout mode**: one block read row by row. The "single column" mode read a
+  receipt as two columns, names and then prices.
