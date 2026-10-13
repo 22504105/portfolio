@@ -1,9 +1,22 @@
 "use client";
 
-import { ArrowLeft, Camera, ImageUp, Keyboard, RotateCw, ScanLine, ShieldCheck, Sparkles, X } from "lucide-react";
+import {
+  Camera,
+  Focus,
+  ImagePlus,
+  ImageUp,
+  Keyboard,
+  Lock,
+  ReceiptText,
+  RotateCw,
+  ScanLine,
+  Sparkles,
+  X,
+  type LucideIcon,
+} from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ButtonHTMLAttributes } from "react";
 import { errorText, useApp, useLoad } from "@/components/app/AppProvider";
 import { Button, Field, inputClass, Loading, Problem } from "@/components/ui/controls";
 import type { Group } from "@/lib/domain/types";
@@ -15,6 +28,7 @@ import { cn } from "@/lib/utils";
 import { AssignStep, ResultStep, type Outcome } from "./AssignStep";
 import { draftFrom, readCorrections, readTranslate, rememberTranslate, withTranslation, type Draft } from "./draft";
 import { ReviewStep } from "./ReviewStep";
+import { ScanHeader } from "./ScanHeader";
 
 // The scanner, after the concept's screens 4 to 7: a photo of a receipt, read
 // on the device, checked by the person, given out line by line, and stored as
@@ -208,32 +222,26 @@ function Flow({ group, groups, onGroup }: { group: Group; groups: { id: string; 
 
   return (
     <>
-      <div className="relative flex min-h-11 items-center justify-center">
-        <Link
-          href={`${base}/groups/${group.id}`}
-          aria-label={t.common.back}
-          className="text-ink-muted hover:text-ink absolute top-0 left-0 inline-flex size-11 items-center justify-center rounded-full"
-        >
-          <ArrowLeft aria-hidden="true" className="size-5" />
-        </Link>
-        <h1 className="type-heading px-12 text-center text-[1.25rem]">{t.scan.title}</h1>
-      </div>
+      <ScanHeader title={t.scan.title} stage="capture" back={`${base}/groups/${group.id}`} />
 
       {step.name === "reading" ? (
-        <div role="status" aria-live="polite" className="card mt-6 flex flex-col items-center gap-4 p-8 text-center">
-          <ScanLine aria-hidden="true" className="text-primary size-10 animate-pulse" />
+        <div
+          role="status"
+          aria-live="polite"
+          className="bg-stage rounded-sheet mt-5 flex flex-col items-center gap-4 px-6 py-12 text-center text-white"
+        >
+          <ScanLine aria-hidden="true" className="text-mint size-10 animate-pulse" />
           <p className="type-heading">{fill(t.scan.reading, { n: Math.round(step.fraction * 100) })}</p>
-          <div className="bg-surface-2 h-2 w-full max-w-xs overflow-hidden rounded-full">
+          <div className="h-2 w-full max-w-xs overflow-hidden rounded-full bg-white/15">
             <div
-              className="bg-primary h-full rounded-full transition-[width]"
+              className="bg-mint h-full rounded-full transition-[width]"
               style={{ width: `${Math.max(4, Math.round(step.fraction * 100))}%` }}
             />
           </div>
-          <p className="type-small text-ink-muted">{t.scan.readingHint}</p>
+          <p className="type-small text-white/80">{t.scan.readingHint}</p>
         </div>
       ) : (
         <>
-          <p className="text-ink-muted mt-2 text-center">{t.scan.lead}</p>
           {problem && (
             <div className="mt-5 flex flex-col items-start gap-3">
               <Problem>{problem}</Problem>
@@ -244,7 +252,72 @@ function Flow({ group, groups, onGroup }: { group: Group; groups: { id: string; 
             </div>
           )}
 
-          <div className="mt-5 grid gap-3 sm:grid-cols-2">
+          {/* The viewfinder: dark in both themes, as a camera is. */}
+          <div className="bg-stage rounded-sheet relative mt-5 overflow-hidden text-white">
+            {photo ? (
+              // The person's own photo, shown from memory: not a file of the site.
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={photo.preview} alt={t.scan.photo} className="mx-auto max-h-[58dvh] w-auto max-w-full object-contain" />
+            ) : (
+              <div className="flex aspect-square max-h-[44dvh] w-full flex-col items-center justify-center gap-3 px-12 text-center">
+                <Corners className="border-mint/80 inset-5" />
+                <ReceiptText aria-hidden="true" className="text-mint size-10" />
+                <p className="type-small text-white/85">{t.scan.lead}</p>
+                <p className="mt-1 inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-[0.8125rem] leading-5 font-medium">
+                  <Focus aria-hidden="true" className="size-4 shrink-0" />
+                  {t.scan.frameHint}
+                </p>
+              </div>
+            )}
+          </div>
+
+          {photo ? (
+            <>
+              <div className="card mt-3 grid grid-cols-3 gap-2 p-2.5">
+                <Tile icon={RotateCw} label={t.scan.rotate} onClick={() => adjust({ turn: ((photo.turn + 90) % 360) as Turn })} />
+                <Tile
+                  icon={Sparkles}
+                  label={t.scan.enhance}
+                  aria-pressed={photo.enhance}
+                  onClick={() => adjust({ enhance: !photo.enhance })}
+                />
+                <Tile icon={ImagePlus} label={t.scan.retake} onClick={() => setPhoto(null)} />
+              </div>
+              <Button className="mt-3 h-14 w-full text-[1.0625rem]" onClick={read}>
+                <ScanLine aria-hidden="true" className="size-5" />
+                {t.scan.read}
+              </Button>
+            </>
+          ) : (
+            <div className="card mt-3 grid grid-cols-[1fr_auto_1fr] items-center gap-3 p-2.5">
+              <Tile icon={ImageUp} label={t.scan.upload} onClick={() => picker.current?.click()} />
+              <button
+                type="button"
+                onClick={() => setCamera(true)}
+                aria-label={t.scan.camera}
+                title={t.scan.camera}
+                className="bg-primary text-on-primary hover:bg-primary-hover ring-accent-soft mx-2 flex size-18 items-center justify-center rounded-full ring-8 transition-colors"
+              >
+                <Camera aria-hidden="true" className="size-7" />
+              </button>
+              <Tile icon={Keyboard} label={t.scan.manual} onClick={byHand} />
+            </div>
+          )}
+          <input
+            ref={picker}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            aria-label={t.scan.upload}
+            className="sr-only"
+            tabIndex={-1}
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              event.target.value = "";
+              if (file) void take(file);
+            }}
+          />
+
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
             {groups.length > 1 && (
               <Field label={t.expense.group}>
                 {(control) => (
@@ -276,71 +349,8 @@ function Flow({ group, groups, onGroup }: { group: Group; groups: { id: string; 
             </Field>
           </div>
 
-          {photo ? (
-            <section aria-label={t.scan.photo} className="mt-5">
-              {/* The person's own photo, shown from memory: not a file of the site. */}
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={photo.preview}
-                alt={t.scan.photo}
-                className="border-line bg-surface-2 mx-auto max-h-[60dvh] w-auto max-w-full rounded-[16px] border object-contain"
-              />
-              <div className="mt-3 flex flex-wrap justify-center gap-2">
-                <Button variant="secondary" small onClick={() => adjust({ turn: ((photo.turn + 90) % 360) as Turn })}>
-                  <RotateCw aria-hidden="true" className="size-4" />
-                  {t.scan.rotate}
-                </Button>
-                <Button
-                  variant="secondary"
-                  small
-                  aria-pressed={photo.enhance}
-                  onClick={() => adjust({ enhance: !photo.enhance })}
-                  className={cn(photo.enhance && "border-primary bg-accent-soft")}
-                >
-                  <Sparkles aria-hidden="true" className="size-4" />
-                  {t.scan.enhance}
-                </Button>
-                <Button variant="ghost" small onClick={() => setPhoto(null)}>
-                  {t.scan.retake}
-                </Button>
-              </div>
-              <Button className="mt-4 h-14 w-full text-[1.0625rem]" onClick={read}>
-                <ScanLine aria-hidden="true" className="size-5" />
-                {t.scan.read}
-              </Button>
-            </section>
-          ) : (
-            <div className="mt-5 flex flex-col gap-2.5">
-              <Button className="h-14 text-[1.0625rem]" onClick={() => setCamera(true)}>
-                <Camera aria-hidden="true" className="size-5" />
-                {t.scan.camera}
-              </Button>
-              <Button variant="secondary" className="h-14 text-[1.0625rem]" onClick={() => picker.current?.click()}>
-                <ImageUp aria-hidden="true" className="size-5" />
-                {t.scan.upload}
-              </Button>
-              <Button variant="ghost" onClick={byHand}>
-                <Keyboard aria-hidden="true" className="size-5" />
-                {t.scan.manual}
-              </Button>
-            </div>
-          )}
-          <input
-            ref={picker}
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            aria-label={t.scan.upload}
-            className="sr-only"
-            tabIndex={-1}
-            onChange={(event) => {
-              const file = event.target.files?.[0];
-              event.target.value = "";
-              if (file) void take(file);
-            }}
-          />
-
-          <p className="type-small text-ink-muted mt-6 flex items-start gap-2">
-            <ShieldCheck aria-hidden="true" className="text-positive mt-0.5 size-4 shrink-0" />
+          <p className="type-small bg-surface-2 text-ink-muted rounded-control mt-4 flex items-start gap-2.5 p-3.5">
+            <Lock aria-hidden="true" className="text-positive mt-0.5 size-4 shrink-0" />
             {t.scan.privacy}
           </p>
         </>
@@ -354,6 +364,39 @@ function Flow({ group, groups, onGroup }: { group: Group; groups: { id: string; 
         />
       )}
     </>
+  );
+}
+
+/** One of the squares in the tray under the viewfinder: a picture with its word beneath. */
+function Tile({ icon: Icon, label, className, ...props }: ButtonHTMLAttributes<HTMLButtonElement> & { icon: LucideIcon; label: string }) {
+  return (
+    <button
+      type="button"
+      className={cn(
+        "bg-surface-2 text-ink hover:bg-accent-soft rounded-control aria-pressed:bg-accent-soft aria-pressed:text-on-accent aria-pressed:ring-primary flex min-h-18 flex-col items-center justify-center gap-1.5 px-2 py-2.5 text-center text-[0.75rem] leading-4 font-medium transition-colors aria-pressed:ring-2",
+        className,
+      )}
+      {...props}
+    >
+      <Icon aria-hidden="true" className="size-5.5" />
+      {label}
+    </button>
+  );
+}
+
+/** The frame to aim with: four corners, as in the concept. */
+function Corners({ className }: { className?: string }) {
+  return (
+    <div aria-hidden="true" className={cn("pointer-events-none absolute", className)}>
+      {[
+        "top-0 left-0 border-t-4 border-l-4 rounded-tl-2xl",
+        "top-0 right-0 border-t-4 border-r-4 rounded-tr-2xl",
+        "bottom-0 left-0 border-b-4 border-l-4 rounded-bl-2xl",
+        "bottom-0 right-0 border-b-4 border-r-4 rounded-br-2xl",
+      ].map((corner) => (
+        <span key={corner} className={cn("absolute size-10 border-inherit", corner)} />
+      ))}
+    </div>
   );
 }
 
@@ -428,17 +471,7 @@ function CameraView({
       </div>
       <div className="relative min-h-0 flex-1">
         <video ref={video} playsInline muted className="size-full object-cover" />
-        {/* The frame to aim with: four corners, as in the concept. */}
-        <div aria-hidden="true" className="pointer-events-none absolute inset-x-[8%] inset-y-[6%]">
-          {[
-            "top-0 left-0 border-t-4 border-l-4 rounded-tl-2xl",
-            "top-0 right-0 border-t-4 border-r-4 rounded-tr-2xl",
-            "bottom-0 left-0 border-b-4 border-l-4 rounded-bl-2xl",
-            "bottom-0 right-0 border-b-4 border-r-4 rounded-br-2xl",
-          ].map((corner) => (
-            <span key={corner} className={cn("absolute size-10 border-white", corner)} />
-          ))}
-        </div>
+        <Corners className="inset-x-[8%] inset-y-[6%] border-white" />
       </div>
       <div className="flex items-center justify-center pt-5 pb-[calc(env(safe-area-inset-bottom)+1.25rem)]">
         <button

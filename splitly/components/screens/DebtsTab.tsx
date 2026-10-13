@@ -1,10 +1,10 @@
 "use client";
 
-import { ArrowRight, CircleCheck, Clock } from "lucide-react";
+import { ArrowRight, BellRing, CircleCheck, Clock, Copy, Send, WandSparkles } from "lucide-react";
 import { useRef, useState } from "react";
 import { errorText, useApp } from "@/components/app/AppProvider";
 import { Avatar } from "@/components/ui/Avatar";
-import { Button, inputClass, Problem } from "@/components/ui/controls";
+import { Button, buttonClass, inputClass, Problem } from "@/components/ui/controls";
 import { pairwise, simplifyAll, type Transfer } from "@/lib/balances/debts";
 import { netsOf } from "@/lib/balances/net";
 import { confirmedAtOnce, mayCancel, mayConfirm } from "@/lib/balances/settle";
@@ -21,9 +21,10 @@ import { formatDay } from "./parts";
  * waiting and changes no balance.
  */
 export function DebtsTab({ group, me, onFailure }: { group: Group; me: Member | undefined; onFailure: (message: string | null) => void }) {
-  const { t, store, locale, changed, notify } = useApp();
+  const { t, store, base, account, locale, changed, notify } = useApp();
   const [view, setView] = useState<"simple" | "all">("simple");
   const [paying, setPaying] = useState<string | null>(null);
+  const [reminding, setReminding] = useState<string | null>(null);
   const [amount, setAmount] = useState("");
   const [amountProblem, setAmountProblem] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -74,12 +75,12 @@ export function DebtsTab({ group, me, onFailure }: { group: Group; me: Member | 
 
   return (
     <>
-      <div role="radiogroup" aria-label={t.debts.view} className="bg-surface-2 rounded-control mt-5 grid grid-cols-2 gap-1 p-1">
+      <div role="radiogroup" aria-label={t.debts.view} className="bg-surface-2 mt-5 grid grid-cols-2 gap-1 rounded-full p-1">
         {(["simple", "all"] as const).map((option) => (
           <label
             key={option}
             className={cn(
-              "type-small has-focus-visible:outline-primary flex h-11 cursor-pointer items-center justify-center rounded-[9px] px-2 text-center font-semibold transition-colors has-focus-visible:outline-2",
+              "type-small has-focus-visible:outline-primary flex h-11 cursor-pointer items-center justify-center rounded-full px-2 text-center font-semibold transition-colors has-focus-visible:outline-2",
               view === option ? "bg-surface text-ink shadow-card" : "text-ink-muted hover:text-ink",
             )}
           >
@@ -88,7 +89,12 @@ export function DebtsTab({ group, me, onFailure }: { group: Group; me: Member | 
           </label>
         ))}
       </div>
-      <p className="type-small text-ink-muted mt-2">{t.debts.viewHints[view]}</p>
+      <div className="bg-accent-soft text-on-accent rounded-card mt-3 flex items-start gap-3 p-3.5">
+        <span aria-hidden="true" className="bg-primary text-on-primary flex size-9 shrink-0 items-center justify-center rounded-full">
+          <WandSparkles className="size-4.5" />
+        </span>
+        <p className="type-small min-w-0 self-center">{t.debts.viewHints[view]}</p>
+      </div>
 
       <section aria-label={t.debts.views[view]} className="mt-4">
         {transfers.length === 0 ? (
@@ -105,34 +111,68 @@ export function DebtsTab({ group, me, onFailure }: { group: Group; me: Member | 
               const open = paying === key(transfer);
               // Anyone in the group may record a payment between two people still in it; whether it counts at once depends on who they are.
               const can = !!me && !group.archivedAt && current.has(transfer.from) && current.has(transfer.to);
+              const mine = !me ? null : transfer.from === me.id ? "owe" : transfer.to === me.id ? "owed" : null;
               return (
                 <li key={key(transfer)} className="card p-4">
                   <div className="flex items-center gap-3">
-                    <Avatar
-                      name={people.get(transfer.from)?.name ?? "?"}
-                      seed={transfer.from}
-                      photo={people.get(transfer.from)?.photoUrl}
-                      className="size-10"
-                    />
-                    <span className="min-w-0 flex-1">
+                    <span className="relative shrink-0">
+                      <Avatar
+                        name={people.get(transfer.from)?.name ?? "?"}
+                        seed={transfer.from}
+                        photo={people.get(transfer.from)?.photoUrl}
+                        className="size-11"
+                      />
+                      <Avatar
+                        name={people.get(transfer.to)?.name ?? "?"}
+                        seed={transfer.to}
+                        photo={people.get(transfer.to)?.photoUrl}
+                        className="ring-surface absolute -right-1 -bottom-1 size-5 ring-2"
+                      />
+                    </span>
+                    <span className="flex min-w-0 flex-1 flex-wrap items-center justify-between gap-x-2 gap-y-1">
                       <Pair from={transfer.from} to={transfer.to} />
-                      <span className="block text-[1.125rem] font-semibold tabular-nums">
+                      <span
+                        className={cn(
+                          "shrink-0 rounded-full px-3 py-1 font-bold tabular-nums",
+                          mine === "owed" ? "bg-accent-soft text-on-accent" : mine === "owe" ? "bg-danger/10 text-danger" : "bg-surface-2",
+                        )}
+                      >
                         {money(transfer.amountMinor, transfer.currency)}
                       </span>
                     </span>
-                    {can && !open && (
+                  </div>
+                  {mine && <p className="text-ink-muted mt-1 pl-14 text-[0.75rem] leading-4">{t.balance[mine]}</p>}
+                  {can && !open && (
+                    <div className="mt-3 flex gap-2">
+                      {mine === "owed" && (
+                        <Button
+                          variant="secondary"
+                          className="min-w-0 flex-1 px-3"
+                          aria-expanded={reminding === key(transfer)}
+                          onClick={() => setReminding(reminding === key(transfer) ? null : key(transfer))}
+                        >
+                          <BellRing aria-hidden="true" className="size-4" />
+                          {t.debts.remind}
+                        </Button>
+                      )}
                       <Button
-                        small
+                        variant={mine === "owe" ? "primary" : "secondary"}
+                        className="min-w-0 flex-1 px-3"
                         onClick={() => {
                           setPaying(key(transfer));
+                          setReminding(null);
                           setAmount(toDecimalString(transfer.amountMinor, transfer.currency));
                           setAmountProblem(false);
                         }}
                       >
+                        <Send aria-hidden="true" className="size-4" />
                         {t.debts.settle}
                       </Button>
-                    )}
-                  </div>
+                    </div>
+                  )}
+                  {mine === "owed" && !open && reminding === key(transfer) && (
+                    <Reminder name={people.get(transfer.from)?.name ?? "?"} amount={money(transfer.amountMinor, transfer.currency)} />
+                  )}
                   {open && (
                     <div className="border-line mt-3 flex flex-col gap-2.5 border-t pt-3">
                       <label className="flex items-center justify-between gap-3">
@@ -223,6 +263,53 @@ export function DebtsTab({ group, me, onFailure }: { group: Group; me: Member | 
       )}
     </>
   );
+
+  /**
+   * A message for someone who owes the viewer, ready to send. Splitly sends
+   * nothing by itself: the bot may not write to a person who has not opened
+   * it, and a reminder is the viewer's own word to a friend. So the message
+   * is handed to Telegram's own "share" screen, or copied, and they send it.
+   */
+  function Reminder({ name, amount }: { name: string; amount: string }) {
+    const text = fill(t.debts.remindText, { name, group: group.name, amount });
+    // Where the message leads: the app in Telegram for a real account, this page in the browser demo.
+    const link = account?.bot ? `https://t.me/${account.bot}?startapp` : `${window.location.origin}${base}/groups/${group.id}`;
+    return (
+      <div
+        role="group"
+        aria-label={fill(t.debts.remindTitle, { name })}
+        className="bg-surface-2 rounded-control mt-3 flex flex-col gap-2.5 p-3.5"
+      >
+        <p className="type-small font-semibold">{fill(t.debts.remindTitle, { name })}</p>
+        <p className="bg-surface rounded-control type-small p-3 break-words">{text}</p>
+        <p className="text-ink-muted text-[0.75rem] leading-4">{t.debts.remindHint}</p>
+        <div className="flex flex-wrap gap-2">
+          <a
+            href={`https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(text)}`}
+            target="_blank"
+            rel="noreferrer"
+            className={buttonClass("primary", true)}
+          >
+            <Send aria-hidden="true" className="size-4" />
+            {t.debts.remindSend}
+          </a>
+          <Button
+            variant="secondary"
+            small
+            onClick={() =>
+              navigator.clipboard.writeText(text).then(
+                () => notify(t.debts.remindCopied),
+                () => onFailure(text),
+              )
+            }
+          >
+            <Copy aria-hidden="true" className="size-4" />
+            {t.debts.remindCopy}
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   function SettlementRow({
     settlement,

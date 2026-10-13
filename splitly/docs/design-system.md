@@ -9,6 +9,10 @@ the deep green of the concept's balance card and browser rail.
 
 All values live in `app/globals.css` as tokens. Components use the names.
 
+> Since 2026-10-13 the tokens follow the Google Stitch design: emerald `#075F4A` for buttons, forest
+> `#173D35` for the balance card, card radius 20 px, control radius 14 px. What was ported, what was
+> not, and where the design and the product disagree is in [stitch.md](stitch.md).
+
 ## Colour
 
 | Token                    | Light                 | Dark                  | Use                                   |
@@ -24,7 +28,7 @@ All values live in `app/globals.css` as tokens. Components use the names.
 | `positive`               | `#1B6B4C`             | `#8FD3AB`             | "You are owed"                        |
 | `danger`                 | `#B04440`             | `#F2A29D`             | "You owe", errors                     |
 | `danger-fill`            | `#B04440`             | `#A8443F`             | A destructive button, with white text |
-| `warning`                | `#96601F`             | `#E6B56F`             | Demo badge, cautions                  |
+| `warning`                | `#8A5514`             | `#E6B56F`             | Demo badge, cautions                  |
 
 **Where the brief's colours were moved, and why** (WCAG 2.2 AA asks 4.5:1 for
 text):
@@ -33,7 +37,7 @@ text):
 | ----------------------------- | ------------- | --------- | ----- |
 | muted `#737C76` on the canvas | 4.0:1         | `#5F6862` | 5.4:1 |
 | danger `#C75B57` on white     | 4.1:1         | `#B04440` | 5.6:1 |
-| warning `#A66B26` on white    | 4.4:1         | `#96601F` | 5.3:1 |
+| warning `#A66B26` on white    | 4.4:1         | `#8A5514` | 6.2:1 |
 
 Canvas, forest, mint, ink, divider, and the whole dark palette are the
 brief's own. `tests/foundation.test.ts` reads both palettes from the
@@ -131,7 +135,7 @@ shows the plan; it has no controls that do nothing.
 - **Balances carry a sign and a colour** in a group's list of people
   ("+1,462.37 TRY", "-677.13 TRY"); a screen reader hears "gets back" or
   "owes". The currency is its code, not a symbol: a group can hold several.
-- **Navigation**: on a phone, Home, Groups, the plus, Analytics, Profile; on a
+- **Navigation**: on a phone, Home, Groups, the plus, Activity, Profile (since the Stitch design; Analytics is reached from Home and from each group); on a
   wide screen the rail adds Receipts and calls the profile Settings.
 - **The cover illustration** is a vector drawing made for Splitly
   (`public/illustrations/friends.svg`), sharp at any size; nothing is cut out

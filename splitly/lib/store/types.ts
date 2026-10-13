@@ -84,4 +84,11 @@ export interface Store {
   cancelSettlement(groupId: string, settlementId: string): Promise<void>;
   /** Records an exchange rate for the group, from a day on. A rate is never changed afterwards: a new one is added. */
   addRate(groupId: string, input: unknown): Promise<string>;
+
+  /**
+   * An address the file asked for can be fetched from, for a few minutes, without a session. Only where the data
+   * lives on the server: inside Telegram a page cannot save a file it made itself, so Telegram fetches it instead.
+   * The demo has no such thing and makes its files on the page.
+   */
+  downloadLink?(ask: unknown): Promise<{ url: string; name: string }>;
 }

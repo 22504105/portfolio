@@ -36,7 +36,7 @@ test("home, as in the concept: a greeting, one group on the green card, its late
   await expect(page.getByRole("heading", { level: 1, name: "Hi, Alex!" })).toBeVisible();
 
   const card = page.getByRole("region", { name: "Istanbul weekend" });
-  await expect(card).toContainText("Total spent");
+  await expect(card).toContainText("Spent by the group");
   // 420 − 450 + 2,480 + 1,800 + 360.50 + 950: the cancelled deposit does not count.
   await expect(card).toContainText("5,560.50 TRY");
   await expect(card.getByRole("link", { name: "Add expense" })).toHaveAttribute("href", "/en/demo/add?group=demo-istanbul");
@@ -66,10 +66,10 @@ test("home, as in the concept: a greeting, one group on the green card, its late
 
 test("a group, as in the concept: faces, tabs, and everyone's balance with its sign", async ({ page }) => {
   await page.goto("/en/demo/groups", { waitUntil: "networkidle" });
-  await expect(page.getByRole("link", { name: /Istanbul weekend/ })).toContainText("People: 4 · Expenses: 6 · TRY");
+  await expect(page.getByRole("link", { name: /Istanbul weekend/ })).toContainText("People: 4 • Expenses: 6TRY");
   await page.getByRole("link", { name: /Flat in Moda/ }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Flat in Moda" })).toBeVisible();
-  await expect(page.getByText("People: 3 · EUR")).toBeVisible();
+  await expect(page.getByText("People: 3 • EUR")).toBeVisible();
 
   // Rent 1,200.00 at 40 / 30 / 30, paid by Nika; internet 35.00 by you; groceries 86.40 by Sam.
   await expect(balances(page).filter({ hasText: "Nika" })).toContainText(/gets back \+799\.53\sEUR/);
@@ -293,11 +293,11 @@ test("the demo can be started over, and a group that is not there says so", asyn
 test("in Russian the same screens speak Russian, amounts included", async ({ page }) => {
   await page.goto("/ru/demo", { waitUntil: "networkidle" });
   await expect(page.getByRole("heading", { level: 1, name: "Привет, Алексей!" })).toBeVisible();
-  await expect(page.getByRole("region", { name: "Выходные в Стамбуле" })).toContainText(/Общие расходы5\s560,50\sTRY/);
+  await expect(page.getByRole("region", { name: "Выходные в Стамбуле" })).toContainText(/Общие расходы группы5\s560,50\sTRY/);
 
   await page.goto("/ru/demo/groups/demo-istanbul", { waitUntil: "networkidle" });
   await expect(page.getByRole("heading", { level: 1, name: "Выходные в Стамбуле" })).toBeVisible();
-  await expect(page.getByRole("tab")).toHaveText(["Расходы", "Долги", "Аналитика", "Настройки"]);
+  await expect(page.getByRole("tab")).toHaveText(["Расходы", "Долги1", "Аналитика", "Настройки"]);
   await expect(page.getByRole("region", { name: "Ваш баланс" })).toContainText("Вам должны");
   await expect(page.getByRole("region", { name: "Ваш баланс" })).toContainText(/1\s462,37\sTRY/);
   await main(page).getByRole("link", { name: "Добавить расход" }).click();
@@ -432,4 +432,33 @@ test("the data API gives nothing without a session", async ({ request }) => {
     expect([path, response.status(), await response.json()]).toEqual([path, 503, { error: "not_configured" }]);
     expect(response.headers()["cache-control"]).toBe("no-store");
   }
+});
+
+test("privacy is said in plain words, and a usual currency is remembered on the device", async ({ page }) => {
+  await page.goto("/en", { waitUntil: "networkidle" });
+  await page.getByRole("link", { name: "Privacy" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "What Splitly keeps, and what it does not" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2 })).toHaveText([
+    "In the browser demo",
+    "When you sign in through Telegram",
+    "Groups and expenses",
+    "Receipts",
+    "What is not there",
+    "Deleting",
+  ]);
+  await expect(page.getByRole("main")).toContainText("It is never uploaded and never stored.");
+  await page.goto("/ru/privacy", { waitUntil: "networkidle" });
+  await expect(page.getByRole("heading", { level: 1, name: "Что Splitly хранит и чего не хранит" })).toBeVisible();
+
+  // The currency chosen in the profile is the one offered for a new group, after a reload too.
+  await page.goto("/en/demo/profile", { waitUntil: "networkidle" });
+  await expect(page.getByRole("combobox", { name: "Your usual currency" })).toHaveValue("TRY");
+  await page.getByRole("combobox", { name: "Your usual currency" }).selectOption("GBP");
+  await page.reload({ waitUntil: "networkidle" });
+  await expect(page.getByRole("combobox", { name: "Your usual currency" })).toHaveValue("GBP");
+  await page.getByRole("main").getByRole("link", { name: "Privacy" }).click();
+  await expect(page).toHaveURL(/\/en\/privacy$/);
+  await page.goto("/en/demo/groups", { waitUntil: "networkidle" });
+  await page.getByRole("button", { name: "New group" }).click();
+  await expect(page.getByLabel("Main currency")).toHaveValue("GBP");
 });

@@ -1,9 +1,10 @@
 "use client";
 
-import { ChevronRight } from "lucide-react";
+import { Star } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { useApp } from "@/components/app/AppProvider";
+import { useFavourites } from "@/components/app/usePreferences";
 import { Avatar, AvatarStack } from "@/components/ui/Avatar";
 import { CategoryIcon } from "@/components/ui/CategoryIcon";
 import type { Expense, GroupSummary } from "@/lib/domain/types";
@@ -64,27 +65,45 @@ export function MyBalance({ net, large = false }: { net: Record<string, number>;
 /** A group in a list: its people's faces, its name, and where the viewer stands in it. */
 export function GroupCard({ group }: { group: GroupSummary }) {
   const { t, base } = useApp();
+  const { favourites, toggle } = useFavourites();
+  const pinned = favourites.has(group.id);
   const people = group.members.filter((member) => !member.removedAt);
   return (
-    <li>
-      <Link href={`${base}/groups/${group.id}`} className="card hover:border-field flex items-center gap-3.5 p-4 transition-colors">
-        <AvatarStack people={people} max={2} className="shrink-0" />
-        <span className="min-w-0 flex-1">
-          <span className="flex items-center gap-2">
-            <span className="truncate font-semibold">{group.name}</span>
-            {group.archivedAt && (
-              <span className="type-small border-field text-ink-muted shrink-0 rounded-full border px-2 py-px">{t.groups.archived}</span>
-            )}
+    <li className="relative">
+      {/* Two rows, so a long name and a balance in two currencies never fight for one line. */}
+      <Link href={`${base}/groups/${group.id}`} className="card hover:border-field block p-4 transition-colors">
+        {/* Room on the right for the star, which is a button of its own beside the link. */}
+        <span className="flex items-center gap-3 pr-10">
+          <AvatarStack people={people} max={2} className="shrink-0" />
+          <span className="min-w-0 flex-1">
+            <span className="flex items-center gap-2">
+              <span className="truncate font-semibold">{group.name}</span>
+              {group.archivedAt && (
+                <span className="type-small border-field text-ink-muted shrink-0 rounded-full border px-2 py-px">{t.groups.archived}</span>
+              )}
+            </span>
+            <span className="text-ink-muted block truncate text-[0.75rem] leading-4">
+              {fill(t.groups.people, { n: people.length })} • {fill(t.groups.expenses, { n: group.expenseCount })}
+            </span>
           </span>
-          <span className="type-small text-ink-muted block">
-            {fill(t.groups.people, { n: people.length })} · {fill(t.groups.expenses, { n: group.expenseCount })} · {group.baseCurrency}
+          <span className="bg-surface-2 text-ink-muted shrink-0 rounded-full px-2 py-0.5 text-[0.75rem] font-medium">
+            {group.baseCurrency}
           </span>
         </span>
-        <span className="shrink-0 text-right">
+        <span className="border-line mt-3 block border-t pt-3 [&_li]:justify-start">
           <MyBalance net={group.myNet} />
         </span>
-        <ChevronRight aria-hidden="true" className="text-ink-muted size-5 shrink-0" />
       </Link>
+      <button
+        type="button"
+        aria-pressed={pinned}
+        aria-label={fill(t.groups.pin, { name: group.name })}
+        title={fill(t.groups.pin, { name: group.name })}
+        onClick={() => toggle(group.id)}
+        className="text-ink-muted hover:text-ink aria-pressed:text-warning absolute top-2.5 right-1.5 inline-flex size-11 items-center justify-center rounded-full transition-colors"
+      >
+        <Star aria-hidden="true" className="size-5" fill={pinned ? "currentColor" : "none"} />
+      </button>
     </li>
   );
 }
@@ -94,37 +113,45 @@ type ExpenseRowProps = {
   names: ReadonlyMap<string, string>;
   /** Members' Telegram photos, for the payer's face. */
   photos?: ReadonlyMap<string, string | null | undefined>;
-  /** What stands at the start of the row: the payer's face (Home) or the category's picture (a group). */
-  face: "payer" | "category";
   /** A second line under the amount, and anything after it (a chevron). */
   under?: ReactNode;
   after?: ReactNode;
 };
 
-/** One expense as the concept draws it: a picture, what it was, who paid and when, and the amount. */
-export function ExpenseRow({ expense, names, photos, face, under, after }: ExpenseRowProps) {
+/**
+ * One expense as Stitch draws it: the category's picture on a tinted square
+ * with the payer's face on its corner, what it was, who paid and when, and
+ * the amount. Words only inside: it goes into a link or a button.
+ */
+export function ExpenseRow({ expense, names, photos, under, after }: ExpenseRowProps) {
   const { t, locale } = useApp();
   const live = expense.status === "active";
   const payer = expense.payers[0];
   const payerName = names.get(payer?.memberId ?? "") ?? "?";
   const paid = expense.payers.length === 1 ? payerName : fill(t.expense.paidSeveral, { n: expense.payers.length });
   return (
-    <span className="flex items-center gap-3 py-3">
-      {face === "payer" ? (
-        <Avatar name={payerName} seed={payer?.memberId} photo={photos?.get(payer?.memberId ?? "")} className="size-11" />
-      ) : (
-        <CategoryIcon category={expense.category} />
-      )}
+    <span className="flex items-center gap-3">
+      <span className="relative shrink-0">
+        <CategoryIcon category={expense.category} className="size-12 rounded-2xl" />
+        {expense.payers.length === 1 && (
+          <Avatar
+            name={payerName}
+            seed={payer?.memberId}
+            photo={photos?.get(payer?.memberId ?? "")}
+            className="ring-surface absolute -right-1 -bottom-1 size-5 ring-2"
+          />
+        )}
+      </span>
       <span className="min-w-0 flex-1 text-left">
-        <span className={cn("block font-semibold break-words", !live && "text-ink-muted line-through")}>{expense.description}</span>
-        <span className="type-small text-ink-muted block">
-          {paid} · {formatDay(expense.date, locale)}
-          {!live && <span className="text-warning font-semibold"> · {t.expense.status[expense.status as "cancelled" | "replaced"]}</span>}
-          {expense.totalMinor < 0 && <span className="font-semibold"> · {t.expense.refundTag}</span>}
+        <span className={cn("line-clamp-2 font-semibold break-words", !live && "text-ink-muted line-through")}>{expense.description}</span>
+        <span className="text-ink-muted mt-0.5 block truncate text-[0.75rem] leading-4">
+          {paid} • {formatDay(expense.date, locale)}
+          {!live && <span className="text-warning font-semibold"> • {t.expense.status[expense.status as "cancelled" | "replaced"]}</span>}
+          {expense.totalMinor < 0 && <span className="font-semibold"> • {t.expense.refundTag}</span>}
         </span>
       </span>
-      <span className="shrink-0 text-right">
-        <span className={cn("block font-semibold tabular-nums", !live && "text-ink-muted line-through")}>
+      <span className="shrink-0 pl-1 text-right">
+        <span className={cn("block font-bold tabular-nums", !live && "text-ink-muted line-through")}>
           {formatMoney(expense.totalMinor, expense.currency, { locale })}
         </span>
         {under}

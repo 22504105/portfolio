@@ -1,19 +1,19 @@
 "use client";
 
-import { ChartColumn, Home, Plus, ReceiptText, Settings, UserRound, UsersRound, type LucideIcon } from "lucide-react";
+import { Bell, ChartColumn, HandCoins, Home, Plus, ReceiptText, Settings, UserRound, UsersRound, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { Dictionary } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
-type Key = "home" | "groups" | "analytics" | "receipts" | "profile" | "settings";
+type Key = "home" | "groups" | "debts" | "activity" | "analytics" | "receipts" | "profile" | "settings";
 type Item = { key: Key; segment: string; icon: LucideIcon };
 
-// The phone's bar, as in the concept: two places, the big plus, two places.
+// The phone's bar, as Stitch draws it: two places, the plus, two places. (Analytics lives in each group and on the rail.)
 const BAR: readonly Item[] = [
   { key: "home", segment: "", icon: Home },
   { key: "groups", segment: "/groups", icon: UsersRound },
-  { key: "analytics", segment: "/analytics", icon: ChartColumn },
+  { key: "activity", segment: "/activity", icon: Bell },
   { key: "profile", segment: "/profile", icon: UserRound },
 ];
 
@@ -21,6 +21,8 @@ const BAR: readonly Item[] = [
 const RAIL: readonly Item[] = [
   { key: "home", segment: "", icon: Home },
   { key: "groups", segment: "/groups", icon: UsersRound },
+  { key: "debts", segment: "/debts", icon: HandCoins },
+  { key: "activity", segment: "/activity", icon: Bell },
   { key: "analytics", segment: "/analytics", icon: ChartColumn },
   { key: "receipts", segment: "/scan", icon: ReceiptText },
   { key: "settings", segment: "/profile", icon: Settings },
@@ -74,7 +76,7 @@ export function BottomNav({ base, labels }: AppNavProps) {
   return (
     <nav
       aria-label={labels.label}
-      className="border-line bg-surface/95 fixed inset-x-0 bottom-0 z-30 border-t pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden print:hidden"
+      className="bg-surface/95 fixed inset-x-0 bottom-0 z-30 pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_20px_rgb(23_61_53/0.05)] backdrop-blur-xl md:hidden print:hidden"
     >
       <ul className="h-nav mx-auto flex max-w-lg items-center px-2">
         {BAR.slice(0, 2).map(link)}
@@ -83,7 +85,7 @@ export function BottomNav({ base, labels }: AppNavProps) {
             href={`${base}/add`}
             aria-label={labels.add}
             aria-current={active("/add") ? "page" : undefined}
-            className="bg-hero text-on-hero shadow-raised ring-surface -mt-7 flex size-14 items-center justify-center rounded-full ring-4 transition-transform hover:scale-105"
+            className="bg-primary text-on-primary -mt-5 flex size-13 items-center justify-center rounded-full shadow-[0_6px_16px_rgb(7_95_74/0.24)] transition-transform active:scale-95"
           >
             <Plus aria-hidden="true" className="size-6" strokeWidth={2.4} />
           </Link>

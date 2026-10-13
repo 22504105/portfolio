@@ -93,6 +93,12 @@ export default async function OnboardingPage({ params }: PageProps<"/[locale]">)
 
         <p className="type-small text-ink-muted mt-8 max-w-2xl">{t.built}</p>
         <p className="type-small text-ink-muted mt-3 max-w-2xl">{t.limits}</p>
+        <Link
+          href={`/${locale}/privacy`}
+          className="type-small text-ink mt-3 inline-flex h-11 items-center font-semibold underline underline-offset-4"
+        >
+          {dictionary.privacy.link}
+        </Link>
       </main>
     </div>
   );

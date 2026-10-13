@@ -6,7 +6,8 @@ import { expect, test, type Page } from "@playwright/test";
 // The server's side is tested against a real database in tests/db/api.test.ts.
 
 const main = (page: Page) => page.getByRole("main");
-const tab = (page: Page, name: string) => page.getByRole("tab", { name, exact: true });
+/** A tab by its word; the Debts tab may carry a count of payments waiting after it. */
+const tab = (page: Page, name: string) => page.getByRole("tab", { name: new RegExp(`^${name}( \\d+)?$`) });
 const said = (page: Page, text: string) => page.getByRole("status").filter({ hasText: text });
 const overflow = (page: Page) => page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
 /** The transfers shown, as "Kerem → Alex 830.12 TRY". */
@@ -180,7 +181,11 @@ test("the expenses can be downloaded as a spreadsheet file", async ({ page }) =>
 
 test("the activity list and the analytics page look across groups", async ({ page, isMobile }) => {
   await page.goto("/en/demo", { waitUntil: "networkidle" });
-  await main(page).getByRole("link", { name: "Activity" }).click();
+  await page
+    .getByRole("navigation", { name: "Main" })
+    .filter({ visible: true })
+    .getByRole("link", { name: "Activity", exact: true })
+    .click();
   await expect(page.getByRole("heading", { level: 1, name: "Activity" })).toBeVisible();
   const events = main(page).getByRole("listitem");
   await expect(events.first()).toBeVisible();
@@ -190,7 +195,11 @@ test("the activity list and the analytics page look across groups", async ({ pag
   await events.filter({ hasText: "Rent, October" }).getByRole("link").click();
   await expect(page.getByRole("heading", { level: 1, name: "Flat in Moda" })).toBeVisible();
 
-  await page.getByRole("navigation", { name: "Main" }).filter({ visible: true }).getByRole("link", { name: "Analytics" }).click();
+  // Analytics across groups: on the rail of a wide screen, from Home on a phone.
+  await page.goto("/en/demo", { waitUntil: "networkidle" });
+  await (isMobile ? main(page) : page.getByRole("navigation", { name: "Main" }).filter({ visible: true }))
+    .getByRole("link", { name: "Analytics" })
+    .click();
   await expect(page.getByRole("heading", { level: 1, name: "Analytics" })).toBeVisible();
   await page.getByLabel("Period").selectOption("all");
   await expect(page.getByTestId("analytics-total")).toHaveText(/^5,560\.50\sTRY$/);
@@ -235,4 +244,62 @@ test("in Russian, and on a phone: the money screens fit and their controls are b
   await page.goto("/ru/demo/activity", { waitUntil: "networkidle" });
   await expect(main(page).getByRole("listitem").first()).toBeVisible();
   await check("activity");
+});
+
+test("a report is made as Excel and PDF files for what was chosen, and a backup holds every group", async ({ page }) => {
+  await page.goto("/en/demo/groups/demo-istanbul", { waitUntil: "networkidle" });
+  await tab(page, "Settings").click();
+  const reports = page.getByRole("region", { name: "Reports" });
+  const save = async (button: string) => {
+    const [download] = await Promise.all([page.waitForEvent("download"), reports.getByRole("button", { name: button }).click()]);
+    return { name: download.suggestedFilename(), bytes: await readFile((await download.path())!) };
+  };
+
+  // Nothing chosen: no file, and the reason in words.
+  await reports.getByText("Expenses", { exact: true }).click();
+  await reports.getByRole("button", { name: "Download as Excel (XLSX)" }).click();
+  await expect(reports.getByRole("alert")).toHaveText("Choose at least one thing to include.");
+
+  await reports.getByText("Debts as they stand", { exact: true }).click();
+  await reports.getByText("Payments", { exact: true }).click();
+  const csv = await save("Download as a spreadsheet (CSV)");
+  expect(csv.name).toBe("splitly-Istanbul-weekend.csv");
+  const blocks = csv.bytes.toString("utf8").replace(/^﻿/, "").trim().split("\r\n\r\n");
+  expect(blocks.map((block) => block.split("\r\n")[0])).toEqual(["Debts as they stand", "Payments"]);
+  expect(blocks[0].split("\r\n").slice(1)).toEqual([
+    "From,To,Amount,Currency",
+    "Kerem,Alex,830.12,TRY",
+    "Deniz,Alex,632.25,TRY",
+    "Deniz,Mira,44.88,TRY",
+  ]);
+
+  const xlsx = await save("Download as Excel (XLSX)");
+  expect(xlsx.name).toBe("splitly-Istanbul-weekend.xlsx");
+  // A ZIP archive, with the debts sheet inside as numbers.
+  expect(xlsx.bytes.subarray(0, 4).toString("latin1")).toBe("PK\u0003\u0004");
+  expect(xlsx.bytes.toString("utf8")).toContain('<c r="C2" s="2"><v>830.12</v></c>');
+
+  const pdf = await save("Download as PDF");
+  expect(pdf.name).toBe("splitly-Istanbul-weekend.pdf");
+  expect(pdf.bytes.subarray(0, 5).toString("latin1")).toBe("%PDF-");
+  expect(pdf.bytes.length).toBeGreaterThan(5_000);
+
+  // One currency only: the other's rows are not in the file.
+  await page.goto("/en/demo/groups/demo-flat", { waitUntil: "networkidle" });
+  await tab(page, "Settings").click();
+  await reports.getByLabel("Report currency").selectOption("TRY");
+  const lira = (await save("Download as a spreadsheet (CSV)")).bytes.toString("utf8").trim().split("\r\n");
+  expect(lira.length).toBeGreaterThan(1);
+  expect(lira.slice(1).every((line) => line.includes(",TRY,"))).toBe(true);
+
+  await page.goto("/en/demo/profile", { waitUntil: "networkidle" });
+  const [download] = await Promise.all([
+    page.waitForEvent("download"),
+    page.getByRole("button", { name: "Download the backup (JSON)" }).click(),
+  ]);
+  expect(download.suggestedFilename()).toMatch(/^splitly-backup-\d{4}-\d{2}-\d{2}\.json$/);
+  const backup = JSON.parse(await readFile((await download.path())!, "utf8"));
+  expect(backup).toMatchObject({ format: "splitly-backup", version: 1, amounts: "minor-units" });
+  expect(backup.groups.map((group: { name: string }) => group.name).sort()).toEqual(["Flat in Moda", "Istanbul weekend"]);
+  expect(backup.groups.find((group: { name: string }) => group.name === "Flat in Moda").expenses).toHaveLength(4);
 });

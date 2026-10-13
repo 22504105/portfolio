@@ -26,6 +26,8 @@ const contentSecurityPolicy = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  // The PDF a report is made into on the server needs its two font files beside the function.
+  outputFileTracingIncludes: { "/api/v1/[...path]": ["./public/fonts/*.ttf"] },
   async headers() {
     return [
       {

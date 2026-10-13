@@ -50,7 +50,17 @@ export function createDemoStore(shelf: Shelf, locale: string, newId: () => strin
     } catch {
       // Unreadable (edited by hand, or cut short): start again from the invented groups.
     }
-    return { version: 1, groups: seedGroups(locale) };
+    return { version: 1, groups: seedGroups(locale, seededAt()) };
+  }
+
+  /**
+   * The moment the invented groups are dated from: the start of today. Until the visitor changes something the groups
+   * are made afresh on every screen, and the activity list tells new from old by the time of each event, so that time
+   * must be the same on every screen. Nothing is stored for it.
+   */
+  function seededAt(): Date {
+    const now = new Date();
+    return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
   }
 
   function save(state: DemoState) {

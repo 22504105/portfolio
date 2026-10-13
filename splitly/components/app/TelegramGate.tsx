@@ -9,6 +9,7 @@ import { buttonClass, Loading } from "@/components/ui/controls";
 import type { Dictionary, Locale } from "@/lib/i18n";
 import { createRemoteStore } from "@/lib/store/remote";
 import { AppProvider, type Account } from "./AppProvider";
+import { TelegramChrome, tapSuccess } from "./TelegramChrome";
 
 // The door to a person's own groups. Inside Telegram it trades the sign-in
 // data Telegram hands the page for a Splitly session, and opens. Anywhere
@@ -213,7 +214,8 @@ export function TelegramGate({ locale, dictionary, bot, children }: GateProps) {
 
   if (phase === "ready") {
     return (
-      <AppProvider store={store} base={base} locale={locale} dictionary={dictionary} account={account}>
+      <AppProvider store={store} base={base} locale={locale} dictionary={dictionary} account={account} onNotify={tapSuccess}>
+        <TelegramChrome base={base} />
         {children}
       </AppProvider>
     );

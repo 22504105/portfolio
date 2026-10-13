@@ -40,6 +40,8 @@ export function useApp(): App {
 }
 
 type ProviderProps = {
+  /** Called with every confirmation: inside Telegram, a tap in the hand. */
+  onNotify?: () => void;
   store: Store;
   base: string;
   locale: Locale;
@@ -49,17 +51,21 @@ type ProviderProps = {
   children: ReactNode;
 };
 
-export function AppProvider({ store, base, locale, dictionary, account, resetDemo, children }: ProviderProps) {
+export function AppProvider({ store, base, locale, dictionary, account, resetDemo, onNotify, children }: ProviderProps) {
   const [revision, setRevision] = useState(0);
   const [toast, setToast] = useState<{ id: number; text: string } | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const changed = useCallback(() => setRevision((value) => value + 1), []);
-  const notify = useCallback((text: string) => {
-    clearTimeout(timer.current);
-    setToast({ id: Date.now(), text });
-    timer.current = setTimeout(() => setToast(null), 4000);
-  }, []);
+  const notify = useCallback(
+    (text: string) => {
+      clearTimeout(timer.current);
+      setToast({ id: Date.now(), text });
+      onNotify?.();
+      timer.current = setTimeout(() => setToast(null), 4000);
+    },
+    [onNotify],
+  );
   useEffect(() => () => clearTimeout(timer.current), []);
 
   const app = useMemo(
