@@ -16,7 +16,8 @@ import { cn } from "@/lib/utils";
 import { AnalyticsView } from "./AnalyticsView";
 import { DebtsTab } from "./DebtsTab";
 import { ExpenseRow, formatDay } from "./parts";
-import { ExportButton, RatesSection } from "./RatesSection";
+import { ExportPanel } from "./ExportPanel";
+import { RatesSection } from "./RatesSection";
 
 /** One group, after the concept: its people's faces, tabs, everyone's balance and what was spent. */
 export function GroupScreen() {
@@ -48,7 +49,11 @@ function GroupView({ group }: { group: Group }) {
   const me = group.members.find((member) => member.self);
   const manages = me?.role === "owner" || me?.role === "admin";
   const people = group.members.filter((member) => !member.removedAt);
-  const [tab, setTab] = useState<Tab>("expenses");
+  // A link from another screen may ask for a tab ("?tab=debts"). This runs in the browser only: a group is never drawn before its data is there.
+  const [tab, setTab] = useState<Tab>(() => {
+    const asked = typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("tab");
+    return TABS.find((name) => name === asked) ?? "expenses";
+  });
   // Payments someone says they made, waiting for the other side: shown as a count on the Debts tab.
   const waiting = group.settlements.filter((settlement) => settlement.status === "proposed").length;
   const [failure, setFailure] = useState<string | null>(null);
@@ -740,7 +745,7 @@ function Settings({ group, me, manages, onFailure }: SectionProps) {
             {!group.archivedAt && <p className="type-small text-ink-muted">{t.group.archiveHint}</p>}
           </div>
         )}
-        <ExportButton group={group} />
+        <ExportPanel group={group} />
         {me.role === "owner" ? (
           <Confirm
             label={t.group.delete}

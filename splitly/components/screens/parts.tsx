@@ -1,9 +1,10 @@
 "use client";
 
-import { ChevronRight } from "lucide-react";
+import { Star } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { useApp } from "@/components/app/AppProvider";
+import { useFavourites } from "@/components/app/usePreferences";
 import { Avatar, AvatarStack } from "@/components/ui/Avatar";
 import { CategoryIcon } from "@/components/ui/CategoryIcon";
 import type { Expense, GroupSummary } from "@/lib/domain/types";
@@ -64,12 +65,15 @@ export function MyBalance({ net, large = false }: { net: Record<string, number>;
 /** A group in a list: its people's faces, its name, and where the viewer stands in it. */
 export function GroupCard({ group }: { group: GroupSummary }) {
   const { t, base } = useApp();
+  const { favourites, toggle } = useFavourites();
+  const pinned = favourites.has(group.id);
   const people = group.members.filter((member) => !member.removedAt);
   return (
-    <li>
+    <li className="relative">
       {/* Two rows, so a long name and a balance in two currencies never fight for one line. */}
       <Link href={`${base}/groups/${group.id}`} className="card hover:border-field block p-4 transition-colors">
-        <span className="flex items-center gap-3">
+        {/* Room on the right for the star, which is a button of its own beside the link. */}
+        <span className="flex items-center gap-3 pr-10">
           <AvatarStack people={people} max={2} className="shrink-0" />
           <span className="min-w-0 flex-1">
             <span className="flex items-center gap-2">
@@ -85,12 +89,21 @@ export function GroupCard({ group }: { group: GroupSummary }) {
           <span className="bg-surface-2 text-ink-muted shrink-0 rounded-full px-2 py-0.5 text-[0.75rem] font-medium">
             {group.baseCurrency}
           </span>
-          <ChevronRight aria-hidden="true" className="text-ink-muted size-5 shrink-0" />
         </span>
         <span className="border-line mt-3 block border-t pt-3 [&_li]:justify-start">
           <MyBalance net={group.myNet} />
         </span>
       </Link>
+      <button
+        type="button"
+        aria-pressed={pinned}
+        aria-label={fill(t.groups.pin, { name: group.name })}
+        title={fill(t.groups.pin, { name: group.name })}
+        onClick={() => toggle(group.id)}
+        className="text-ink-muted hover:text-ink aria-pressed:text-warning absolute top-2.5 right-1.5 inline-flex size-11 items-center justify-center rounded-full transition-colors"
+      >
+        <Star aria-hidden="true" className="size-5" fill={pinned ? "currentColor" : "none"} />
+      </button>
     </li>
   );
 }

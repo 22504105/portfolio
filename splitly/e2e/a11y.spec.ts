@@ -57,6 +57,12 @@ const SCREENS: [string, string, ((page: Page) => Promise<void>)?][] = [
   ],
   ["analytics", "/en/demo/analytics"],
   ["activity", "/en/demo/activity"],
+  ["debts across groups", "/en/demo/debts"],
+  [
+    "group: debts, a reminder opened",
+    "/en/demo/groups/demo-istanbul?tab=debts",
+    async (page) => page.getByRole("button", { name: "Remind" }).first().click(),
+  ],
   ["profile", "/en/demo/profile"],
   ["privacy", "/en/privacy"],
   ["outside Telegram", "/en/app"],
@@ -66,7 +72,7 @@ const SCREENS: [string, string, ((page: Page) => Promise<void>)?][] = [
 
 for (const theme of ["light", "dark"] as const) {
   test(`no accessibility problems a machine can find, ${theme} theme`, async ({ page }) => {
-    test.setTimeout(120_000);
+    test.setTimeout(240_000);
     await page.addInitScript((value) => window.localStorage.setItem("splitly-theme", value), theme);
     const found: Record<string, string[]> = {};
     for (const [name, path, open] of SCREENS) {

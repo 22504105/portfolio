@@ -10,6 +10,7 @@ import { fill } from "@/lib/i18n";
 import { CURRENCIES } from "@/lib/money/currency";
 import { preferredCurrency, rememberCurrency } from "@/lib/preferences";
 import { cn } from "@/lib/utils";
+import { BackupButton } from "./ExportPanel";
 import { SectionTitle, SettingRow } from "./settings-parts";
 
 /** Who this is: the face and name the groups know them by, and how much there is. Counted from the groups, never made up. */
@@ -91,10 +92,11 @@ export function ProfileExtras() {
   return (
     <>
       <SectionTitle icon={ShieldCheck}>{t.profile.data}</SectionTitle>
-      <div className="card mt-2.5">
+      <div className="card divide-line mt-2.5 divide-y">
+        <BackupButton />
         <Link
           href={`/${locale}/privacy`}
-          className="hover:bg-surface-2/60 rounded-card flex min-h-16 items-center gap-3 p-4 transition-colors"
+          className="hover:bg-surface-2/60 rounded-b-card flex min-h-16 items-center gap-3 p-4 transition-colors"
         >
           <span aria-hidden="true" className="bg-surface-2 text-ink flex size-11 shrink-0 items-center justify-center rounded-[12px]">
             <ShieldCheck className="size-5" />

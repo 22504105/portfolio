@@ -41,6 +41,7 @@ test("every place in the navigation opens its screen and is marked as current", 
     ...(isMobile
       ? [["Profile", "/en/demo/profile", "Profile"]]
       : [
+          ["Debts", "/en/demo/debts", "Debts"],
           ["Analytics", "/en/demo/analytics", "Analytics"],
           ["Receipts", "/en/demo/scan", "Scan a receipt"],
           ["Settings", "/en/demo/profile", "Profile"],
@@ -107,6 +108,7 @@ test("no screen is wider than the display, in either language or theme", async (
       "/ru/demo",
       "/ru/demo/groups",
       "/ru/demo/activity",
+      "/ru/demo/debts",
       "/ru/demo/analytics",
       "/ru/demo/scan",
       "/ru/demo/add",
@@ -182,6 +184,7 @@ test("nothing on any screen pretends to work: no dead buttons or empty links", a
     "/en/demo",
     "/en/demo/groups",
     "/en/demo/activity",
+    "/en/demo/debts",
     "/en/demo/analytics",
     "/en/demo/scan",
     "/en/demo/add",

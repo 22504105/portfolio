@@ -1,14 +1,16 @@
 "use client";
 
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, Star } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { errorText, useApp, useLoad } from "@/components/app/AppProvider";
+import { useFavourites } from "@/components/app/usePreferences";
 import { Button, Field, inputClass, Loading, Problem } from "@/components/ui/controls";
 import { fill } from "@/lib/i18n";
 import { CURRENCIES } from "@/lib/money/currency";
-import { preferredCurrency } from "@/lib/preferences";
+import { favouritesFirst, preferredCurrency } from "@/lib/preferences";
 import { StoreError } from "@/lib/store/types";
+import { cn } from "@/lib/utils";
 import { GroupCard } from "./parts";
 
 /** Every group, a search over them, and a way to make another. */
@@ -26,8 +28,14 @@ export function GroupsScreen() {
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<{ name?: string; form?: string }>({});
 
+  const { favourites } = useFavourites();
+  const [onlyFavourites, setOnlyFavourites] = useState(false);
+  const narrowed = onlyFavourites && favourites.size > 0;
   const needle = query.trim().toLocaleLowerCase();
-  const shown = groups?.filter((group) => group.name.toLocaleLowerCase().includes(needle)) ?? [];
+  const shown = favouritesFirst(
+    groups?.filter((group) => group.name.toLocaleLowerCase().includes(needle) && (!narrowed || favourites.has(group.id))) ?? [],
+    favourites,
+  );
 
   async function create(event: FormEvent) {
     event.preventDefault();
@@ -118,6 +126,21 @@ export function GroupsScreen() {
               onChange={(event) => setQuery(event.target.value)}
             />
           </div>
+          {favourites.size > 0 && (
+            <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-1">
+              <label
+                className={cn(
+                  "type-small has-focus-visible:outline-primary inline-flex h-11 cursor-pointer items-center gap-1.5 rounded-full border px-4 font-semibold transition-colors has-focus-visible:outline-2",
+                  narrowed ? "bg-accent text-on-accent border-transparent" : "border-field bg-surface text-ink hover:bg-surface-2",
+                )}
+              >
+                <input type="checkbox" className="sr-only" checked={narrowed} onChange={() => setOnlyFavourites(!narrowed)} />
+                <Star aria-hidden="true" className="size-4" fill={narrowed ? "currentColor" : "none"} />
+                {t.groups.favourites}
+              </label>
+              <p className="text-ink-muted text-[0.75rem] leading-4">{t.groups.favouritesHint}</p>
+            </div>
+          )}
           {shown.length === 0 ? (
             <p role="status" className="text-ink-muted">
               {fill(t.groups.nothingFound, { query: query.trim() })}

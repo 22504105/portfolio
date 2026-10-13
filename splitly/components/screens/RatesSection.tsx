@@ -1,14 +1,13 @@
 "use client";
 
-import { Download } from "lucide-react";
+import { CloudDownload } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { errorText, useApp } from "@/components/app/AppProvider";
 import { Button, Field, inputClass, Problem } from "@/components/ui/controls";
-import { toCsv } from "@/lib/analytics/summary";
 import type { Group } from "@/lib/domain/types";
 import { fill } from "@/lib/i18n";
-import { toDecimalString } from "@/lib/money/amount";
 import { CURRENCIES } from "@/lib/money/currency";
+import type { OfferedRate } from "@/lib/money/auto-rate";
 import { parseRate } from "@/lib/money/fx";
 import { today } from "@/lib/split/form";
 import { StoreError } from "@/lib/store/types";
@@ -30,6 +29,30 @@ export function RatesSection({ group, onFailure }: { group: Group; onFailure: (m
   const [day, setDay] = useState(today());
   const [problem, setProblem] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [fetching, setFetching] = useState(false);
+  /** What came of asking the source: a rate with its day, or that there is none to be had. */
+  const [offer, setOffer] = useState<OfferedRate | "unavailable" | null>(null);
+
+  /** Asks for the bank's latest rate and puts it in the form. Nothing is recorded until the person adds it. */
+  async function fetchRate() {
+    setFetching(true);
+    setOffer(null);
+    setProblem(null);
+    try {
+      const response = await fetch(`/api/rates?from=${from}&to=${group.baseCurrency}`);
+      const body = (await response.json()) as OfferedRate | { error: string };
+      if (!response.ok || "error" in body) setOffer("unavailable");
+      else {
+        setOffer(body);
+        setRate(body.rate);
+        // From the day it was published: the days before keep the rate they had.
+        setDay(body.date);
+      }
+    } catch {
+      setOffer("unavailable");
+    }
+    setFetching(false);
+  }
 
   async function add(event: FormEvent) {
     event.preventDefault();
@@ -42,6 +65,7 @@ export function RatesSection({ group, onFailure }: { group: Group; onFailure: (m
       changed();
       notify(t.rates.added);
       setRate("");
+      setOffer(null);
     } catch (caught) {
       if (caught instanceof StoreError && caught.code === "invalid")
         setProblem(caught.details.problems?.includes("date") ? t.expense.problems.date : t.rates.rateProblem);
@@ -77,7 +101,15 @@ export function RatesSection({ group, onFailure }: { group: Group; onFailure: (m
           <div className="grid grid-cols-2 gap-3">
             <Field label={t.rates.from}>
               {(control) => (
-                <select {...control} className={inputClass} value={from} onChange={(event) => setFrom(event.target.value)}>
+                <select
+                  {...control}
+                  className={inputClass}
+                  value={from}
+                  onChange={(event) => {
+                    setFrom(event.target.value);
+                    setOffer(null);
+                  }}
+                >
                   {others.map((code) => (
                     <option key={code}>{code}</option>
                   ))}
@@ -104,43 +136,25 @@ export function RatesSection({ group, onFailure }: { group: Group; onFailure: (m
               <input {...control} type="date" className={inputClass} value={day} onChange={(event) => setDay(event.target.value)} />
             )}
           </Field>
+          {offer && offer !== "unavailable" && (
+            <p role="status" className="bg-accent-soft text-on-accent rounded-control type-small p-3">
+              {fill(t.rates.fetched, { date: formatDay(offer.date, locale, true) })}
+            </p>
+          )}
+          {offer === "unavailable" && <Problem>{t.rates.unavailable}</Problem>}
           {problem && <Problem>{problem}</Problem>}
-          <Button type="submit" variant="secondary" busy={busy} className="self-start">
-            {t.rates.add}
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button type="submit" variant="secondary" busy={busy}>
+              {t.rates.add}
+            </Button>
+            <Button variant="ghost" busy={fetching} onClick={fetchRate}>
+              <CloudDownload aria-hidden="true" className="size-4" />
+              {t.rates.fetch}
+            </Button>
+          </div>
+          <p className="text-ink-muted text-[0.75rem] leading-4">{t.rates.source}</p>
         </form>
       )}
     </section>
-  );
-}
-
-/** The group's expenses as a spreadsheet file, made in the browser from what is already on screen. */
-export function ExportButton({ group }: { group: Group }) {
-  const { t } = useApp();
-  function download() {
-    const names = new Map(group.members.map((member) => [member.id, member.name]));
-    const csv = toCsv(group.expenses, names, [...t.export.columns], toDecimalString);
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
-    // A name a file system will take, whatever the group is called.
-    link.download = `splitly-${
-      group.name
-        .replace(/[^\p{L}\p{N}]+/gu, "-")
-        .replace(/^-|-$/g, "")
-        .slice(0, 40) || "group"
-    }.csv`;
-    document.body.append(link);
-    link.click();
-    link.remove();
-    setTimeout(() => URL.revokeObjectURL(link.href), 5000);
-  }
-  return (
-    <div className="flex flex-col items-start gap-2">
-      <Button variant="secondary" small onClick={download} disabled={group.expenses.length === 0}>
-        <Download aria-hidden="true" className="size-4" />
-        {t.export.button}
-      </Button>
-      <p className="type-small text-ink-muted">{t.export.hint}</p>
-    </div>
   );
 }

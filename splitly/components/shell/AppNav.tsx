@@ -1,12 +1,12 @@
 "use client";
 
-import { Bell, ChartColumn, Home, Plus, ReceiptText, Settings, UserRound, UsersRound, type LucideIcon } from "lucide-react";
+import { Bell, ChartColumn, HandCoins, Home, Plus, ReceiptText, Settings, UserRound, UsersRound, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { Dictionary } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
-type Key = "home" | "groups" | "activity" | "analytics" | "receipts" | "profile" | "settings";
+type Key = "home" | "groups" | "debts" | "activity" | "analytics" | "receipts" | "profile" | "settings";
 type Item = { key: Key; segment: string; icon: LucideIcon };
 
 // The phone's bar, as Stitch draws it: two places, the plus, two places. (Analytics lives in each group and on the rail.)
@@ -21,6 +21,7 @@ const BAR: readonly Item[] = [
 const RAIL: readonly Item[] = [
   { key: "home", segment: "", icon: Home },
   { key: "groups", segment: "/groups", icon: UsersRound },
+  { key: "debts", segment: "/debts", icon: HandCoins },
   { key: "activity", segment: "/activity", icon: Bell },
   { key: "analytics", segment: "/analytics", icon: ChartColumn },
   { key: "receipts", segment: "/scan", icon: ReceiptText },

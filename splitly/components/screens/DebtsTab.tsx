@@ -1,10 +1,10 @@
 "use client";
 
-import { ArrowRight, CircleCheck, Clock, Send, WandSparkles } from "lucide-react";
+import { ArrowRight, BellRing, CircleCheck, Clock, Copy, Send, WandSparkles } from "lucide-react";
 import { useRef, useState } from "react";
 import { errorText, useApp } from "@/components/app/AppProvider";
 import { Avatar } from "@/components/ui/Avatar";
-import { Button, inputClass, Problem } from "@/components/ui/controls";
+import { Button, buttonClass, inputClass, Problem } from "@/components/ui/controls";
 import { pairwise, simplifyAll, type Transfer } from "@/lib/balances/debts";
 import { netsOf } from "@/lib/balances/net";
 import { confirmedAtOnce, mayCancel, mayConfirm } from "@/lib/balances/settle";
@@ -21,9 +21,10 @@ import { formatDay } from "./parts";
  * waiting and changes no balance.
  */
 export function DebtsTab({ group, me, onFailure }: { group: Group; me: Member | undefined; onFailure: (message: string | null) => void }) {
-  const { t, store, locale, changed, notify } = useApp();
+  const { t, store, base, account, locale, changed, notify } = useApp();
   const [view, setView] = useState<"simple" | "all">("simple");
   const [paying, setPaying] = useState<string | null>(null);
+  const [reminding, setReminding] = useState<string | null>(null);
   const [amount, setAmount] = useState("");
   const [amountProblem, setAmountProblem] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -142,18 +143,35 @@ export function DebtsTab({ group, me, onFailure }: { group: Group; me: Member | 
                   </div>
                   {mine && <p className="text-ink-muted mt-1 pl-14 text-[0.75rem] leading-4">{t.balance[mine]}</p>}
                   {can && !open && (
-                    <Button
-                      variant={mine === "owe" ? "primary" : "secondary"}
-                      className="mt-3 w-full"
-                      onClick={() => {
-                        setPaying(key(transfer));
-                        setAmount(toDecimalString(transfer.amountMinor, transfer.currency));
-                        setAmountProblem(false);
-                      }}
-                    >
-                      <Send aria-hidden="true" className="size-4" />
-                      {t.debts.settle}
-                    </Button>
+                    <div className="mt-3 flex gap-2">
+                      {mine === "owed" && (
+                        <Button
+                          variant="secondary"
+                          className="min-w-0 flex-1 px-3"
+                          aria-expanded={reminding === key(transfer)}
+                          onClick={() => setReminding(reminding === key(transfer) ? null : key(transfer))}
+                        >
+                          <BellRing aria-hidden="true" className="size-4" />
+                          {t.debts.remind}
+                        </Button>
+                      )}
+                      <Button
+                        variant={mine === "owe" ? "primary" : "secondary"}
+                        className="min-w-0 flex-1 px-3"
+                        onClick={() => {
+                          setPaying(key(transfer));
+                          setReminding(null);
+                          setAmount(toDecimalString(transfer.amountMinor, transfer.currency));
+                          setAmountProblem(false);
+                        }}
+                      >
+                        <Send aria-hidden="true" className="size-4" />
+                        {t.debts.settle}
+                      </Button>
+                    </div>
+                  )}
+                  {mine === "owed" && !open && reminding === key(transfer) && (
+                    <Reminder name={people.get(transfer.from)?.name ?? "?"} amount={money(transfer.amountMinor, transfer.currency)} />
                   )}
                   {open && (
                     <div className="border-line mt-3 flex flex-col gap-2.5 border-t pt-3">
@@ -245,6 +263,53 @@ export function DebtsTab({ group, me, onFailure }: { group: Group; me: Member | 
       )}
     </>
   );
+
+  /**
+   * A message for someone who owes the viewer, ready to send. Splitly sends
+   * nothing by itself: the bot may not write to a person who has not opened
+   * it, and a reminder is the viewer's own word to a friend. So the message
+   * is handed to Telegram's own "share" screen, or copied, and they send it.
+   */
+  function Reminder({ name, amount }: { name: string; amount: string }) {
+    const text = fill(t.debts.remindText, { name, group: group.name, amount });
+    // Where the message leads: the app in Telegram for a real account, this page in the browser demo.
+    const link = account?.bot ? `https://t.me/${account.bot}?startapp` : `${window.location.origin}${base}/groups/${group.id}`;
+    return (
+      <div
+        role="group"
+        aria-label={fill(t.debts.remindTitle, { name })}
+        className="bg-surface-2 rounded-control mt-3 flex flex-col gap-2.5 p-3.5"
+      >
+        <p className="type-small font-semibold">{fill(t.debts.remindTitle, { name })}</p>
+        <p className="bg-surface rounded-control type-small p-3 break-words">{text}</p>
+        <p className="text-ink-muted text-[0.75rem] leading-4">{t.debts.remindHint}</p>
+        <div className="flex flex-wrap gap-2">
+          <a
+            href={`https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(text)}`}
+            target="_blank"
+            rel="noreferrer"
+            className={buttonClass("primary", true)}
+          >
+            <Send aria-hidden="true" className="size-4" />
+            {t.debts.remindSend}
+          </a>
+          <Button
+            variant="secondary"
+            small
+            onClick={() =>
+              navigator.clipboard.writeText(text).then(
+                () => notify(t.debts.remindCopied),
+                () => onFailure(text),
+              )
+            }
+          >
+            <Copy aria-hidden="true" className="size-4" />
+            {t.debts.remindCopy}
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   function SettlementRow({
     settlement,

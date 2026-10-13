@@ -1,15 +1,19 @@
 "use client";
 
-import { ArrowDown, ArrowUp, ChartColumn, ChevronRight, CircleCheck, Plus, ScanLine } from "lucide-react";
+import { ArrowDown, ArrowUp, Bell, ChartColumn, ChevronRight, CircleCheck, HandCoins, Plus, ScanLine, Star } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { errorText, useApp, useLoad } from "@/components/app/AppProvider";
+import { useGroups } from "@/components/app/useGroups";
+import { useActivitySeen, useFavourites } from "@/components/app/usePreferences";
 import { Avatar, AvatarStack } from "@/components/ui/Avatar";
 import { buttonClass, Loading, Problem } from "@/components/ui/controls";
 import { spentOf } from "@/lib/balances/net";
 import type { GroupSummary } from "@/lib/domain/types";
+import { countNew, eventsOf } from "@/lib/activity";
 import { fill } from "@/lib/i18n";
 import { formatMoney } from "@/lib/money/amount";
+import { favouritesFirst } from "@/lib/preferences";
 import { cn } from "@/lib/utils";
 import { ExpenseRow, MyBalance, totalNet } from "./parts";
 
@@ -23,7 +27,9 @@ import { ExpenseRow, MyBalance, totalNet } from "./parts";
 export function HomeScreen() {
   const { t, base, account } = useApp();
   const { data: groups, error } = useLoad((store) => store.listGroups(), "groups");
-  const open = groups?.filter((group) => !group.archivedAt) ?? [];
+  const { favourites } = useFavourites();
+  // Favourite groups come first: the first of them is the one on the card.
+  const open = favouritesFirst(groups?.filter((group) => !group.archivedAt) ?? [], favourites);
   const [picked, setPicked] = useState<string | null>(null);
   const group = open.find((candidate) => candidate.id === picked) ?? open[0];
   const self = group?.members.find((member) => member.self);
@@ -40,12 +46,13 @@ export function HomeScreen() {
             photo={self?.photoUrl ?? account?.photoUrl}
             className="ring-accent/50 size-11 ring-2"
           />
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <h1 className="text-[1.375rem] leading-7 font-semibold tracking-[-0.01em]">
               {name ? fill(t.home.greeting, { name }) : t.home.greetingPlain} <span aria-hidden="true">👋</span>
             </h1>
             <p className="text-ink-muted text-[0.75rem] leading-4">{t.home.lead}</p>
           </div>
+          <NewsBell />
         </div>
 
         {error && <Problem className="mt-6">{errorText(t, error)}</Problem>}
@@ -81,6 +88,9 @@ export function HomeScreen() {
                       checked={candidate.id === group.id}
                       onChange={() => setPicked(candidate.id)}
                     />
+                    {favourites.has(candidate.id) && (
+                      <Star role="img" aria-label={t.groups.favourite} className="mr-1.5 size-3.5" fill="currentColor" />
+                    )}
                     {candidate.name}
                   </label>
                 ))}
@@ -157,11 +167,44 @@ export function HomeScreen() {
               </div>
               <MyBalance net={totalNet(groups ?? [])} large />
               {Object.keys(totalNet(groups ?? [])).length > 1 && <p className="type-small text-ink-muted mt-4">{t.balance.apart}</p>}
+              <Link href={`${base}/debts`} className={cn(buttonClass("secondary"), "mt-4 w-full")}>
+                <HandCoins aria-hidden="true" className="size-4" />
+                {t.home.allDebts}
+              </Link>
             </section>
           </div>
         </>
       )}
     </div>
+  );
+}
+
+/**
+ * The way to the activity, with the count of what is new for this person:
+ * what others did since they last marked it read, and payments waiting for
+ * them. Counted from the groups' own records; with nothing new, a plain bell.
+ */
+function NewsBell() {
+  const { t, base } = useApp();
+  const { data: groups } = useGroups();
+  const { seen } = useActivitySeen(!!groups);
+  const fresh = countNew(eventsOf(groups ?? []), seen);
+  return (
+    <Link
+      href={`${base}/activity`}
+      aria-label={fresh > 0 ? fill(t.home.news, { n: fresh }) : t.home.newsNone}
+      className="bg-surface text-ink shadow-card relative inline-flex size-11 shrink-0 items-center justify-center rounded-full"
+    >
+      <Bell aria-hidden="true" className="size-5" />
+      {fresh > 0 && (
+        <span
+          aria-hidden="true"
+          className="bg-danger-fill ring-canvas absolute -top-0.5 -right-0.5 flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[0.6875rem] leading-none font-bold text-white ring-2"
+        >
+          {fresh > 9 ? "9+" : fresh}
+        </span>
+      )}
+    </Link>
   );
 }
 

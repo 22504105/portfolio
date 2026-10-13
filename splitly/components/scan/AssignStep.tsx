@@ -10,7 +10,6 @@ import {
   HandCoins,
   Landmark,
   Scale,
-  ShoppingBag,
   type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
@@ -18,6 +17,7 @@ import { useId, useMemo, useRef, useState } from "react";
 import { errorText, useApp } from "@/components/app/AppProvider";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button, buttonClass, Field, inputClass, Problem } from "@/components/ui/controls";
+import { ProductIcon } from "@/components/ui/ProductIcon";
 import type { Group, Member } from "@/lib/domain/types";
 import { fill } from "@/lib/i18n";
 import { formatMoney } from "@/lib/money/amount";
@@ -169,19 +169,21 @@ export function AssignStep({ group, draft, contentHash, mimeType, onChange, onBa
           const chosen = members.filter((member) => line.assigned[member.id]);
           const all = chosen.length === members.length;
           const missing = tried && line.kind === "item" && chosen.length === 0;
-          const Icon = KIND_ICON[line.kind];
+          const Icon = line.kind === "item" ? null : KIND_ICON[line.kind];
           return (
             <li key={line.id} className={cn("card p-4", missing && "border-danger")}>
               <div className="flex items-start gap-3">
-                <span
-                  aria-hidden="true"
-                  className={cn(
-                    "flex size-11 shrink-0 items-center justify-center rounded-[12px]",
-                    chosen.length > 0 ? "bg-accent-soft text-on-accent" : "bg-surface-2 text-ink-muted",
-                  )}
-                >
-                  <Icon className="size-5" />
-                </span>
+                {line.kind === "item" ? (
+                  // A picture of the kind of thing it is, by its printed name first: that is the one in a known language.
+                  <ProductIcon label={`${line.originalLabel} ${line.displayLabel}`} />
+                ) : (
+                  <span
+                    aria-hidden="true"
+                    className="bg-surface-2 text-ink-muted flex size-11 shrink-0 items-center justify-center rounded-[12px]"
+                  >
+                    {Icon && <Icon className="size-5" />}
+                  </span>
+                )}
                 <div className="min-w-0 flex-1">
                   <p className="font-semibold break-words">{line.displayLabel}</p>
                   {line.kind !== "item" && <p className="text-ink-muted text-[0.75rem] leading-4">{t.scan.kinds[line.kind]}</p>}
@@ -331,8 +333,7 @@ export function AssignStep({ group, draft, contentHash, mimeType, onChange, onBa
   );
 }
 
-const KIND_ICON: Record<LineKind, LucideIcon> = {
-  item: ShoppingBag,
+const KIND_ICON: Record<Exclude<LineKind, "item">, LucideIcon> = {
   discount: BadgePercent,
   tax: Landmark,
   tip: HandCoins,
