@@ -70,7 +70,8 @@ export function AppFrame({ locale, dictionary, base, demo = false, children }: A
           tabIndex={-1}
           className="flex-1 px-4 pt-5 pb-[calc(var(--spacing-nav)+env(safe-area-inset-bottom)+2rem)] outline-none md:px-10 md:pt-2 md:pb-12"
         >
-          <div className="mx-auto w-full max-w-2xl md:mx-0 md:max-w-3xl">{children}</div>
+          {/* A screen laid out in columns marks itself with data-wide and gets the room for them. */}
+          <div className="mx-auto w-full max-w-2xl md:mx-0 md:max-w-3xl xl:has-[[data-wide]]:max-w-6xl">{children}</div>
         </main>
       </div>
 

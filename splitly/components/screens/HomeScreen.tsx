@@ -16,7 +16,9 @@ import { ExpenseRow, MyBalance, totalNet } from "./parts";
 /**
  * The first screen, after Stitch's "Home": a greeting, the groups as chips,
  * one group on the forest card with where you stand in it, its latest
- * expenses, and the other groups, each in its own currency.
+ * expenses, and the other groups, each in its own currency. On a wide
+ * screen, as in Stitch's browser version, the balance and the other groups
+ * stand in a column of their own beside the card.
  */
 export function HomeScreen() {
   const { t, base, account } = useApp();
@@ -29,124 +31,137 @@ export function HomeScreen() {
   const others = open.filter((candidate) => candidate.id !== group?.id);
 
   return (
-    <>
-      <div className="flex items-center gap-3">
-        <Avatar
-          name={self?.name ?? name ?? "Splitly"}
-          seed={self?.id}
-          photo={self?.photoUrl ?? account?.photoUrl}
-          className="ring-accent/50 size-11 ring-2"
-        />
-        <div className="min-w-0">
-          <h1 className="text-[1.375rem] leading-7 font-semibold tracking-[-0.01em]">
-            {name ? fill(t.home.greeting, { name }) : t.home.greetingPlain} <span aria-hidden="true">👋</span>
-          </h1>
-          <p className="text-ink-muted text-[0.75rem] leading-4">{t.home.lead}</p>
+    <div data-wide className="xl:grid xl:grid-cols-[minmax(0,1fr)_22rem] xl:items-start xl:gap-x-8">
+      <div className="xl:col-span-2">
+        <div className="flex items-center gap-3">
+          <Avatar
+            name={self?.name ?? name ?? "Splitly"}
+            seed={self?.id}
+            photo={self?.photoUrl ?? account?.photoUrl}
+            className="ring-accent/50 size-11 ring-2"
+          />
+          <div className="min-w-0">
+            <h1 className="text-[1.375rem] leading-7 font-semibold tracking-[-0.01em]">
+              {name ? fill(t.home.greeting, { name }) : t.home.greetingPlain} <span aria-hidden="true">👋</span>
+            </h1>
+            <p className="text-ink-muted text-[0.75rem] leading-4">{t.home.lead}</p>
+          </div>
         </div>
+
+        {error && <Problem className="mt-6">{errorText(t, error)}</Problem>}
+        {!groups && !error && <Loading label={t.common.loading} />}
+
+        {groups && open.length === 0 && (
+          <div className="card mt-6 flex flex-col items-start gap-4 p-5">
+            <p className="text-ink-muted">{t.home.noGroups}</p>
+            <Link href={`${base}/groups`} className={buttonClass("primary")}>
+              <Plus aria-hidden="true" className="size-5" />
+              {t.groups.create}
+            </Link>
+          </div>
+        )}
+
+        {group && (
+          <>
+            {/* Which group the card shows: one chip a group, the chosen one filled. */}
+            {open.length > 1 && (
+              <div role="radiogroup" aria-label={t.home.pick} className="no-bar -mx-4 mt-4 flex gap-2 overflow-x-auto px-4 md:mx-0 md:px-0">
+                {open.map((candidate) => (
+                  <label
+                    key={candidate.id}
+                    className={cn(
+                      "has-focus-visible:outline-primary flex h-11 shrink-0 cursor-pointer items-center rounded-full px-4 text-[0.875rem] font-medium whitespace-nowrap transition-colors has-focus-visible:outline-2",
+                      candidate.id === group.id ? "bg-[#173d35] text-white" : "bg-surface text-ink-muted hover:text-ink shadow-card",
+                    )}
+                  >
+                    <input
+                      type="radio"
+                      name="home-group"
+                      className="sr-only"
+                      checked={candidate.id === group.id}
+                      onChange={() => setPicked(candidate.id)}
+                    />
+                    {candidate.name}
+                  </label>
+                ))}
+              </div>
+            )}
+          </>
+        )}
       </div>
-
-      {error && <Problem className="mt-6">{errorText(t, error)}</Problem>}
-      {!groups && !error && <Loading label={t.common.loading} />}
-
-      {groups && open.length === 0 && (
-        <div className="card mt-6 flex flex-col items-start gap-4 p-5">
-          <p className="text-ink-muted">{t.home.noGroups}</p>
-          <Link href={`${base}/groups`} className={buttonClass("primary")}>
-            <Plus aria-hidden="true" className="size-5" />
-            {t.groups.create}
-          </Link>
-        </div>
-      )}
 
       {group && (
         <>
-          {/* Which group the card shows: one chip a group, the chosen one filled. */}
-          {open.length > 1 && (
-            <div role="radiogroup" aria-label={t.home.pick} className="no-bar -mx-4 mt-4 flex gap-2 overflow-x-auto px-4 md:mx-0 md:px-0">
-              {open.map((candidate) => (
-                <label
-                  key={candidate.id}
-                  className={cn(
-                    "has-focus-visible:outline-primary flex h-11 shrink-0 cursor-pointer items-center rounded-full px-4 text-[0.875rem] font-medium whitespace-nowrap transition-colors has-focus-visible:outline-2",
-                    candidate.id === group.id ? "bg-[#173d35] text-white" : "bg-surface text-ink-muted hover:text-ink shadow-card",
-                  )}
-                >
-                  <input
-                    type="radio"
-                    name="home-group"
-                    className="sr-only"
-                    checked={candidate.id === group.id}
-                    onChange={() => setPicked(candidate.id)}
-                  />
-                  {candidate.name}
-                </label>
-              ))}
-            </div>
-          )}
+          <div className="min-w-0">
+            <GroupHero key={group.id} group={group} />
+          </div>
 
-          <GroupHero key={group.id} group={group} />
-
-          {others.length > 0 && (
-            <section aria-labelledby="home-others" className="mt-8">
-              <div className="mb-3 flex items-end justify-between gap-3">
-                <div>
-                  <h2 id="home-others" className="type-heading">
-                    {t.home.otherGroups}
-                  </h2>
-                  <p className="text-ink-muted text-[0.75rem] leading-4">{t.home.separate}</p>
+          <div className="flex min-w-0 flex-col">
+            {others.length > 0 && (
+              <section aria-labelledby="home-others" className="mt-8">
+                <div className="mb-3 flex items-end justify-between gap-3">
+                  <div>
+                    <h2 id="home-others" className="type-heading">
+                      {t.home.otherGroups}
+                    </h2>
+                    <p className="text-ink-muted text-[0.75rem] leading-4">{t.home.separate}</p>
+                  </div>
+                  <Link
+                    href={`${base}/groups`}
+                    aria-label={t.groups.create}
+                    className="bg-surface text-ink shadow-card inline-flex size-11 shrink-0 items-center justify-center rounded-full"
+                  >
+                    <Plus aria-hidden="true" className="size-5" />
+                  </Link>
                 </div>
+                <ul className="grid grid-cols-2 gap-3 xl:grid-cols-1">
+                  {others.map((other) => (
+                    <li key={other.id}>
+                      <Link
+                        href={`${base}/groups/${other.id}`}
+                        className="card hover:border-field flex h-full flex-col gap-2 p-4 transition-colors"
+                      >
+                        <span className="flex items-center justify-between gap-2">
+                          <AvatarStack people={other.members.filter((member) => !member.removedAt)} max={2} className="[&>*]:size-8" />
+                          <span className="bg-surface-2 text-ink-muted rounded-full px-2 py-0.5 text-[0.75rem] font-medium">
+                            {other.baseCurrency}
+                          </span>
+                        </span>
+                        <span className="font-semibold break-words">{other.name}</span>
+                        <span className="text-ink-muted text-[0.75rem] leading-4">
+                          {fill(t.groups.people, { n: other.members.filter((member) => !member.removedAt).length })}
+                        </span>
+                        <span className="mt-auto [&_li]:justify-start">
+                          <MyBalance net={other.myNet} />
+                        </span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+
+            {/* Every group together, each currency on its own line, and the way to the figures across groups. */}
+            <section aria-labelledby="home-balance" className="card mt-8 p-5 xl:order-first xl:mt-4">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <h2 id="home-balance" className="type-label text-ink-muted">
+                  {t.balance.title}
+                </h2>
                 <Link
-                  href={`${base}/groups`}
-                  aria-label={t.groups.create}
-                  className="bg-surface text-ink shadow-card inline-flex size-11 shrink-0 items-center justify-center rounded-full"
+                  href={`${base}/analytics`}
+                  className="text-primary inline-flex h-11 items-center gap-1.5 text-[0.875rem] font-semibold"
                 >
-                  <Plus aria-hidden="true" className="size-5" />
+                  <ChartColumn aria-hidden="true" className="size-4" />
+                  {t.nav.analytics}
                 </Link>
               </div>
-              <ul className="grid grid-cols-2 gap-3">
-                {others.map((other) => (
-                  <li key={other.id}>
-                    <Link
-                      href={`${base}/groups/${other.id}`}
-                      className="card hover:border-field flex h-full flex-col gap-2 p-4 transition-colors"
-                    >
-                      <span className="flex items-center justify-between gap-2">
-                        <AvatarStack people={other.members.filter((member) => !member.removedAt)} max={2} className="[&>*]:size-8" />
-                        <span className="bg-surface-2 text-ink-muted rounded-full px-2 py-0.5 text-[0.75rem] font-medium">
-                          {other.baseCurrency}
-                        </span>
-                      </span>
-                      <span className="font-semibold break-words">{other.name}</span>
-                      <span className="text-ink-muted text-[0.75rem] leading-4">
-                        {fill(t.groups.people, { n: other.members.filter((member) => !member.removedAt).length })}
-                      </span>
-                      <span className="mt-auto [&_li]:justify-start">
-                        <MyBalance net={other.myNet} />
-                      </span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
+              <MyBalance net={totalNet(groups ?? [])} large />
+              {Object.keys(totalNet(groups ?? [])).length > 1 && <p className="type-small text-ink-muted mt-4">{t.balance.apart}</p>}
             </section>
-          )}
-
-          {/* Every group together, each currency on its own line, and the way to the figures across groups. */}
-          <section aria-labelledby="home-balance" className="card mt-8 p-5">
-            <div className="mb-3 flex items-center justify-between gap-3">
-              <h2 id="home-balance" className="type-label text-ink-muted">
-                {t.balance.title}
-              </h2>
-              <Link href={`${base}/analytics`} className="text-primary inline-flex h-11 items-center gap-1.5 text-[0.875rem] font-semibold">
-                <ChartColumn aria-hidden="true" className="size-4" />
-                {t.nav.analytics}
-              </Link>
-            </div>
-            <MyBalance net={totalNet(groups ?? [])} large />
-            {Object.keys(totalNet(groups ?? [])).length > 1 && <p className="type-small text-ink-muted mt-4">{t.balance.apart}</p>}
-          </section>
+          </div>
         </>
       )}
-    </>
+    </div>
   );
 }
 

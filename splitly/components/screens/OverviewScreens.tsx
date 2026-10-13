@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeftRight, Ban, Pencil, Plus } from "lucide-react";
+import { Ban, CircleCheck, Clock, Hourglass, Pencil, Plus, ReceiptText } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { errorText, useApp, useLoad } from "@/components/app/AppProvider";
@@ -50,12 +50,12 @@ export function AnalyticsScreen() {
       {groups && group && (
         <>
           {groups.length > 1 && (
-            <div role="radiogroup" aria-label={t.home.pick} className="bg-surface-2 rounded-control mt-5 flex gap-1 overflow-x-auto p-1">
+            <div role="radiogroup" aria-label={t.home.pick} className="bg-surface-2 mt-5 flex gap-1 overflow-x-auto rounded-full p-1">
               {groups.map((candidate) => (
                 <label
                   key={candidate.id}
                   className={cn(
-                    "type-small has-focus-visible:outline-primary flex h-11 min-w-0 flex-1 cursor-pointer items-center justify-center rounded-[9px] px-3 font-semibold whitespace-nowrap transition-colors has-focus-visible:outline-2",
+                    "type-small has-focus-visible:outline-primary flex h-11 min-w-0 flex-1 cursor-pointer items-center justify-center rounded-full px-3 font-semibold whitespace-nowrap transition-colors has-focus-visible:outline-2",
                     candidate.id === group.id ? "bg-surface text-ink shadow-card" : "text-ink-muted hover:text-ink",
                   )}
                 >
@@ -97,6 +97,7 @@ type Event = {
 export function ActivityScreen() {
   const { t, base, locale } = useApp();
   const { data: groups, error } = useGroups();
+  const [only, setOnly] = useState<string | null>(null);
 
   const events: Event[] = [];
   for (const group of groups ?? []) {
@@ -128,15 +129,31 @@ export function ActivityScreen() {
     }
   }
   events.sort((a, b) => b.at.localeCompare(a.at) || a.id.localeCompare(b.id));
-  const shown = events.slice(0, 60);
-  const when = (at: string) =>
-    new Intl.DateTimeFormat(locale === "ru" ? "ru-RU" : "en-GB", {
-      day: "numeric",
-      month: "short",
-      hour: "2-digit",
-      minute: "2-digit",
-    }).format(new Date(at));
-  const ICON = { added: Plus, cancelled: Ban, changed: Pencil, paid: ArrowLeftRight, proposed: ArrowLeftRight, withdrawn: Ban } as const;
+  const shown = events.filter((event) => only === null || event.groupId === only).slice(0, 60);
+  const zone = locale === "ru" ? "ru-RU" : "en-GB";
+  const time = (at: string) => new Intl.DateTimeFormat(zone, { hour: "2-digit", minute: "2-digit" }).format(new Date(at));
+  // The person's own day, not the server's: an evening expense belongs to the evening it was added.
+  const dayOf = (at: string) => {
+    const date = new Date(at);
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+  };
+  const dayName = (at: string) => new Intl.DateTimeFormat(zone, { day: "numeric", month: "long", weekday: "short" }).format(new Date(at));
+  const days: { day: string; events: Event[] }[] = [];
+  for (const event of shown) {
+    const day = dayOf(event.at);
+    if (days[days.length - 1]?.day === day) days[days.length - 1].events.push(event);
+    else days.push({ day, events: [event] });
+  }
+  const LOOK = {
+    added: { icon: ReceiptText, tone: "bg-accent-soft text-on-accent" },
+    cancelled: { icon: Ban, tone: "bg-surface-2 text-ink-muted" },
+    changed: { icon: Pencil, tone: "bg-surface-2 text-ink-muted" },
+    paid: { icon: CircleCheck, tone: "bg-primary text-on-primary" },
+    proposed: { icon: Clock, tone: "bg-warning/15 text-warning" },
+    withdrawn: { icon: Ban, tone: "bg-surface-2 text-ink-muted" },
+  } as const;
+  const chip =
+    "type-small has-focus-visible:outline-primary inline-flex h-11 shrink-0 cursor-pointer items-center rounded-full border px-4 font-semibold whitespace-nowrap transition-colors has-focus-visible:outline-2";
 
   return (
     <>
@@ -145,46 +162,70 @@ export function ActivityScreen() {
       {error && <Problem className="mt-6">{errorText(t, error)}</Problem>}
       {!groups && !error && <Loading label={t.common.loading} />}
       {groups && groups.length === 0 && <NoGroups />}
+      {groups && groups.length > 1 && (
+        <div role="radiogroup" aria-label={t.activity.filter} className="mt-5 flex flex-wrap gap-2">
+          {[{ id: null, name: t.activity.all }, ...groups].map((option) => (
+            <label
+              key={option.id ?? "all"}
+              className={cn(
+                chip,
+                only === option.id ? "bg-primary text-on-primary border-transparent" : "border-line bg-surface text-ink hover:bg-surface-2",
+              )}
+            >
+              <input
+                type="radio"
+                name="activity-group"
+                className="sr-only"
+                checked={only === option.id}
+                onChange={() => setOnly(option.id)}
+              />
+              {option.name}
+            </label>
+          ))}
+        </div>
+      )}
       {groups && groups.length > 0 && shown.length === 0 && <p className="card text-ink-muted mt-6 p-5">{t.activity.empty}</p>}
-      {shown.length > 0 && (
-        <ul className="card divide-line mt-6 divide-y">
-          {shown.map((event) => {
-            const Icon = ICON[event.kind];
-            return (
-              <li key={`${event.kind}-${event.id}`}>
-                <Link
-                  href={`${base}/groups/${event.groupId}`}
-                  className="hover:bg-surface-2/60 flex items-center gap-3 px-4 py-3 transition-colors"
-                >
-                  <span
-                    aria-hidden="true"
-                    className={cn(
-                      "flex size-10 shrink-0 items-center justify-center rounded-full",
-                      event.kind === "paid" ? "bg-positive/15 text-positive" : "bg-surface-2 text-ink-muted",
-                    )}
+      {days.map(({ day, events: happened }) => (
+        <section key={day} aria-labelledby={`day-${day}`} className="mt-6">
+          <h2 id={`day-${day}`} className="type-label text-ink-muted">
+            {dayName(happened[0].at)}
+          </h2>
+          <ul className="mt-2.5 flex flex-col gap-2.5">
+            {happened.map((event) => {
+              const { icon: Icon, tone } = LOOK[event.kind];
+              const undone = event.kind === "cancelled" || event.kind === "changed" || event.kind === "withdrawn";
+              return (
+                <li key={`${event.kind}-${event.id}`}>
+                  <Link
+                    href={`${base}/groups/${event.groupId}`}
+                    className="card hover:border-field flex items-center gap-3 p-4 transition-colors"
                   >
-                    <Icon className="size-4.5" />
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block break-words">{fill(t.activity.events[event.kind], { who: event.who, what: event.what })}</span>
-                    <span className="type-small text-ink-muted block">
-                      {event.groupName} · {when(event.at)}
+                    <span aria-hidden="true" className={cn("flex size-11 shrink-0 items-center justify-center rounded-full", tone)}>
+                      <Icon className="size-5" />
                     </span>
-                  </span>
-                  <span
-                    className={cn(
-                      "shrink-0 font-semibold tabular-nums",
-                      (event.kind === "cancelled" || event.kind === "changed" || event.kind === "withdrawn") &&
-                        "text-ink-muted line-through",
-                    )}
-                  >
-                    {event.amount}
-                  </span>
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
+                    <span className="min-w-0 flex-1">
+                      <span className="block font-medium break-words">
+                        {fill(t.activity.events[event.kind], { who: event.who, what: event.what })}
+                      </span>
+                      <span className="text-ink-muted mt-0.5 block text-[0.75rem] leading-4">
+                        {event.groupName} • {time(event.at)}
+                      </span>
+                    </span>
+                    <span className={cn("shrink-0 font-bold tabular-nums", undone && "text-ink-muted line-through")}>{event.amount}</span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      ))}
+      {shown.length > 0 && (
+        <p className="text-ink-muted mt-8 flex flex-col items-center gap-2 text-center">
+          <span aria-hidden="true" className="bg-surface-2 flex size-11 items-center justify-center rounded-full">
+            <Hourglass className="size-5" />
+          </span>
+          <span className="type-small">{t.activity.end}</span>
+        </p>
       )}
     </>
   );

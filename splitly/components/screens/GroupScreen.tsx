@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowDown, ArrowLeft, ArrowUp, ChevronDown, Copy, Plus, ReceiptText, ScanLine, Send, Share2 } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowUp, ChevronDown, Clock, Copy, Link2, Plus, ReceiptText, ScanLine, Send, Share2 } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
@@ -566,57 +566,57 @@ function People({ group, me, manages, onFailure }: SectionProps) {
           </form>
 
           <div className="card mt-3 flex flex-col gap-3 p-4 sm:p-5">
-            <h3 className="type-small font-semibold">{t.people.invite}</h3>
+            <h3 className="font-semibold">{t.people.invite}</h3>
             {store.kind === "demo" ? (
               <p className="type-small text-ink-muted">{t.people.inviteDemo}</p>
             ) : (
               <>
                 <p className="type-small text-ink-muted">{t.people.inviteHint}</p>
                 {invite && link && (
-                  <div className="flex flex-col gap-2">
-                    <QrCode value={link} label={t.people.inviteQr} className="border-line mx-auto size-48 rounded-[14px] border" />
-                    <input
-                      readOnly
-                      aria-label={t.people.inviteLink}
-                      className={cn(inputClass, "type-small")}
-                      value={link}
-                      onFocus={(event) => event.target.select()}
-                    />
-                    <p className="type-small text-ink-muted">
-                      {fill(t.people.inviteExpires, { date: formatDay(invite.expiresAt, locale, true), n: invite.maxUses })}
-                    </p>
-                  </div>
-                )}
-                <div className="flex flex-wrap gap-2">
-                  {invite && link && (
+                  <>
+                    {/* The link on its own panel with the button that copies it, as on Stitch's invitation sheet. */}
+                    <div className="bg-surface-2 rounded-card flex flex-col gap-2.5 p-3.5">
+                      <p className="text-ink-muted flex items-start gap-1.5 text-[0.8125rem] leading-5">
+                        <Clock aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+                        {fill(t.people.inviteExpires, { date: formatDay(invite.expiresAt, locale, true), n: invite.maxUses })}
+                      </p>
+                      <div className="flex gap-2">
+                        <input
+                          readOnly
+                          aria-label={t.people.inviteLink}
+                          className={cn(inputClass, "type-small")}
+                          value={link}
+                          onFocus={(event) => event.target.select()}
+                        />
+                        <Button
+                          variant="secondary"
+                          onClick={() =>
+                            navigator.clipboard.writeText(link).then(
+                              () => notify(t.people.inviteCopied),
+                              () => onFailure(link),
+                            )
+                          }
+                        >
+                          <Copy aria-hidden="true" className="size-4" />
+                          {t.people.inviteCopy}
+                        </Button>
+                      </div>
+                    </div>
                     <a
                       href={`https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(fill(t.people.inviteText, { group: group.name }))}`}
                       target="_blank"
                       rel="noreferrer"
-                      className={buttonClass("primary", true)}
+                      className={cn(buttonClass("primary"), "h-13 w-full")}
                     >
-                      <Send aria-hidden="true" className="size-4" />
+                      <Send aria-hidden="true" className="size-5" />
                       {t.people.inviteShare}
                     </a>
-                  )}
-                  {invite && link ? (
+                    <QrCode value={link} label={t.people.inviteQr} className="border-line mx-auto size-48 rounded-[14px] border" />
+                  </>
+                )}
+                <div className="flex flex-wrap gap-2">
+                  {!(invite && link) && (
                     <Button
-                      variant="secondary"
-                      small
-                      onClick={() =>
-                        navigator.clipboard.writeText(link).then(
-                          () => notify(t.people.inviteCopied),
-                          () => onFailure(link),
-                        )
-                      }
-                    >
-                      <Copy aria-hidden="true" className="size-4" />
-                      {t.people.inviteCopy}
-                    </Button>
-                  ) : (
-                    <Button
-                      variant="secondary"
-                      small
                       onClick={async () => {
                         onFailure(null);
                         try {
@@ -626,6 +626,7 @@ function People({ group, me, manages, onFailure }: SectionProps) {
                         }
                       }}
                     >
+                      <Link2 aria-hidden="true" className="size-4" />
                       {t.people.inviteCreate}
                     </Button>
                   )}

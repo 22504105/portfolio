@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, CircleCheck, Plus, Trash2, TriangleAlert } from "lucide-react";
+import { ArrowRight, BadgeCheck, CheckCheck, CircleCheck, CirclePlus, Keyboard, Plus, Trash2, TriangleAlert } from "lucide-react";
 import { useState } from "react";
 import { useApp } from "@/components/app/AppProvider";
 import { Button, inputClass, Problem } from "@/components/ui/controls";
@@ -11,6 +11,7 @@ import { likelyDuplicates } from "@/lib/receipt/parse";
 import type { LineKind } from "@/lib/receipt/types";
 import { cn } from "@/lib/utils";
 import { amountOf, emptyLine, needsLook, totals, type Draft, type DraftLine } from "./draft";
+import { ScanHeader } from "./ScanHeader";
 
 type ReviewProps = {
   group: Group;
@@ -60,21 +61,19 @@ export function ReviewStep({ group, draft, fromPhoto, translate, onTranslate, on
 
   return (
     <>
-      <div className="relative flex min-h-11 items-center justify-center">
-        <button
-          type="button"
-          onClick={onBack}
-          aria-label={t.common.back}
-          className="text-ink-muted hover:text-ink absolute top-0 left-0 inline-flex size-11 items-center justify-center rounded-full"
-        >
-          <ArrowLeft aria-hidden="true" className="size-5" />
-        </button>
-        <h1 className="type-heading px-12 text-center text-[1.25rem]">{t.scan.reviewTitle}</h1>
-      </div>
+      <ScanHeader title={t.scan.reviewTitle} stage="review" back={onBack} />
 
-      <div className={cn("rounded-control mt-4 flex items-start gap-3 p-4", fromPhoto ? "bg-accent-soft text-on-accent" : "bg-surface-2")}>
-        {fromPhoto && <CircleCheck aria-hidden="true" className="mt-0.5 size-5 shrink-0" />}
-        <div>
+      <div className={cn("rounded-card mt-4 flex items-start gap-3 p-4", fromPhoto ? "bg-accent-soft text-on-accent" : "bg-surface-2")}>
+        <span
+          aria-hidden="true"
+          className={cn(
+            "flex size-10 shrink-0 items-center justify-center rounded-full",
+            fromPhoto ? "bg-primary text-on-primary" : "bg-surface text-ink-muted",
+          )}
+        >
+          {fromPhoto ? <BadgeCheck className="size-5" /> : <Keyboard className="size-5" />}
+        </span>
+        <div className="min-w-0">
           <p className="font-semibold">{fromPhoto ? t.scan.recognised : t.scan.manualBanner}</p>
           <p className="type-small mt-0.5 opacity-85">{fromPhoto ? t.scan.recognisedHint : t.scan.manualHint}</p>
         </div>
@@ -95,7 +94,13 @@ export function ReviewStep({ group, draft, fromPhoto, translate, onTranslate, on
         </label>
       )}
 
-      <ul aria-label={t.scan.lines} className="mt-4 flex flex-col gap-2.5">
+      <h2 id="scan-lines" className="type-heading mt-5 flex items-center gap-2">
+        {t.scan.lines}
+        <span className="bg-surface-2 text-ink-muted rounded-full px-2 py-0.5 text-[0.75rem] leading-4 font-semibold tabular-nums">
+          {draft.lines.length}
+        </span>
+      </h2>
+      <ul aria-labelledby="scan-lines" className="mt-3 flex flex-col gap-2.5">
         {draft.lines.map((line, index) => {
           const amount = amountOf(line, currency);
           const low = needsLook(line);
@@ -155,6 +160,12 @@ export function ReviewStep({ group, draft, fromPhoto, translate, onTranslate, on
               {line.kind === "item" && line.quantity !== "1" && (
                 <p className="type-small text-ink-muted mt-1.5 tabular-nums">× {line.quantity}</p>
               )}
+              {fromPhoto && line.reviewed && !duplicates.has(index) && (
+                <p className="bg-accent-soft text-on-accent mt-2 inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[0.75rem] leading-4 font-medium">
+                  <CheckCheck aria-hidden="true" className="size-3.5" />
+                  {t.scan.checked}
+                </p>
+              )}
               {(low || duplicates.has(index)) && (
                 <p className="type-small text-warning mt-2 flex items-start gap-1.5 font-medium">
                   <TriangleAlert aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
@@ -168,11 +179,15 @@ export function ReviewStep({ group, draft, fromPhoto, translate, onTranslate, on
         })}
       </ul>
 
-      <div className="mt-3 flex flex-wrap gap-2">
-        <Button variant="secondary" small onClick={() => add("item")}>
-          <Plus aria-hidden="true" className="size-4" />
-          {t.scan.addItem}
-        </Button>
+      <button
+        type="button"
+        onClick={() => add("item")}
+        className="bg-accent-soft text-on-accent rounded-card hover:bg-accent mt-3 flex h-14 w-full items-center justify-center gap-2 font-semibold transition-colors"
+      >
+        <CirclePlus aria-hidden="true" className="size-5" />
+        {t.scan.addItem}
+      </button>
+      <div className="mt-2 flex flex-wrap gap-2">
         {ADJUSTMENTS.map((kind) => (
           <Button key={kind} variant="ghost" small onClick={() => add(kind)}>
             <Plus aria-hidden="true" className="size-4" />
@@ -199,12 +214,6 @@ export function ReviewStep({ group, draft, fromPhoto, translate, onTranslate, on
         <h2 id="scan-totals" className="sr-only">
           {t.scan.totals}
         </h2>
-        <p className="flex items-baseline justify-between gap-3">
-          <span className="text-ink-muted">{t.scan.sum}</span>
-          <span className="font-semibold tabular-nums" data-testid="scan-sum">
-            {money(sums.sumMinor)}
-          </span>
-        </p>
         <label className="flex items-center justify-between gap-3">
           <span className="text-ink-muted">{t.scan.printedTotal}</span>
           <input
@@ -220,6 +229,12 @@ export function ReviewStep({ group, draft, fromPhoto, translate, onTranslate, on
         {draft.includedTaxMinor !== null && (
           <p className="type-small text-ink-muted">{fill(t.scan.includedTax, { amount: money(draft.includedTaxMinor) })}</p>
         )}
+        <p className="border-line flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 border-t pt-3">
+          <span className="type-label text-ink">{t.scan.sum}</span>
+          <span className="type-amount text-primary" data-testid="scan-sum">
+            {money(sums.sumMinor)}
+          </span>
+        </p>
         {sums.printedMinor === null && !printedBad && <p className="type-small text-ink-muted">{t.scan.noPrinted}</p>}
         {printedBad && <Problem>{t.scan.needsAmount}</Problem>}
         {sums.differenceMinor === 0 && (
@@ -251,8 +266,14 @@ export function ReviewStep({ group, draft, fromPhoto, translate, onTranslate, on
       </section>
 
       {tried && !ready && <Problem className="mt-4">{!bought ? t.scan.needsItem : off ? t.scan.needsMatch : t.scan.needsFix}</Problem>}
-      <Button className="mt-4 h-14 w-full text-[1.0625rem]" onClick={() => (ready ? onContinue() : setTried(true))}>
-        {t.scan.continue}
+      <Button className="mt-4 h-14 w-full justify-between pr-2.5 text-[1.0625rem]" onClick={() => (ready ? onContinue() : setTried(true))}>
+        <span className="flex items-center gap-2">
+          {t.scan.continue}
+          <ArrowRight aria-hidden="true" className="size-5" />
+        </span>
+        <span aria-hidden="true" className="bg-on-primary/15 rounded-full px-3 py-1.5 text-[0.875rem] leading-5 tabular-nums">
+          {money(sums.sumMinor)}
+        </span>
       </Button>
     </>
   );

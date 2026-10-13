@@ -40,6 +40,9 @@
   --hero: linear-gradient(160deg, #173d35 0%, #0f2a24 100%);
   --hero-line: transparent;
 
+  /* The scanner's viewfinder: dark in both themes, always under white text. */
+  --stage: #0f1a17;
+
   /* Meaning. Never the only signal: always with a word, a sign or an icon. */
   --positive: #075f4a;
   /* The brief's #C75B57 is 4.1:1 on white; this is 5.6:1. */
@@ -79,6 +82,8 @@
   /* In the dark the balance card is a raised surface with a hairline, not a brighter block (Stitch "Botanical Nocturne"). */
   --hero: linear-gradient(160deg, #1b2923 0%, #16221d 100%);
   --hero-line: #2a3c34;
+
+  --stage: #0a120f;
 
   --positive: #8fd3ab;
   --danger: #f2a29d;
@@ -122,6 +127,7 @@
 
   --color-mint: var(--mint);
   --color-on-mint: var(--on-mint);
+  --color-stage: var(--stage);
 
   --shadow-card: var(--card-shadow);
   --shadow-raised: var(--raised-shadow);
