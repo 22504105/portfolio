@@ -284,6 +284,14 @@
   (34 из 34). Серверная сборка файлов без базы проверяется самопроверкой `/api/v1/selftest/…`
   (`SPLITLY_SELFTEST=1` и свой `SESSION_SECRET` через `vercel deploy -e`); где аккаунты настроены, её
   адреса не существуют. Слияние в `main` и выкладка на рабочий сайт — только по явному слову владельца.
+- **Стенд (2026-10-13):** https://splitly-staging-phi.vercel.app, отдельный проект Vercel `splitly-staging`
+  (`prj_vGn4jUaWAQqUf7itvIcreiqDhU04`), бот `@SplitlyTest_Bot`, отдельная база Supabase `umikroeawsciaiyzygtx`
+  (eu-west-1). Значения — в `splitly/.env.staging` (заполнил владелец; токен читать через
+  `scripts/staging-env.mjs`, он же отказывает, если в файле что-то рабочее). Выкладка на стенд:
+  `VERCEL_ORG_ID=team_TCMWVpqI5RzzK6WqMqwMV15H VERCEL_PROJECT_ID=prj_vGn4jUaWAQqUf7itvIcreiqDhU04 npx vercel
+  deploy --prod --yes --scope riddle6` из `splitly/` (папка привязана к рабочему проекту: без этих двух
+  переменных `--prod` уйдёт на рабочий сайт). Проверка: `node scripts/staging-accounts-check.mjs <адрес>`
+  (37 из 37, убирает за собой). Данные стенда тестовые. Рабочей базы стенд не касается.
 - **Проект Vercel подключён к GitHub** и на каждую отправку ветки сам запускает сборку из корня
   репозитория; она падает («No Next.js version detected»), сайт не меняется. Если указать Root Directory,
   слияние в `main` начнёт выкладывать сайт само. Настройки не трогать без слова владельца.
@@ -345,6 +353,10 @@
     (`.tmp/pdf-shot.mjs` снимает его в Chrome).
   - Демо до первого изменения создаёт группы заново на каждом экране: время событий считается от начала
     дня, иначе «новое» в событиях появлялось бы при каждом переходе.
+  - Проект Vercel, созданный `vercel project add`, не знает, что это Next.js: сборка проходит, а сайт отдаёт
+    NOT_FOUND. В `vercel.json` указано `"framework": "nextjs"`.
+  - Прямой адрес базы Supabase (`db.<ref>.supabase.co`) только IPv6: ни отсюда, ни с Vercel не открывается.
+    Пулер того же проекта находит `scripts/staging-pooler.mjs`.
   - Vercel убирает `s-maxage` из заголовка ответа: кэш проверять по `X-Vercel-Cache: HIT`, а не по заголовку.
   - Tailwind обнуляет отступы у `<dialog>`: без своих `inset`/`m-auto` окно встаёт в левый верхний угол.
   - Playwright находит по роли и то, что закрыто модальным окном: «страница недоступна» проверять фокусом

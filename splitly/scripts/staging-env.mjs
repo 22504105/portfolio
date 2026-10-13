@@ -57,7 +57,7 @@ export function stagingEnv() {
   return { token, username, databaseUrl, host, problems };
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const env = stagingEnv();
   console.log(`bot: @${env.username || "?"}   database host: ${env.host || "?"}`);
   if (env.problems.length > 0) {
