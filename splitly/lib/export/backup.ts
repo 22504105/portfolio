@@ -58,3 +58,26 @@ export function saveFile(content: string | Uint8Array, name: string, type: strin
   link.remove();
   setTimeout(() => URL.revokeObjectURL(link.href), 5000);
 }
+
+type TelegramApp = {
+  downloadFile?: (file: { url: string; file_name: string }) => void;
+  openLink?: (url: string) => void;
+  isVersionAtLeast?: (version: string) => boolean;
+};
+
+/**
+ * Hands the address of a file made on the server to whatever can save it, and says which it was. Inside Telegram a
+ * page cannot save a file itself: Telegram's own downloader does (clients from Bot API 8.0 on), and before that the
+ * phone's browser, which Telegram opens the address in. Outside Telegram the browser simply follows the address.
+ */
+export function handOver({ url: path, name }: { url: string; name: string }): "telegram" | "browser" {
+  const url = new URL(path, window.location.origin).href;
+  const app = (window as Window & { Telegram?: { WebApp?: TelegramApp } }).Telegram?.WebApp;
+  if (app?.downloadFile && app.isVersionAtLeast?.("8.0")) {
+    app.downloadFile({ url, file_name: name });
+    return "telegram";
+  }
+  if (app?.openLink) app.openLink(url);
+  else window.location.assign(url);
+  return "browser";
+}

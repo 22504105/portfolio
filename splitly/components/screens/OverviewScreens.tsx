@@ -38,7 +38,7 @@ export function AnalyticsScreen() {
   const group = groups?.find((candidate) => candidate.id === picked) ?? groups?.[0];
 
   return (
-    <>
+    <div data-wide>
       <h1 className="type-title">{t.analytics.title}</h1>
       <p className="type-lead text-ink-muted mt-2">{t.analytics.lead}</p>
       {error && <Problem className="mt-6">{errorText(t, error)}</Problem>}
@@ -71,7 +71,7 @@ export function AnalyticsScreen() {
           <AnalyticsView key={group.id} group={group} />
         </>
       )}
-    </>
+    </div>
   );
 }
 

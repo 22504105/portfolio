@@ -4,95 +4,70 @@ import { DatabaseBackup, Download, FileSpreadsheet, FileText } from "lucide-reac
 import { useState } from "react";
 import { errorText, useApp } from "@/components/app/AppProvider";
 import { Button, Field, inputClass, Problem } from "@/components/ui/controls";
-import { monthOf } from "@/lib/analytics/summary";
 import type { Group } from "@/lib/domain/types";
-import { backupOf, saveFile } from "@/lib/export/backup";
-import { buildReport, fileName, reportCsv, SECTIONS, type ReportFilter, type ReportWords, type Section } from "@/lib/export/report";
-import { toXlsx } from "@/lib/export/xlsx";
-import { fill } from "@/lib/i18n";
+import { handOver, saveFile } from "@/lib/export/backup";
+import { makeBackup, makeReport, PERIODS, type ReportAsk } from "@/lib/export/make";
+import { SECTIONS, type Section } from "@/lib/export/report";
 import { today } from "@/lib/split/form";
 import { cn } from "@/lib/utils";
-import { formatDay } from "./parts";
 
-const PERIODS = ["all", "month", "last"] as const;
+/**
+ * How a file reaches the person. Where the data lives on the server (a real
+ * account, inside Telegram) the page cannot save a file it made itself, so it
+ * asks the server for a short-lived address and hands that to Telegram's own
+ * downloader, or to the phone's browser. In the demo the data is on the page,
+ * and the page makes and saves the file.
+ */
+function useDelivery() {
+  const { t, store, notify } = useApp();
+  return async (ask: unknown, local: () => Promise<{ content: string | Uint8Array; name: string; type: string }>) => {
+    if (store.downloadLink) {
+      const by = handOver(await store.downloadLink(ask));
+      notify(by === "telegram" ? t.export.viaTelegram : t.export.viaBrowser);
+      return;
+    }
+    const file = await local();
+    saveFile(file.content, file.name, file.type);
+  };
+}
 
 /**
  * A group's figures as files: a spreadsheet (CSV or XLSX) and a PDF, each
- * made on the device from the same tables, for the sections, period and
- * currency chosen. Nothing is sent anywhere, and nothing is converted.
+ * made from the same tables, for the sections, period and currency chosen.
+ * Nothing is converted: every amount stays in its own currency.
  */
 export function ExportPanel({ group }: { group: Group }) {
   const { t, locale } = useApp();
+  const deliver = useDelivery();
   const [sections, setSections] = useState<readonly Section[]>(["expenses"]);
   const [period, setPeriod] = useState<(typeof PERIODS)[number]>("all");
   const [currency, setCurrency] = useState("");
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState<ReportAsk["format"] | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
   const currencies = [
     ...new Set([group.baseCurrency, ...group.expenses.map((item) => item.currency), ...group.settlements.map((item) => item.currency)]),
   ].sort();
 
-  const range = period === "all" ? null : monthOf(today(), period === "last" ? -1 : 0);
-  const filter: ReportFilter = { sections, from: range?.from ?? null, to: range?.to ?? null, currency: currency || null };
-  /** For a spreadsheet to be read by a program, the bare keys; for a person, their own words. */
-  const words = (plain: boolean): ReportWords => ({
-    sections: t.export.sections,
-    expenses: t.export.columns,
-    debts: t.export.debtColumns,
-    payments: t.export.paymentColumns,
-    category: (key) => (plain ? (key ?? "") : key ? t.expense.categories[key as keyof typeof t.expense.categories] : t.expense.noCategory),
-    expenseState: (key) => (plain ? key : t.export.states[key as keyof typeof t.export.states]),
-    paymentState: (key) => (plain ? key : t.debts.states[key as keyof typeof t.debts.states]),
-    empty: t.export.empty,
-  });
-
-  function ready(): boolean {
-    setProblem(sections.length === 0 ? t.export.nothing : null);
-    return sections.length > 0;
-  }
-
-  function csv() {
-    if (!ready()) return;
-    saveFile(reportCsv(buildReport(group, filter, words(true))), fileName(group.name, "csv"), "text/csv;charset=utf-8");
-  }
-
-  function xlsx() {
-    if (!ready()) return;
-    saveFile(
-      toXlsx(buildReport(group, filter, words(false))),
-      fileName(group.name, "xlsx"),
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    );
-  }
-
-  async function pdf() {
-    if (!ready()) return;
-    setBusy(true);
+  async function download(format: ReportAsk["format"]) {
+    if (sections.length === 0) return setProblem(t.export.nothing);
+    setProblem(null);
+    setBusy(format);
+    const report: ReportAsk = { format, sections: [...sections], period, currency: currency || null, day: today() };
     try {
-      const font = async (name: string) => {
-        const response = await fetch(`/fonts/${name}.ttf`);
-        if (!response.ok) throw new Error("font");
-        return response.arrayBuffer();
-      };
-      const [{ toPdf }, regular, bold] = await Promise.all([import("@/lib/export/pdf"), font("Inter-Regular"), font("Inter-SemiBold")]);
-      const bytes = await toPdf(
-        buildReport(group, filter, words(false)),
-        {
-          title: `Splitly · ${group.name}`,
-          lines: [
-            `${t.export.periods[period]}${range ? ` (${formatDay(range.from, locale, true)} – ${formatDay(range.to, locale, true)})` : ""} · ${currency || t.export.allCurrencies}`,
-            fill(t.export.made, { date: formatDay(today(), locale, true) }),
-          ],
-          page: (n, of) => fill(t.export.page, { n, of }),
-          empty: t.export.empty,
-        },
-        { regular, bold },
+      await deliver({ kind: "report", groupId: group.id, locale, report }, () =>
+        makeReport(group, report, t, locale, async () => {
+          const font = async (name: string) => {
+            const response = await fetch(`/fonts/${name}.ttf`);
+            if (!response.ok) throw new Error("font");
+            return response.arrayBuffer();
+          };
+          return { regular: await font("Inter-Regular"), bold: await font("Inter-SemiBold") };
+        }),
       );
-      saveFile(bytes, fileName(group.name, "pdf"), "application/pdf");
-    } catch {
-      setProblem(t.export.pdfFailed);
+    } catch (caught) {
+      setProblem(caught instanceof Error && caught.message === "font" ? t.export.pdfFailed : errorText(t, caught));
     }
-    setBusy(false);
+    setBusy(null);
   }
 
   return (
@@ -156,15 +131,15 @@ export function ExportPanel({ group }: { group: Group }) {
 
       {problem && <Problem>{problem}</Problem>}
       <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-        <Button variant="secondary" onClick={csv}>
+        <Button variant="secondary" busy={busy === "csv"} onClick={() => download("csv")}>
           <Download aria-hidden="true" className="size-4" />
           {t.export.button}
         </Button>
-        <Button variant="secondary" onClick={xlsx}>
+        <Button variant="secondary" busy={busy === "xlsx"} onClick={() => download("xlsx")}>
           <FileSpreadsheet aria-hidden="true" className="size-4" />
           {t.export.xlsx}
         </Button>
-        <Button variant="secondary" busy={busy} onClick={pdf}>
+        <Button variant="secondary" busy={busy === "pdf"} onClick={() => download("pdf")}>
           <FileText aria-hidden="true" className="size-4" />
           {t.export.pdf}
         </Button>
@@ -173,9 +148,10 @@ export function ExportPanel({ group }: { group: Group }) {
   );
 }
 
-/** Everything Splitly holds for this person, as one file to keep. Read fresh from the store when asked for. */
+/** Everything Splitly holds for this person, as one file to keep. Read fresh when asked for. */
 export function BackupButton() {
   const { t, store, notify } = useApp();
+  const deliver = useDelivery();
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
 
@@ -183,11 +159,12 @@ export function BackupButton() {
     setBusy(true);
     setProblem(null);
     try {
-      const list = await store.listGroups();
-      const groups = (await Promise.all(list.map((group) => store.getGroup(group.id)))).filter((group): group is Group => group !== null);
-      const at = new Date().toISOString();
-      saveFile(JSON.stringify(backupOf(groups, at), null, 2), `splitly-backup-${at.slice(0, 10)}.json`, "application/json");
-      notify(t.export.saved);
+      await deliver({ kind: "backup" }, async () => {
+        const list = await store.listGroups();
+        const groups = (await Promise.all(list.map((group) => store.getGroup(group.id)))).filter((group): group is Group => group !== null);
+        notify(t.export.saved);
+        return makeBackup(groups, new Date().toISOString());
+      });
     } catch (caught) {
       setProblem(errorText(t, caught));
     }

@@ -187,3 +187,62 @@ test("a receipt line gets the picture of its kind, and a name nothing matches ge
     .evaluateAll((tiles) => tiles.map((tile) => tile.getAttribute("data-picture")));
   expect(pictures).toEqual(["milk", "bread", "other"]);
 });
+
+test("the invitation is a sheet over the group: it opens, keeps the page out of reach, and closes four ways", async ({ page }) => {
+  await page.goto("/en/demo/groups/demo-istanbul", { waitUntil: "networkidle" });
+  const sheet = page.getByRole("dialog", { name: "Istanbul weekend" });
+  await expect(sheet).toHaveCount(0);
+
+  await page.getByRole("button", { name: "Invite", exact: true }).click();
+  await expect(sheet).toBeVisible();
+  await expect(sheet).toContainText("Invitation to the group");
+  // The demo has nobody to invite, and says so instead of offering a link that would lead nowhere.
+  await expect(sheet).toContainText("the demo has none");
+  await expect(sheet.getByRole("button", { name: "Create invite link" })).toHaveCount(0);
+  // It is a modal: the keyboard is taken inside it, and a tap on the dimmed page around it only closes it.
+  await expect(sheet.getByRole("button", { name: "Close" })).toBeFocused();
+  await page.mouse.click(8, 8);
+  await expect(sheet).toHaveCount(0);
+  await expect(page.getByRole("tab", { name: "Expenses" })).toHaveAttribute("aria-selected", "true");
+  await page.getByRole("button", { name: "Invite", exact: true }).click();
+
+  await sheet.getByRole("button", { name: "Close" }).click();
+  await expect(sheet).toHaveCount(0);
+  await page.getByRole("button", { name: "Invite", exact: true }).click();
+  await page.keyboard.press("Escape");
+  await expect(sheet).toHaveCount(0);
+  // Closed, the page is whole again and nothing was changed by looking.
+  await expect(page.getByRole("tab", { name: "Expenses" })).toHaveAttribute("aria-selected", "true");
+
+  // Adding someone by name from the sheet leads to the form that does it.
+  await page.getByRole("button", { name: "Invite", exact: true }).click();
+  await sheet.getByRole("button", { name: "Add", exact: true }).click();
+  await expect(sheet).toHaveCount(0);
+  await expect(page.getByRole("tab", { name: "Settings" })).toHaveAttribute("aria-selected", "true");
+  await page.getByPlaceholder("Name").first().waitFor();
+});
+
+test("on a wide screen the group and the analytics stand in columns; on a phone they follow one another", async ({ page, isMobile }) => {
+  const box = async (locator: ReturnType<Page["locator"]>) => (await locator.boundingBox())!;
+  await page.goto("/en/demo/groups/demo-istanbul", { waitUntil: "networkidle" });
+  const balances = await box(page.getByRole("heading", { level: 2, name: "People", exact: true }));
+  const tabs = await box(page.getByRole("tablist"));
+  if (isMobile) expect(tabs.y).toBeGreaterThan(balances.y);
+  else {
+    // The card with everyone's balance on the left, the tabs beside it, starting level with it.
+    expect(tabs.x).toBeGreaterThan(balances.x + 250);
+    expect(tabs.y).toBeLessThan(balances.y);
+    // The card stays in view while the expenses scroll.
+    await page.mouse.wheel(0, 600);
+    await page.waitForTimeout(200);
+    await expect(page.getByRole("heading", { level: 2, name: "People", exact: true })).toBeInViewport();
+  }
+
+  await page.goto("/en/demo/analytics", { waitUntil: "networkidle" });
+  await page.getByLabel("Period").selectOption("all");
+  const total = await box(page.getByTestId("analytics-total"));
+  const split = await box(page.getByRole("radiogroup", { name: "What to split the total by" }));
+  if (isMobile) expect(split.y).toBeGreaterThan(total.y);
+  else expect(split.x).toBeGreaterThan(total.x + 300);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBe(0);
+});

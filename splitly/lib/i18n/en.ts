@@ -176,6 +176,9 @@ export const en = {
     inviteShare: "Share in Telegram",
     inviteText: "Join “{group}” on Splitly",
     inviteDemo: "Invitations bring in other people's Telegram accounts, and the demo has none. Here, add people by name.",
+    inviteSub: "Invitation to the group",
+    guestRow: "Add someone by name",
+    guestRowHint: "Without Telegram. You keep their balance yourself.",
   },
   expense: {
     haveReceipt: "Have a paper receipt?",
@@ -532,6 +535,8 @@ export const en = {
     nothing: "Choose at least one thing to include.",
     pdfFailed: "The PDF could not be made: its font did not load. Check the connection and try again.",
     saved: "File saved",
+    viaTelegram: "Telegram will now ask to save the file.",
+    viaBrowser: "The file is opening in your browser, which saves it.",
     backupTitle: "Backup copy",
     backupHint:
       "Everything Splitly holds for you (groups, people, expenses, payments, exchange rates) as one JSON file made on this device. It is for keeping: Splitly cannot read it back in.",

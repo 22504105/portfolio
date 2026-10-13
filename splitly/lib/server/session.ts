@@ -40,3 +40,40 @@ export function readSession(token: unknown, secret: string, nowSeconds = Math.fl
     return null;
   }
 }
+
+// A download ticket: a short note saying "user X may fetch this one file, until time T", signed like a session
+// but under a name of its own, so that neither can ever pass for the other. Telegram's downloader fetches a file
+// by its address alone, with no header of ours, so the permission has to travel in the address. It is good for a
+// few minutes and for exactly the file it names, and it only ever reads.
+
+export const TICKET_SECONDS = 5 * 60;
+
+const signTicket = (payload: string, secret: string) => createHmac("sha256", secret).update(`download:${payload}`).digest("base64url");
+
+export function issueTicket(userId: string, file: unknown, secret: string, nowSeconds = Math.floor(Date.now() / 1000)): string {
+  const payload = Buffer.from(JSON.stringify({ u: userId, e: nowSeconds + TICKET_SECONDS, f: file })).toString("base64url");
+  return `${payload}.${signTicket(payload, secret)}`;
+}
+
+/** Whose ticket it is and what file it names, or null if it is forged, damaged or out of date. */
+export function readTicket(
+  token: unknown,
+  secret: string,
+  nowSeconds = Math.floor(Date.now() / 1000),
+): { userId: string; file: unknown } | null {
+  if (typeof token !== "string" || token.length > 2048 || !secret) return null;
+  const [payload, signature, ...rest] = token.split(".");
+  if (!payload || !signature || rest.length > 0) return null;
+
+  const given = Buffer.from(signature, "base64url");
+  const expected = Buffer.from(signTicket(payload, secret), "base64url");
+  if (given.length !== expected.length || !timingSafeEqual(given, expected)) return null;
+
+  try {
+    const { u, e, f } = JSON.parse(Buffer.from(payload, "base64url").toString("utf8")) as { u?: unknown; e?: unknown; f?: unknown };
+    if (typeof u !== "string" || !/^[0-9a-f-]{36}$/.test(u) || typeof e !== "number" || e <= nowSeconds) return null;
+    return { userId: u, file: f };
+  } catch {
+    return null;
+  }
+}

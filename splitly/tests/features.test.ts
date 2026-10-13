@@ -1,6 +1,7 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { countNew, eventsOf, isNew } from "@/lib/activity";
 import type { Group } from "@/lib/domain/types";
+import { handOver } from "@/lib/export/backup";
 import { OFFERED_CURRENCIES, rateQuery, readOffer } from "@/lib/money/auto-rate";
 import { favouritesFirst, parseFavourites } from "@/lib/preferences";
 import { FAMILY_OF, fold, PICTURES, pictureOf } from "@/lib/receipt/pictures";
@@ -125,5 +126,49 @@ describe("favourite groups", () => {
     expect(parseFavourites("not json")).toEqual([]);
     expect(parseFavourites('{"a":1}')).toEqual([]);
     expect(parseFavourites('["a",5,null,"b"]')).toEqual(["a", "b"]);
+  });
+});
+
+describe("handing a file made on the server to whatever can save it", () => {
+  const file = { url: "/api/v1/downloads/abc.def", name: "splitly-Квартира.pdf" };
+  const withWindow = (telegram: unknown, work: (went: string[]) => void) => {
+    const went: string[] = [];
+    vi.stubGlobal("window", {
+      location: { origin: "https://splitly.test", assign: (url: string) => went.push(`page ${url}`) },
+      Telegram: telegram ? { WebApp: telegram } : undefined,
+    });
+    try {
+      work(went);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  };
+
+  it("uses Telegram's own downloader where the client has one, with the whole address and the file's real name", () => {
+    const asked: unknown[] = [];
+    withWindow(
+      { downloadFile: (params: unknown) => asked.push(params), openLink: () => asked.push("link"), isVersionAtLeast: () => true },
+      () => {
+        expect(handOver(file)).toBe("telegram");
+      },
+    );
+    expect(asked).toEqual([{ url: "https://splitly.test/api/v1/downloads/abc.def", file_name: "splitly-Квартира.pdf" }]);
+  });
+
+  it("opens the address in the phone's browser on a Telegram client too old to download, and simply follows it outside Telegram", () => {
+    const opened: string[] = [];
+    // The method is there but the client says it is older than the version that has it.
+    withWindow(
+      { downloadFile: () => opened.push("download"), openLink: (url: string) => opened.push(url), isVersionAtLeast: () => false },
+      () => {
+        expect(handOver(file)).toBe("browser");
+      },
+    );
+    withWindow({ openLink: (url: string) => opened.push(url) }, () => expect(handOver(file)).toBe("browser"));
+    expect(opened).toEqual(["https://splitly.test/api/v1/downloads/abc.def", "https://splitly.test/api/v1/downloads/abc.def"]);
+    withWindow(null, (went) => {
+      expect(handOver(file)).toBe("browser");
+      expect(went).toEqual(["page https://splitly.test/api/v1/downloads/abc.def"]);
+    });
   });
 });

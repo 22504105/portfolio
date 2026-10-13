@@ -1,12 +1,11 @@
 "use client";
 
-import { ArrowDown, ArrowLeft, ArrowUp, ChevronDown, Clock, Copy, Link2, Plus, ReceiptText, ScanLine, Send, Share2 } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowUp, ChevronDown, Plus, ReceiptText, ScanLine, Share2 } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { errorText, useApp, useLoad } from "@/components/app/AppProvider";
 import { Avatar, AvatarStack } from "@/components/ui/Avatar";
-import { QrCode } from "@/components/ui/QrCode";
 import { Button, buttonClass, Confirm, Field, inputClass, Loading, Problem } from "@/components/ui/controls";
 import { netsOf, spentOf } from "@/lib/balances/net";
 import type { Expense, Group, Invite, Member } from "@/lib/domain/types";
@@ -15,8 +14,9 @@ import { formatMoney } from "@/lib/money/amount";
 import { cn } from "@/lib/utils";
 import { AnalyticsView } from "./AnalyticsView";
 import { DebtsTab } from "./DebtsTab";
-import { ExpenseRow, formatDay } from "./parts";
+import { ExpenseRow } from "./parts";
 import { ExportPanel } from "./ExportPanel";
+import { InviteSheet } from "./InviteSheet";
 import { RatesSection } from "./RatesSection";
 
 /** One group, after the concept: its people's faces, tabs, everyone's balance and what was spent. */
@@ -57,110 +57,132 @@ function GroupView({ group }: { group: Group }) {
   // Payments someone says they made, waiting for the other side: shown as a count on the Debts tab.
   const waiting = group.settlements.filter((settlement) => settlement.status === "proposed").length;
   const [failure, setFailure] = useState<string | null>(null);
+  const [inviting, setInviting] = useState(false);
+  const [invite, setInvite] = useState<Invite | null>(null);
   const section = { group, me, manages, onFailure: setFailure };
 
+  // On a wide screen, as in Stitch's browser version: the card with everyone's balance stands on the left and stays
+  // in view, and the tabs with what they hold take the rest.
   return (
-    <>
-      <div className="flex items-center gap-2">
-        <Link
-          href={`${base}/groups`}
-          aria-label={t.group.toGroups}
-          className="bg-surface text-ink shadow-card inline-flex size-11 shrink-0 items-center justify-center rounded-full"
-        >
-          <ArrowLeft aria-hidden="true" className="size-5" />
-        </Link>
-        <div className="min-w-0 flex-1">
-          <h1 className="truncate text-[1.375rem] leading-7 font-semibold tracking-[-0.01em]">{group.name}</h1>
-          <p className="text-ink-muted truncate text-[0.75rem] leading-4">
-            {fill(t.groups.people, { n: people.length })} • {group.baseCurrency}
-          </p>
+    <div data-wide className="xl:grid xl:grid-cols-[23rem_minmax(0,1fr)] xl:items-start xl:gap-x-8">
+      <div className="xl:col-span-2">
+        <div className="flex items-center gap-2">
+          <Link
+            href={`${base}/groups`}
+            aria-label={t.group.toGroups}
+            className="bg-surface text-ink shadow-card inline-flex size-11 shrink-0 items-center justify-center rounded-full"
+          >
+            <ArrowLeft aria-hidden="true" className="size-5" />
+          </Link>
+          <div className="min-w-0 flex-1">
+            <h1 className="truncate text-[1.375rem] leading-7 font-semibold tracking-[-0.01em]">{group.name}</h1>
+            <p className="text-ink-muted truncate text-[0.75rem] leading-4">
+              {fill(t.groups.people, { n: people.length })} • {group.baseCurrency}
+            </p>
+          </div>
+          {manages && !group.archivedAt && (
+            <button
+              type="button"
+              onClick={() => setInviting(true)}
+              className="bg-surface text-ink shadow-card inline-flex h-11 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-[0.875rem] font-medium"
+            >
+              <Share2 aria-hidden="true" className="size-4" />
+              {t.group.invite}
+            </button>
+          )}
         </div>
-        {manages && !group.archivedAt && (
-          <button
-            type="button"
-            onClick={() => setTab("settings")}
-            className="bg-surface text-ink shadow-card inline-flex h-11 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-[0.875rem] font-medium"
-          >
-            <Share2 aria-hidden="true" className="size-4" />
-            {t.group.invite}
-          </button>
+
+        {group.archivedAt && (
+          <p className="type-small border-warning/40 bg-warning/10 text-warning rounded-control mt-4 border p-3.5 font-medium">
+            {t.group.archivedNote}
+          </p>
         )}
+        {failure && <Problem className="mt-4">{failure}</Problem>}
       </div>
 
-      {group.archivedAt && (
-        <p className="type-small border-warning/40 bg-warning/10 text-warning rounded-control mt-4 border p-3.5 font-medium">
-          {t.group.archivedNote}
-        </p>
-      )}
-      {failure && <Problem className="mt-4">{failure}</Problem>}
-
-      <Hero group={group} />
-
-      <div role="tablist" aria-label={group.name} className="bg-surface-2 mt-5 grid grid-cols-4 gap-1 rounded-[16px] p-1">
-        {TABS.map((name) => (
-          <button
-            key={name}
-            type="button"
-            role="tab"
-            id={`tab-${name}`}
-            aria-selected={tab === name}
-            aria-controls={`panel-${name}`}
-            onClick={() => setTab(name)}
-            className={cn(
-              "flex h-11 min-w-0 items-center justify-center gap-1.5 rounded-[12px] px-1 text-[0.875rem] font-semibold transition-colors",
-              tab === name ? "bg-surface text-ink shadow-card" : "text-ink-muted hover:text-ink",
-            )}
-          >
-            <span className="truncate">{t.group.tabs[name]}</span>
-            {name === "debts" && waiting > 0 && (
-              <span
-                className="bg-accent text-on-accent rounded-full px-1.5 text-[0.6875rem] leading-4 font-semibold"
-                title={t.debts.waiting}
-              >
-                {waiting}
-              </span>
-            )}
-          </button>
-        ))}
+      <div className="xl:sticky xl:top-16">
+        <Hero group={group} />
       </div>
 
-      <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`}>
-        {tab === "expenses" && (
-          <>
-            {!group.archivedAt && (
-              <div className="mt-4 grid grid-cols-2 gap-3">
-                <Link
-                  href={`${base}/scan?group=${group.id}`}
-                  aria-label={t.home.scan}
-                  className="bg-accent text-on-accent inline-flex h-13 items-center justify-center gap-2 rounded-[14px] font-semibold transition-opacity hover:opacity-90"
+      <div className="min-w-0">
+        <div role="tablist" aria-label={group.name} className="bg-surface-2 mt-5 grid grid-cols-4 gap-1 rounded-[16px] p-1 xl:mt-4">
+          {TABS.map((name) => (
+            <button
+              key={name}
+              type="button"
+              role="tab"
+              id={`tab-${name}`}
+              aria-selected={tab === name}
+              aria-controls={`panel-${name}`}
+              onClick={() => setTab(name)}
+              className={cn(
+                "flex h-11 min-w-0 items-center justify-center gap-1.5 rounded-[12px] px-1 text-[0.875rem] font-semibold transition-colors",
+                tab === name ? "bg-surface text-ink shadow-card" : "text-ink-muted hover:text-ink",
+              )}
+            >
+              <span className="truncate">{t.group.tabs[name]}</span>
+              {name === "debts" && waiting > 0 && (
+                <span
+                  className="bg-accent text-on-accent rounded-full px-1.5 text-[0.6875rem] leading-4 font-semibold"
+                  title={t.debts.waiting}
                 >
-                  <ScanLine aria-hidden="true" className="size-5" />
-                  {t.group.scanShort}
-                </Link>
-                <Link
-                  href={`${base}/add?group=${group.id}`}
-                  aria-label={t.group.addExpense}
-                  className="bg-primary text-on-primary hover:bg-primary-hover inline-flex h-13 items-center justify-center gap-2 rounded-[14px] font-semibold transition-colors"
-                >
-                  <Plus aria-hidden="true" className="size-5" />
-                  {t.home.expense}
-                </Link>
-              </div>
-            )}
-            <Expenses {...section} />
-          </>
-        )}
-        {tab === "debts" && <DebtsTab group={group} me={me} onFailure={setFailure} />}
-        {tab === "analytics" && <AnalyticsView group={group} />}
-        {tab === "settings" && (
-          <>
-            <People {...section} />
-            <RatesSection group={group} onFailure={setFailure} />
-            <Settings {...section} />
-          </>
-        )}
+                  {waiting}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+
+        <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`}>
+          {tab === "expenses" && (
+            <>
+              {!group.archivedAt && (
+                <div className="mt-4 grid grid-cols-2 gap-3">
+                  <Link
+                    href={`${base}/scan?group=${group.id}`}
+                    aria-label={t.home.scan}
+                    className="bg-accent text-on-accent inline-flex h-13 items-center justify-center gap-2 rounded-[14px] font-semibold transition-opacity hover:opacity-90"
+                  >
+                    <ScanLine aria-hidden="true" className="size-5" />
+                    {t.group.scanShort}
+                  </Link>
+                  <Link
+                    href={`${base}/add?group=${group.id}`}
+                    aria-label={t.group.addExpense}
+                    className="bg-primary text-on-primary hover:bg-primary-hover inline-flex h-13 items-center justify-center gap-2 rounded-[14px] font-semibold transition-colors"
+                  >
+                    <Plus aria-hidden="true" className="size-5" />
+                    {t.home.expense}
+                  </Link>
+                </div>
+              )}
+              <Expenses {...section} />
+            </>
+          )}
+          {tab === "debts" && <DebtsTab group={group} me={me} onFailure={setFailure} />}
+          {tab === "analytics" && <AnalyticsView group={group} />}
+          {tab === "settings" && (
+            <>
+              <People {...section} onInvite={() => setInviting(true)} />
+              <RatesSection group={group} onFailure={setFailure} />
+              <Settings {...section} />
+            </>
+          )}
+        </div>
       </div>
-    </>
+
+      <InviteSheet
+        group={group}
+        open={inviting}
+        onClose={() => setInviting(false)}
+        invite={invite}
+        onInvite={setInvite}
+        onGuest={() => {
+          setInviting(false);
+          setTab("settings");
+        }}
+      />
+    </div>
   );
 }
 
@@ -462,12 +484,11 @@ function Expenses({ group, me, manages, onFailure }: SectionProps) {
   );
 }
 
-function People({ group, me, manages, onFailure }: SectionProps) {
-  const { t, store, base, locale, account, changed, notify } = useApp();
+function People({ group, me, manages, onFailure, onInvite }: SectionProps & { onInvite: () => void }) {
+  const { t, store, changed, notify } = useApp();
   const [guest, setGuest] = useState("");
   const [guestProblem, setGuestProblem] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [invite, setInvite] = useState<Invite | null>(null);
 
   /** Does one change to the group's people, then says so, or says what went wrong. */
   async function act(work: () => Promise<unknown>, done: string) {
@@ -491,10 +512,6 @@ function People({ group, me, manages, onFailure }: SectionProps) {
     setGuest("");
     setBusy(false);
   }
-
-  const link =
-    invite &&
-    (account?.bot ? `https://t.me/${account.bot}?startapp=${invite.token}` : `${window.location.origin}${base}/join?t=${invite.token}`);
 
   return (
     <section aria-labelledby="group-people" className="mt-6">
@@ -570,88 +587,17 @@ function People({ group, me, manages, onFailure }: SectionProps) {
             </Field>
           </form>
 
-          <div className="card mt-3 flex flex-col gap-3 p-4 sm:p-5">
+          <div className="card mt-3 flex flex-col items-start gap-3 p-4 sm:p-5">
             <h3 className="font-semibold">{t.people.invite}</h3>
             {store.kind === "demo" ? (
               <p className="type-small text-ink-muted">{t.people.inviteDemo}</p>
             ) : (
               <>
                 <p className="type-small text-ink-muted">{t.people.inviteHint}</p>
-                {invite && link && (
-                  <>
-                    {/* The link on its own panel with the button that copies it, as on Stitch's invitation sheet. */}
-                    <div className="bg-surface-2 rounded-card flex flex-col gap-2.5 p-3.5">
-                      <p className="text-ink-muted flex items-start gap-1.5 text-[0.8125rem] leading-5">
-                        <Clock aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
-                        {fill(t.people.inviteExpires, { date: formatDay(invite.expiresAt, locale, true), n: invite.maxUses })}
-                      </p>
-                      <div className="flex gap-2">
-                        <input
-                          readOnly
-                          aria-label={t.people.inviteLink}
-                          className={cn(inputClass, "type-small")}
-                          value={link}
-                          onFocus={(event) => event.target.select()}
-                        />
-                        <Button
-                          variant="secondary"
-                          onClick={() =>
-                            navigator.clipboard.writeText(link).then(
-                              () => notify(t.people.inviteCopied),
-                              () => onFailure(link),
-                            )
-                          }
-                        >
-                          <Copy aria-hidden="true" className="size-4" />
-                          {t.people.inviteCopy}
-                        </Button>
-                      </div>
-                    </div>
-                    <a
-                      href={`https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(fill(t.people.inviteText, { group: group.name }))}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className={cn(buttonClass("primary"), "h-13 w-full")}
-                    >
-                      <Send aria-hidden="true" className="size-5" />
-                      {t.people.inviteShare}
-                    </a>
-                    <QrCode value={link} label={t.people.inviteQr} className="border-line mx-auto size-48 rounded-[14px] border" />
-                  </>
-                )}
-                <div className="flex flex-wrap gap-2">
-                  {!(invite && link) && (
-                    <Button
-                      onClick={async () => {
-                        onFailure(null);
-                        try {
-                          setInvite(await store.createInvite(group.id));
-                        } catch (caught) {
-                          onFailure(errorText(t, caught));
-                        }
-                      }}
-                    >
-                      <Link2 aria-hidden="true" className="size-4" />
-                      {t.people.inviteCreate}
-                    </Button>
-                  )}
-                  <Button
-                    variant="ghost"
-                    small
-                    onClick={async () => {
-                      onFailure(null);
-                      try {
-                        const revoked = await store.revokeInvites(group.id);
-                        setInvite(null);
-                        notify(fill(t.people.inviteRevoked, { n: revoked }));
-                      } catch (caught) {
-                        onFailure(errorText(t, caught));
-                      }
-                    }}
-                  >
-                    {t.people.inviteRevoke}
-                  </Button>
-                </div>
+                <Button variant="secondary" onClick={onInvite}>
+                  <Share2 aria-hidden="true" className="size-4" />
+                  {t.group.invite}
+                </Button>
               </>
             )}
           </div>

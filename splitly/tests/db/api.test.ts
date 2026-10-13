@@ -3,7 +3,7 @@ import { createHmac, randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { handle } from "@/lib/server/api";
 import { resetPool } from "@/lib/server/db";
-import { issueSession } from "@/lib/server/session";
+import { issueSession, issueTicket } from "@/lib/server/session";
 import { startTestDatabase, type TestDatabase } from "./harness";
 
 // The server as a client meets it: real requests into the real handler, a
@@ -1155,5 +1155,201 @@ describe("exchange rates", () => {
     // A recorded rate cannot be altered, even directly in the database.
     await expect(t.db.query("update splitly.fx_rates set decimal_rate = '1' where group_id = $1", [id])).rejects.toBeTruthy();
     expect((await t.db.query("select count(*)::int as n from splitly.fx_rates where group_id = $1", [id])).rows[0].n).toBe(3);
+  });
+});
+
+describe("files to take away", () => {
+  /** Fetches a download address the way Telegram's downloader does: no session, no origin, just the address. */
+  async function fetchFile(url: string) {
+    const path = url.replace("/api/v1/", "");
+    const response = await handle(new Request(`${ORIGIN}${url}`), path.split("/"));
+    return { status: response.status, headers: response.headers, bytes: Buffer.from(await response.arrayBuffer()) };
+  }
+  const report = (overrides: Record<string, unknown> = {}) => ({
+    format: "csv",
+    sections: ["expenses", "debts", "payments"],
+    period: "all",
+    currency: null,
+    day: "2026-10-13",
+    ...overrides,
+  });
+
+  async function setUp() {
+    const ann = await person("Анна");
+    const bob = await person("Bob");
+    const id = (await call("POST", "groups", { token: ann.token, body: { name: "Квартира", baseCurrency: "TRY" } })).body.id as string;
+    const invite = (await call("POST", `groups/${id}/invites`, { token: ann.token, body: {} })).body.invite;
+    await call("POST", "invites/accept", { token: bob.token, body: { token: invite.token } });
+    const group = await groupOf(ann.token, id);
+    const annM = selfIn(group);
+    const bobM = group.members.find((member: any) => !member.self).id as string;
+    const add = (body: unknown) =>
+      call("POST", `groups/${id}/expenses`, { token: ann.token, body: { idempotencyKey: randomUUID(), expense: body } });
+    expect((await add(expense(annM, [annM, bobM], 100_01, { description: "Ужин, «Каракёй»" }))).status).toBe(200);
+    expect((await add(expense(annM, [annM, bobM], 50_00, { description: "Taxi", currency: "EUR", category: "transport" }))).status).toBe(
+      200,
+    );
+    return { ann, bob, id, annM, bobM };
+  }
+
+  it("a report is made on the server from the group as the person may see it: exact sums, each currency apart, Cyrillic whole", async () => {
+    const { ann, id } = await setUp();
+    const asked = await call("POST", "downloads", {
+      token: ann.token,
+      body: { kind: "report", groupId: id, locale: "ru", report: report() },
+    });
+    expect(asked.status).toBe(200);
+    expect(asked.body.name).toBe("splitly-Квартира.csv");
+    const file = await fetchFile(asked.body.url);
+    expect(file.status).toBe(200);
+    expect(file.headers.get("content-type")).toBe("text/csv;charset=utf-8");
+    expect(file.headers.get("content-disposition")).toBe(
+      `attachment; filename="splitly-________.csv"; filename*=UTF-8''${encodeURIComponent("splitly-Квартира.csv")}`,
+    );
+    expect(file.headers.get("cache-control")).toBe("private, no-store");
+    const text = file.bytes.toString("utf8");
+    expect(text.charCodeAt(0)).toBe(0xfeff);
+    const [expenses, debts, payments] = text.slice(1).trim().split("\r\n\r\n");
+    expect(expenses.split("\r\n").slice(0, 2)).toEqual(["Расходы", "Дата,Описание,Категория,Сумма,Валюта,Состояние,Кто платил,Доли"]);
+    expect(expenses).toContain('2026-10-12,"Ужин, «Каракёй»",food,100.01,TRY,active,Анна: 100.01,Анна: 50.01; Bob: 50.00');
+    expect(expenses).toContain("2026-10-12,Taxi,transport,50.00,EUR,active,Анна: 50.00,Анна: 25.00; Bob: 25.00");
+    // One debt per currency: nothing is added across them.
+    expect(debts.split("\r\n").slice(1).sort()).toEqual(["Bob,Анна,25.00,EUR", "Bob,Анна,50.00,TRY", "Кто,Кому,Сумма,Валюта"]);
+    expect(payments.split("\r\n")).toEqual(["Погашения", "Дата,Кто,Кому,Сумма,Валюта,Состояние"]);
+
+    // One currency, one section: only its rows.
+    const euros = await call("POST", "downloads", {
+      token: ann.token,
+      body: { kind: "report", groupId: id, locale: "en", report: report({ sections: ["expenses"], currency: "EUR" }) },
+    });
+    const rows = (await fetchFile(euros.body.url)).bytes.toString("utf8").trim().split("\r\n");
+    expect(rows).toHaveLength(2);
+    expect(rows[1]).toContain(",50.00,EUR,");
+    // A period with nothing in it is an empty table, not an error.
+    const old = await call("POST", "downloads", {
+      token: ann.token,
+      body: { kind: "report", groupId: id, locale: "en", report: report({ sections: ["expenses"], period: "month", day: "2020-01-15" }) },
+    });
+    expect((await fetchFile(old.body.url)).bytes.toString("utf8").trim().split("\r\n")).toHaveLength(1);
+  });
+
+  it("the same report as a workbook and as a PDF", async () => {
+    const { ann, id } = await setUp();
+    const ask = (format: string) =>
+      call("POST", "downloads", { token: ann.token, body: { kind: "report", groupId: id, locale: "ru", report: report({ format }) } });
+    const xlsx = await fetchFile((await ask("xlsx")).body.url);
+    expect(xlsx.headers.get("content-type")).toBe("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    expect(xlsx.bytes.subarray(0, 4).toString("latin1")).toBe("PK\u0003\u0004");
+    const inside = xlsx.bytes.toString("utf8");
+    expect(inside).toContain('<sheet name="Расходы" sheetId="1" r:id="rId1"/>');
+    expect(inside).toContain("<v>100.01</v>");
+    expect(inside).toContain("Ужин, «Каракёй»");
+
+    const pdf = await fetchFile((await ask("pdf")).body.url);
+    expect(pdf.headers.get("content-type")).toBe("application/pdf");
+    expect(pdf.bytes.subarray(0, 5).toString("latin1")).toBe("%PDF-");
+    expect(pdf.bytes.length).toBeGreaterThan(100_000);
+  }, 30_000);
+
+  it("the backup holds this person's groups and nobody else's", async () => {
+    const { ann, bob, id } = await setUp();
+    const stranger = await person("Stranger");
+    const own = (await call("POST", "groups", { token: stranger.token, body: { name: "Private of the stranger", baseCurrency: "USD" } }))
+      .body.id;
+    const annOnly = (await call("POST", "groups", { token: ann.token, body: { name: "Ann alone", baseCurrency: "TRY" } })).body.id;
+
+    const read = async (token: string) => {
+      const asked = await call("POST", "downloads", { token, body: { kind: "backup" } });
+      expect(asked.status).toBe(200);
+      expect(asked.body.name).toMatch(/^splitly-backup-\d{4}-\d{2}-\d{2}\.json$/);
+      const file = await fetchFile(asked.body.url);
+      expect(file.headers.get("content-type")).toBe("application/json");
+      return { text: file.bytes.toString("utf8"), backup: JSON.parse(file.bytes.toString("utf8")) };
+    };
+    const anns = await read(ann.token);
+    expect(anns.backup).toMatchObject({ format: "splitly-backup", version: 1, amounts: "minor-units" });
+    expect(anns.backup.groups.map((group: any) => group.id).sort()).toEqual([id, annOnly].sort());
+    expect(anns.backup.groups.find((group: any) => group.id === id).expenses).toHaveLength(2);
+    expect(anns.text).not.toContain("Private of the stranger");
+
+    // Bob is in one of Ann's groups: he gets that one, not the one she keeps alone.
+    const bobs = await read(bob.token);
+    expect(bobs.backup.groups.map((group: any) => group.id)).toEqual([id]);
+    expect(bobs.backup.groups[0].members.filter((member: any) => member.self).map((member: any) => member.name)).toEqual(["Bob"]);
+    expect(bobs.text).not.toContain("Ann alone");
+
+    const strangers = await read(stranger.token);
+    expect(strangers.backup.groups.map((group: any) => group.id)).toEqual([own]);
+    expect(strangers.text).not.toContain("Квартира");
+    // Nothing that opens a door is in any of them: no session, no invitation, no Telegram identity.
+    for (const { text } of [anns, bobs, strangers]) expect(text).not.toMatch(/token|initData|telegram|photo/i);
+  });
+
+  it("no address is given for a group that is not yours, without a session, or for a request that is not one", async () => {
+    const { ann, id } = await setUp();
+    const stranger = await person("Stranger");
+    const body = { kind: "report", groupId: id, locale: "en", report: report() };
+    expect((await call("POST", "downloads", { token: stranger.token, body })).body).toEqual({ error: "not_found" });
+    expect((await call("POST", "downloads", { body })).status).toBe(401);
+    for (const bad of [
+      {},
+      { kind: "everything" },
+      { ...body, groupId: "../../etc/passwd" },
+      { ...body, locale: "xx" },
+      { ...body, report: report({ format: "exe" }) },
+      { ...body, report: report({ sections: [] }) },
+      { ...body, report: report({ sections: ["expenses", "passwords"] }) },
+      { ...body, report: report({ currency: "euro" }) },
+      { ...body, report: report({ day: "2026-13-45" }) },
+      { ...body, report: report({ period: "forever" }) },
+    ]) {
+      const result = await call("POST", "downloads", { token: ann.token, body: bad });
+      expect([JSON.stringify(bad).slice(0, 60), result.status]).toEqual([JSON.stringify(bad).slice(0, 60), 422]);
+    }
+  });
+
+  it("an address works only as it was signed, only for a few minutes, and is not a session", async () => {
+    const { ann, id } = await setUp();
+    const stranger = await person("Stranger");
+    const body = { kind: "report", groupId: id, locale: "en", report: report() };
+    const good = (await call("POST", "downloads", { token: ann.token, body })).body.url as string;
+    expect((await fetchFile(good)).status).toBe(200);
+
+    const ticket = good.split("/").pop()!;
+    const [payload, signature] = ticket.split(".");
+    // The same permission, re-addressed to the stranger's own account or to another file: the signature no longer fits.
+    const edited = (change: (note: any) => void) => {
+      const note = JSON.parse(Buffer.from(payload, "base64url").toString("utf8"));
+      change(note);
+      return `${Buffer.from(JSON.stringify(note)).toString("base64url")}.${signature}`;
+    };
+    for (const forged of [
+      edited((note) => (note.u = stranger.userId)),
+      edited((note) => (note.e += 86_400)),
+      edited((note) => (note.f = { kind: "backup" })),
+      `${payload}.${signature.slice(0, -2)}AA`,
+      payload,
+      "x.y",
+      ann.token,
+    ]) {
+      const result = await fetchFile(`/api/v1/downloads/${forged}`);
+      expect([result.status, result.bytes.toString("utf8")]).toEqual([404, '{"error":"not_found"}']);
+    }
+    // An address is not a session.
+    expect((await call("GET", "groups", { token: ticket })).status).toBe(401);
+
+    // Signed properly, but by someone who cannot see the group: the service still refuses when the file is made.
+    const foreign = issueTicket(stranger.userId, body, SECRET);
+    expect((await fetchFile(`/api/v1/downloads/${foreign}`)).status).toBe(404);
+    // Out of date.
+    const stale = issueTicket(ann.userId, body, SECRET, Math.floor(Date.now() / 1000) - 6 * 60);
+    expect((await fetchFile(`/api/v1/downloads/${stale}`)).status).toBe(404);
+    // Signed with another secret.
+    const other = issueTicket(ann.userId, body, "another-secret-of-at-least-32-characters-long");
+    expect((await fetchFile(`/api/v1/downloads/${other}`)).status).toBe(404);
+
+    // The group is gone: an address made while it was there gives nothing.
+    await call("DELETE", `groups/${id}`, { token: ann.token });
+    expect((await fetchFile(good)).status).toBe(404);
   });
 });

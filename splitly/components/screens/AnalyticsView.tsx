@@ -58,139 +58,153 @@ export function AnalyticsView({ group }: { group: Group }) {
         </select>
       </div>
 
-      <section aria-label={t.analytics.total} className="bg-hero text-on-hero rounded-card mt-3 p-5">
-        <dl>
-          <div>
-            <dt className="type-small text-white/80">{t.analytics.total}</dt>
-            <dd className="type-amount mt-1" data-testid="analytics-total">
-              {money(summary.totalMinor)}
-            </dd>
-          </div>
-          <div className="type-small mt-3 inline-flex flex-wrap items-center gap-x-1.5 rounded-full bg-white/10 px-3 py-1.5">
-            <dt className="text-white/85">{t.analytics.average}:</dt>
-            <dd className="font-semibold tabular-nums" data-testid="analytics-average">
-              {summary.averageMinor === null ? "—" : money(summary.averageMinor)}
-            </dd>
-          </div>
-        </dl>
-        <p className="type-small mt-2 text-white/80">{fill(t.analytics.count, { n: summary.count })}</p>
-        {me && mine && (
-          <p className="mt-4 flex items-center gap-2.5 border-t border-white/15 pt-3.5">
-            <Avatar name={me.name} seed={me.id} photo={me.photoUrl} className="size-8 shrink-0" />
-            <span className="type-small min-w-0 flex-1">{t.analytics.yourShare}</span>
-            <span className="shrink-0 font-semibold tabular-nums">{money(mine.owedMinor)}</span>
-            <span className="type-small shrink-0 text-white/80 tabular-nums">{percent(mine.share)}</span>
-          </p>
-        )}
-      </section>
-
-      {converted && <p className="type-small text-ink-muted mt-3">{fill(t.analytics.converted, { currency: group.baseCurrency })}</p>}
-      {summary.leftOut.length > 0 && (
-        <p role="status" className="type-small border-warning/50 bg-warning/10 rounded-control mt-3 border p-3.5">
-          <span className="text-warning font-semibold">{t.analytics.leftOut} </span>
-          {summary.leftOut
-            .map((row) => fill(t.analytics.leftOutRow, { n: row.count, amount: money(row.totalMinor, row.currency) }))
-            .join("; ")}
-          . {fill(t.analytics.leftOutHint, { currency: group.baseCurrency })}
-        </p>
-      )}
-
-      {summary.count === 0 ? (
-        <p className="card text-ink-muted mt-4 p-5">{t.analytics.empty}</p>
-      ) : (
-        <>
-          {/* Spending day by day: bars to look at, and the same figures as a list for whoever cannot see them. */}
-          <div className="card mt-4 p-4">
-            <div className="flex items-center justify-between gap-3">
-              <h3 className="font-semibold">{t.analytics.byDay}</h3>
-              <span aria-hidden="true" className="bg-accent-soft text-on-accent flex size-9 items-center justify-center rounded-full">
-                <ChartColumn className="size-4.5" />
-              </span>
-            </div>
-            <div aria-hidden="true" className="mt-3 flex h-32 items-end gap-1.5">
-              {summary.byDay.map((day) => (
-                <div key={day.day} className="flex min-w-0 flex-1 flex-col items-center justify-end gap-1 self-stretch">
-                  <div
-                    className={cn(
-                      "w-full max-w-12 rounded-[8px]",
-                      day.totalMinor < 0 ? "bg-danger-fill" : Math.abs(day.totalMinor) === tallest ? "bg-primary" : "bg-accent",
-                    )}
-                    style={{ height: `${Math.max(3, Math.round((Math.abs(day.totalMinor) / tallest) * 100))}%` }}
-                  />
+      {/* With room for it (a wide screen, as in Stitch's browser version) the figures stand on the left and the split
+          by category or person beside them; in a narrow column they follow one another. */}
+      <div className="@container">
+        <div className="@2xl:grid @2xl:grid-cols-2 @2xl:items-start @2xl:gap-x-6">
+          <div className="min-w-0">
+            <section aria-label={t.analytics.total} className="bg-hero text-on-hero rounded-card mt-3 p-5">
+              <dl>
+                <div>
+                  <dt className="type-small text-white/80">{t.analytics.total}</dt>
+                  <dd className="type-amount mt-1" data-testid="analytics-total">
+                    {money(summary.totalMinor)}
+                  </dd>
                 </div>
-              ))}
-            </div>
-            <ul className="sr-only">
-              {summary.byDay.map((day) => (
-                <li key={day.day}>
-                  {formatDay(day.day, locale)}: {money(day.totalMinor)}
-                </li>
-              ))}
-            </ul>
-            <div aria-hidden="true" className="type-small text-ink-muted mt-2 flex justify-between">
-              <span>{formatDay(summary.byDay[0].day, locale)}</span>
-              {summary.byDay.length > 1 && <span>{formatDay(summary.byDay[summary.byDay.length - 1].day, locale)}</span>}
-            </div>
-          </div>
+                <div className="type-small mt-3 inline-flex flex-wrap items-center gap-x-1.5 rounded-full bg-white/10 px-3 py-1.5">
+                  <dt className="text-white/85">{t.analytics.average}:</dt>
+                  <dd className="font-semibold tabular-nums" data-testid="analytics-average">
+                    {summary.averageMinor === null ? "—" : money(summary.averageMinor)}
+                  </dd>
+                </div>
+              </dl>
+              <p className="type-small mt-2 text-white/80">{fill(t.analytics.count, { n: summary.count })}</p>
+              {me && mine && (
+                <p className="mt-4 flex items-center gap-2.5 border-t border-white/15 pt-3.5">
+                  <Avatar name={me.name} seed={me.id} photo={me.photoUrl} className="size-8 shrink-0" />
+                  <span className="type-small min-w-0 flex-1">{t.analytics.yourShare}</span>
+                  <span className="shrink-0 font-semibold tabular-nums">{money(mine.owedMinor)}</span>
+                  <span className="type-small shrink-0 text-white/80 tabular-nums">{percent(mine.share)}</span>
+                </p>
+              )}
+            </section>
 
-          <div role="radiogroup" aria-label={t.analytics.by} className="bg-surface-2 mt-4 grid grid-cols-2 gap-1 rounded-full p-1">
-            {(["category", "member"] as const).map((option) => (
-              <label
-                key={option}
-                className={cn(
-                  "type-small has-focus-visible:outline-primary flex h-11 cursor-pointer items-center justify-center rounded-full px-2 font-semibold transition-colors has-focus-visible:outline-2",
-                  by === option ? "bg-surface text-ink shadow-card" : "text-ink-muted hover:text-ink",
-                )}
+            {converted && <p className="type-small text-ink-muted mt-3">{fill(t.analytics.converted, { currency: group.baseCurrency })}</p>}
+            {summary.leftOut.length > 0 && (
+              <p role="status" className="type-small border-warning/50 bg-warning/10 rounded-control mt-3 border p-3.5">
+                <span className="text-warning font-semibold">{t.analytics.leftOut} </span>
+                {summary.leftOut
+                  .map((row) => fill(t.analytics.leftOutRow, { n: row.count, amount: money(row.totalMinor, row.currency) }))
+                  .join("; ")}
+                . {fill(t.analytics.leftOutHint, { currency: group.baseCurrency })}
+              </p>
+            )}
+
+            {summary.count === 0 && <p className="card text-ink-muted mt-4 p-5">{t.analytics.empty}</p>}
+            {summary.count > 0 && (
+              <>
+                {/* Spending day by day: bars to look at, and the same figures as a list for whoever cannot see them. */}
+                <div className="card mt-4 p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <h3 className="font-semibold">{t.analytics.byDay}</h3>
+                    <span aria-hidden="true" className="bg-accent-soft text-on-accent flex size-9 items-center justify-center rounded-full">
+                      <ChartColumn className="size-4.5" />
+                    </span>
+                  </div>
+                  <div aria-hidden="true" className="mt-3 flex h-32 items-end gap-1.5">
+                    {summary.byDay.map((day) => (
+                      <div key={day.day} className="flex min-w-0 flex-1 flex-col items-center justify-end gap-1 self-stretch">
+                        <div
+                          className={cn(
+                            "w-full max-w-12 rounded-[8px]",
+                            day.totalMinor < 0 ? "bg-danger-fill" : Math.abs(day.totalMinor) === tallest ? "bg-primary" : "bg-accent",
+                          )}
+                          style={{ height: `${Math.max(3, Math.round((Math.abs(day.totalMinor) / tallest) * 100))}%` }}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                  <ul className="sr-only">
+                    {summary.byDay.map((day) => (
+                      <li key={day.day}>
+                        {formatDay(day.day, locale)}: {money(day.totalMinor)}
+                      </li>
+                    ))}
+                  </ul>
+                  <div aria-hidden="true" className="type-small text-ink-muted mt-2 flex justify-between">
+                    <span>{formatDay(summary.byDay[0].day, locale)}</span>
+                    {summary.byDay.length > 1 && <span>{formatDay(summary.byDay[summary.byDay.length - 1].day, locale)}</span>}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+          {summary.count > 0 && (
+            <div className="min-w-0">
+              <div
+                role="radiogroup"
+                aria-label={t.analytics.by}
+                className="bg-surface-2 mt-4 grid grid-cols-2 gap-1 rounded-full p-1 @2xl:mt-3"
               >
-                <input type="radio" name="analytics-by" className="sr-only" checked={by === option} onChange={() => setBy(option)} />
-                {t.analytics.bys[option]}
-              </label>
-            ))}
-          </div>
-
-          <ul aria-label={t.analytics.bys[by]} className="mt-3 flex flex-col gap-2.5">
-            {by === "category"
-              ? summary.byCategory.map((row) => (
-                  <li key={row.category ?? "none"} className="card p-4">
-                    <div className="flex items-center gap-3">
-                      <CategoryIcon category={row.category} round />
-                      <span className="min-w-0 flex-1 font-semibold break-words">
-                        {row.category ? t.expense.categories[row.category] : t.expense.noCategory}
-                      </span>
-                      <span className="shrink-0 text-right">
-                        <span className="block font-bold tabular-nums">{money(row.totalMinor)}</span>
-                        <span className="text-ink-muted block text-[0.75rem] leading-4 tabular-nums">{percent(row.share)}</span>
-                      </span>
-                    </div>
-                    <div aria-hidden="true" className="bg-surface-2 mt-3 h-1.5 overflow-hidden rounded-full">
-                      <div className="bg-primary h-full rounded-full" style={{ width: width(row.share) }} />
-                    </div>
-                  </li>
-                ))
-              : summary.byMember.map((row) => (
-                  <li key={row.memberId} className="card p-4">
-                    <div className="flex items-center gap-3">
-                      <Avatar
-                        name={people.get(row.memberId)?.name ?? "?"}
-                        seed={row.memberId}
-                        photo={people.get(row.memberId)?.photoUrl}
-                        className="size-11 shrink-0"
-                      />
-                      <span className="min-w-0 flex-1 font-semibold break-words">{people.get(row.memberId)?.name ?? "?"}</span>
-                      <span className="shrink-0 text-right">
-                        <span className="block font-bold tabular-nums">{money(row.owedMinor)}</span>
-                        <span className="text-ink-muted block text-[0.75rem] leading-4 tabular-nums">{percent(row.share)}</span>
-                      </span>
-                    </div>
-                    <div aria-hidden="true" className="bg-surface-2 mt-3 h-1.5 overflow-hidden rounded-full">
-                      <div className="bg-primary h-full rounded-full" style={{ width: width(row.share) }} />
-                    </div>
-                  </li>
+                {(["category", "member"] as const).map((option) => (
+                  <label
+                    key={option}
+                    className={cn(
+                      "type-small has-focus-visible:outline-primary flex h-11 cursor-pointer items-center justify-center rounded-full px-2 font-semibold transition-colors has-focus-visible:outline-2",
+                      by === option ? "bg-surface text-ink shadow-card" : "text-ink-muted hover:text-ink",
+                    )}
+                  >
+                    <input type="radio" name="analytics-by" className="sr-only" checked={by === option} onChange={() => setBy(option)} />
+                    {t.analytics.bys[option]}
+                  </label>
                 ))}
-          </ul>
-          {by === "member" && <p className="type-small text-ink-muted mt-2">{t.analytics.memberHint}</p>}
-        </>
-      )}
+              </div>
+
+              <ul aria-label={t.analytics.bys[by]} className="mt-3 flex flex-col gap-2.5">
+                {by === "category"
+                  ? summary.byCategory.map((row) => (
+                      <li key={row.category ?? "none"} className="card p-4">
+                        <div className="flex items-center gap-3">
+                          <CategoryIcon category={row.category} round />
+                          <span className="min-w-0 flex-1 font-semibold break-words">
+                            {row.category ? t.expense.categories[row.category] : t.expense.noCategory}
+                          </span>
+                          <span className="shrink-0 text-right">
+                            <span className="block font-bold tabular-nums">{money(row.totalMinor)}</span>
+                            <span className="text-ink-muted block text-[0.75rem] leading-4 tabular-nums">{percent(row.share)}</span>
+                          </span>
+                        </div>
+                        <div aria-hidden="true" className="bg-surface-2 mt-3 h-1.5 overflow-hidden rounded-full">
+                          <div className="bg-primary h-full rounded-full" style={{ width: width(row.share) }} />
+                        </div>
+                      </li>
+                    ))
+                  : summary.byMember.map((row) => (
+                      <li key={row.memberId} className="card p-4">
+                        <div className="flex items-center gap-3">
+                          <Avatar
+                            name={people.get(row.memberId)?.name ?? "?"}
+                            seed={row.memberId}
+                            photo={people.get(row.memberId)?.photoUrl}
+                            className="size-11 shrink-0"
+                          />
+                          <span className="min-w-0 flex-1 font-semibold break-words">{people.get(row.memberId)?.name ?? "?"}</span>
+                          <span className="shrink-0 text-right">
+                            <span className="block font-bold tabular-nums">{money(row.owedMinor)}</span>
+                            <span className="text-ink-muted block text-[0.75rem] leading-4 tabular-nums">{percent(row.share)}</span>
+                          </span>
+                        </div>
+                        <div aria-hidden="true" className="bg-surface-2 mt-3 h-1.5 overflow-hidden rounded-full">
+                          <div className="bg-primary h-full rounded-full" style={{ width: width(row.share) }} />
+                        </div>
+                      </li>
+                    ))}
+              </ul>
+              {by === "member" && <p className="type-small text-ink-muted mt-2">{t.analytics.memberHint}</p>}
+            </div>
+          )}
+        </div>
+      </div>
     </>
   );
 }

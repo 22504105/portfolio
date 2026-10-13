@@ -91,6 +91,7 @@ export function createRemoteStore(session: () => string | null, renew: () => Pro
       await send("DELETE", `groups/${groupId}/settlements/${settlementId}`);
     },
     addRate: async (groupId, input) => (await send("POST", `groups/${groupId}/rates`, input)).id as string,
+    downloadLink: async (ask) => (await send("POST", "downloads", ask)) as { url: string; name: string },
     createReceiptExpense: async (groupId, key, input) =>
       (await send("POST", `groups/${groupId}/receipts`, { idempotencyKey: key, receipt: input })).id as string,
   };

@@ -35,6 +35,11 @@ const SCREENS: [string, string, ((page: Page) => Promise<void>)?][] = [
       await page.getByRole("button", { name: "Settle" }).first().click();
     },
   ],
+  [
+    "group: the invitation sheet",
+    "/en/demo/groups/demo-istanbul",
+    async (page) => page.getByRole("button", { name: "Invite", exact: true }).click(),
+  ],
   ["group: analytics", "/en/demo/groups/demo-flat", async (page) => page.getByRole("tab", { name: "Analytics" }).click()],
   ["group: settings", "/en/demo/groups/demo-istanbul", async (page) => page.getByRole("tab", { name: "Settings" }).click()],
   [

@@ -2,7 +2,8 @@ import "server-only";
 import { accountsConfigured, serverEnv, standalone, transaction, type Db } from "./db";
 import * as service from "./service";
 import { ServiceError } from "./service";
-import { issueSession, readSession } from "./session";
+import { fileNameOf, fileResponse, readFileAsk } from "./download";
+import { issueSession, issueTicket, readSession, readTicket } from "./session";
 import { verifyInitData } from "./telegram";
 
 // The server's API: /api/v1/…. Each request is parsed, the session read, and
@@ -102,6 +103,7 @@ async function enforce(request: Request, limit: Limit) {
   if (!(await service.allowed(standalone, limit.scope, subject, limit.max, limit.seconds))) throw new RequestError("rate_limited", 429);
 }
 
+/** What a route answers with: something to send as JSON, or (for a file) the answer itself. */
 type Route = (context: { request: Request; db: Db; parts: string[] }) => Promise<unknown>;
 
 /** method + path pattern (":x" matches one segment) → what to do. */
@@ -122,6 +124,33 @@ const ROUTES: [string, string, Route, Limit?][] = [
     { scope: "session", by: "address", max: 30, seconds: 600 },
   ],
   ["GET", "me", async ({ request, db }) => service.profile(db, sessionUser(request))],
+  // A file to take away is fetched in two steps: the page, signed in, asks for an address; the address, good for a few
+  // minutes, gives the file to whatever fetches it (Telegram's own downloader, or the phone's browser).
+  [
+    "POST",
+    "downloads",
+    async ({ request, db }) => {
+      const userId = sessionUser(request);
+      const ask = readFileAsk(await body(request));
+      if (!ask) throw new RequestError("invalid", 422);
+      // The name is worked out now, which also refuses, before any address exists, a group that is not this person's.
+      const name = await fileNameOf(db, userId, ask);
+      return { url: `/api/v1/downloads/${issueTicket(userId, ask, serverEnv().sessionSecret)}`, name };
+    },
+    { scope: "download", by: "user", max: 120, seconds: 3600 },
+  ],
+  [
+    "GET",
+    "downloads/:ticket",
+    async ({ db, parts }) => {
+      const ticket = readTicket(parts[1], serverEnv().sessionSecret);
+      const ask = ticket && readFileAsk(ticket.file);
+      // A ticket that is wrong in any way, and one for a group that is not this person's, get the same answer.
+      if (!ticket || !ask) throw new RequestError("not_found", 404);
+      return fileResponse(db, ticket.userId, ask);
+    },
+    { scope: "download.fetch", by: "address", max: 240, seconds: 3600 },
+  ],
   [
     "DELETE",
     "me",
@@ -306,7 +335,8 @@ export async function handle(request: Request, path: string[]): Promise<Response
 
   try {
     if (matched.limit) await enforce(request, matched.limit);
-    return json(await transaction((db) => matched.route({ request, db, parts: path })));
+    const answer = await transaction((db) => matched.route({ request, db, parts: path }));
+    return answer instanceof Response ? answer : json(answer);
   } catch (error) {
     if (error instanceof RequestError) return fail(error.code, error.status);
     if (error instanceof ServiceError) return fail(error.code, STATUS[error.code], error.details);
