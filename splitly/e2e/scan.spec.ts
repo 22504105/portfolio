@@ -309,3 +309,32 @@ test("the choice to translate is remembered on the device, and a name the person
   await expect(page.getByLabel("Translate the names into English")).toBeChecked();
   expect(await names(page)).toEqual(["Milk 1 l", "Chicken breast", "Bread", "Cheese", "Laundry detergent"]);
 });
+
+test("reading a receipt creates nothing: an expense exists only after the person presses the button that creates it", async ({ page }) => {
+  // The demo keeps nothing at all until something is changed, so its storage tells exactly when the first change was made.
+  const stored = () => page.evaluate(() => window.localStorage.getItem("splitly-demo-v1"));
+  await read(page, "receipt-tr", "tur");
+  await expect(page.getByRole("heading", { level: 1, name: "Check the receipt" })).toBeVisible();
+  // Read and shown for checking: nothing stored.
+  expect(await stored()).toBeNull();
+  await page.getByRole("button", { name: "Continue" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Who had what" })).toBeVisible();
+  for (const item of await page.getByRole("group").evaluateAll((groups) => groups.map((group) => group.getAttribute("aria-label")!)))
+    await page.getByRole("group", { name: item, exact: true }).getByRole("button", { name: "Everyone (4)" }).click();
+  // Checked and given out, every share worked out on screen: still nothing stored.
+  expect(await stored()).toBeNull();
+
+  // Leaving now leaves no trace of the receipt in the group.
+  await page.goto("/en/demo/groups/demo-istanbul", { waitUntil: "networkidle" });
+  await expect(page.getByRole("button", { name: /Receipt/ })).toHaveCount(0);
+  expect(await stored()).toBeNull();
+
+  // Only the button does it.
+  await read(page, "receipt-tr", "tur");
+  await page.getByRole("button", { name: "Continue" }).click();
+  for (const item of await page.getByRole("group").evaluateAll((groups) => groups.map((group) => group.getAttribute("aria-label")!)))
+    await page.getByRole("group", { name: item, exact: true }).getByRole("button", { name: "Everyone (4)" }).click();
+  await page.getByRole("button", { name: "Create the expense" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "The receipt is split!" })).toBeVisible();
+  expect(await stored()).not.toBeNull();
+});
