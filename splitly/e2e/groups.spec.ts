@@ -66,7 +66,7 @@ test("home, as in the concept: a greeting, one group on the green card, its late
 
 test("a group, as in the concept: faces, tabs, and everyone's balance with its sign", async ({ page }) => {
   await page.goto("/en/demo/groups", { waitUntil: "networkidle" });
-  await expect(page.getByRole("link", { name: /Istanbul weekend/ })).toContainText("People: 4 · Expenses: 6 · TRY");
+  await expect(page.getByRole("link", { name: /Istanbul weekend/ })).toContainText("People: 4 • Expenses: 6TRY");
   await page.getByRole("link", { name: /Flat in Moda/ }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Flat in Moda" })).toBeVisible();
   await expect(page.getByText("People: 3 • EUR")).toBeVisible();

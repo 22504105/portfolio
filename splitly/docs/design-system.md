@@ -9,6 +9,10 @@ the deep green of the concept's balance card and browser rail.
 
 All values live in `app/globals.css` as tokens. Components use the names.
 
+> Since 2026-10-13 the tokens follow the Google Stitch design: emerald `#075F4A` for buttons, forest
+> `#173D35` for the balance card, card radius 20 px, control radius 14 px. What was ported, what was
+> not, and where the design and the product disagree is in [stitch.md](stitch.md).
+
 ## Colour
 
 | Token                    | Light                 | Dark                  | Use                                   |
@@ -131,7 +135,7 @@ shows the plan; it has no controls that do nothing.
 - **Balances carry a sign and a colour** in a group's list of people
   ("+1,462.37 TRY", "-677.13 TRY"); a screen reader hears "gets back" or
   "owes". The currency is its code, not a symbol: a group can hold several.
-- **Navigation**: on a phone, Home, Groups, the plus, Analytics, Profile; on a
+- **Navigation**: on a phone, Home, Groups, the plus, Activity, Profile (since the Stitch design; Analytics is reached from Home and from each group); on a
   wide screen the rail adds Receipts and calls the profile Settings.
 - **The cover illustration** is a vector drawing made for Splitly
   (`public/illustrations/friends.svg`), sharp at any size; nothing is cut out

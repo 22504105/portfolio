@@ -67,23 +67,29 @@ export function GroupCard({ group }: { group: GroupSummary }) {
   const people = group.members.filter((member) => !member.removedAt);
   return (
     <li>
-      <Link href={`${base}/groups/${group.id}`} className="card hover:border-field flex items-center gap-3.5 p-4 transition-colors">
-        <AvatarStack people={people} max={2} className="shrink-0" />
-        <span className="min-w-0 flex-1">
-          <span className="flex items-center gap-2">
-            <span className="truncate font-semibold">{group.name}</span>
-            {group.archivedAt && (
-              <span className="type-small border-field text-ink-muted shrink-0 rounded-full border px-2 py-px">{t.groups.archived}</span>
-            )}
+      {/* Two rows, so a long name and a balance in two currencies never fight for one line. */}
+      <Link href={`${base}/groups/${group.id}`} className="card hover:border-field block p-4 transition-colors">
+        <span className="flex items-center gap-3">
+          <AvatarStack people={people} max={2} className="shrink-0" />
+          <span className="min-w-0 flex-1">
+            <span className="flex items-center gap-2">
+              <span className="truncate font-semibold">{group.name}</span>
+              {group.archivedAt && (
+                <span className="type-small border-field text-ink-muted shrink-0 rounded-full border px-2 py-px">{t.groups.archived}</span>
+              )}
+            </span>
+            <span className="text-ink-muted block truncate text-[0.75rem] leading-4">
+              {fill(t.groups.people, { n: people.length })} • {fill(t.groups.expenses, { n: group.expenseCount })}
+            </span>
           </span>
-          <span className="type-small text-ink-muted block">
-            {fill(t.groups.people, { n: people.length })} · {fill(t.groups.expenses, { n: group.expenseCount })} · {group.baseCurrency}
+          <span className="bg-surface-2 text-ink-muted shrink-0 rounded-full px-2 py-0.5 text-[0.75rem] font-medium">
+            {group.baseCurrency}
           </span>
+          <ChevronRight aria-hidden="true" className="text-ink-muted size-5 shrink-0" />
         </span>
-        <span className="shrink-0 text-right">
+        <span className="border-line mt-3 block border-t pt-3 [&_li]:justify-start">
           <MyBalance net={group.myNet} />
         </span>
-        <ChevronRight aria-hidden="true" className="text-ink-muted size-5 shrink-0" />
       </Link>
     </li>
   );
