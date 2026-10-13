@@ -11,7 +11,7 @@ import { chromium, devices } from "@playwright/test";
 import sharp from "sharp";
 
 const base = process.argv[2] ?? "http://localhost:3310";
-const out = "docs/screenshots/stitch";
+const out = process.argv[3] ?? "docs/screenshots/stitch";
 mkdirSync(out, { recursive: true });
 
 const browser = await chromium.launch({ channel: process.env.CI ? undefined : "chrome" });
