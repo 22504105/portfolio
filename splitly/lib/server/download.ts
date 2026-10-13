@@ -31,7 +31,7 @@ export async function fileNameOf(db: Db, userId: string, ask: FileAsk): Promise<
   return fileName((await service.getGroup(db, userId, ask.groupId)).name, ask.report.format);
 }
 
-async function fonts() {
+export async function fonts() {
   const font = async (name: string) => {
     const file = await readFile(join(process.cwd(), "public", "fonts", `${name}.ttf`));
     return file.buffer.slice(file.byteOffset, file.byteOffset + file.byteLength) as ArrayBuffer;
@@ -49,7 +49,11 @@ async function make(db: Db, userId: string, ask: FileAsk): Promise<MadeFile> {
 }
 
 export async function fileResponse(db: Db, userId: string, ask: FileAsk): Promise<Response> {
-  const file = await make(db, userId, ask);
+  return respond(await make(db, userId, ask));
+}
+
+/** A made file as the answer to a request: to be saved, never shown, never kept by anything in between. */
+export function respond(file: MadeFile): Response {
   // A name in plain letters for old programs, and the real one (it may be Cyrillic) for the rest.
   const plain = file.name.replace(/[^\x20-\x7E]/g, "_").replace(/["\\]/g, "_");
   return new Response(file.content as BodyInit, {

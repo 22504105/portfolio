@@ -3,6 +3,7 @@ import { accountsConfigured, serverEnv, standalone, transaction, type Db } from 
 import * as service from "./service";
 import { ServiceError } from "./service";
 import { fileNameOf, fileResponse, readFileAsk } from "./download";
+import { selfTest } from "./selftest";
 import { issueSession, issueTicket, readSession, readTicket } from "./session";
 import { verifyInitData } from "./telegram";
 
@@ -327,6 +328,8 @@ function match(method: string, parts: string[]): { route: Route; limit?: Limit }
 
 /** Handles one API request. `path` is what follows /api/v1/. */
 export async function handle(request: Request, path: string[]): Promise<Response> {
+  // A trial deployment's check of itself: answers only where it is switched on and there are no accounts at all.
+  if (path[0] === "selftest") return selfTest(request, path);
   if (!accountsConfigured()) return fail("not_configured", 503);
 
   const matched = match(request.method, path);
