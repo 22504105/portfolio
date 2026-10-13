@@ -94,37 +94,45 @@ type ExpenseRowProps = {
   names: ReadonlyMap<string, string>;
   /** Members' Telegram photos, for the payer's face. */
   photos?: ReadonlyMap<string, string | null | undefined>;
-  /** What stands at the start of the row: the payer's face (Home) or the category's picture (a group). */
-  face: "payer" | "category";
   /** A second line under the amount, and anything after it (a chevron). */
   under?: ReactNode;
   after?: ReactNode;
 };
 
-/** One expense as the concept draws it: a picture, what it was, who paid and when, and the amount. */
-export function ExpenseRow({ expense, names, photos, face, under, after }: ExpenseRowProps) {
+/**
+ * One expense as Stitch draws it: the category's picture on a tinted square
+ * with the payer's face on its corner, what it was, who paid and when, and
+ * the amount. Words only inside: it goes into a link or a button.
+ */
+export function ExpenseRow({ expense, names, photos, under, after }: ExpenseRowProps) {
   const { t, locale } = useApp();
   const live = expense.status === "active";
   const payer = expense.payers[0];
   const payerName = names.get(payer?.memberId ?? "") ?? "?";
   const paid = expense.payers.length === 1 ? payerName : fill(t.expense.paidSeveral, { n: expense.payers.length });
   return (
-    <span className="flex items-center gap-3 py-3">
-      {face === "payer" ? (
-        <Avatar name={payerName} seed={payer?.memberId} photo={photos?.get(payer?.memberId ?? "")} className="size-11" />
-      ) : (
-        <CategoryIcon category={expense.category} />
-      )}
+    <span className="flex items-center gap-3">
+      <span className="relative shrink-0">
+        <CategoryIcon category={expense.category} className="size-12 rounded-2xl" />
+        {expense.payers.length === 1 && (
+          <Avatar
+            name={payerName}
+            seed={payer?.memberId}
+            photo={photos?.get(payer?.memberId ?? "")}
+            className="ring-surface absolute -right-1 -bottom-1 size-5 ring-2"
+          />
+        )}
+      </span>
       <span className="min-w-0 flex-1 text-left">
-        <span className={cn("block font-semibold break-words", !live && "text-ink-muted line-through")}>{expense.description}</span>
-        <span className="type-small text-ink-muted block">
-          {paid} · {formatDay(expense.date, locale)}
-          {!live && <span className="text-warning font-semibold"> · {t.expense.status[expense.status as "cancelled" | "replaced"]}</span>}
-          {expense.totalMinor < 0 && <span className="font-semibold"> · {t.expense.refundTag}</span>}
+        <span className={cn("block truncate font-semibold", !live && "text-ink-muted line-through")}>{expense.description}</span>
+        <span className="text-ink-muted mt-0.5 block truncate text-[0.75rem] leading-4">
+          {paid} • {formatDay(expense.date, locale)}
+          {!live && <span className="text-warning font-semibold"> • {t.expense.status[expense.status as "cancelled" | "replaced"]}</span>}
+          {expense.totalMinor < 0 && <span className="font-semibold"> • {t.expense.refundTag}</span>}
         </span>
       </span>
-      <span className="shrink-0 text-right">
-        <span className={cn("block font-semibold tabular-nums", !live && "text-ink-muted line-through")}>
+      <span className="shrink-0 pl-1 text-right">
+        <span className={cn("block font-bold tabular-nums", !live && "text-ink-muted line-through")}>
           {formatMoney(expense.totalMinor, expense.currency, { locale })}
         </span>
         {under}
