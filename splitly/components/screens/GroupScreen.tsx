@@ -233,17 +233,14 @@ function Hero({ group }: { group: Group }) {
           </h2>
           <p className="text-[0.75rem] leading-4 text-white/70">{standing.length}</p>
         </div>
-        <ul className="no-bar -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+        <ul className="grid grid-cols-[repeat(auto-fill,minmax(5.25rem,1fr))] gap-2">
           {standing.map((member) => {
             const lines = Object.entries(nets)
               .sort(([x], [y]) => x.localeCompare(y))
               .map(([currency, byMember]) => [currency, byMember[member.id] ?? 0] as const)
               .filter(([, net]) => net !== 0);
             return (
-              <li
-                key={member.id}
-                className="flex w-[5.75rem] shrink-0 flex-col items-center gap-1 rounded-[14px] bg-white/8 px-1.5 py-2.5 text-center"
-              >
+              <li key={member.id} className="flex min-w-0 flex-col items-center gap-1 rounded-[14px] bg-white/8 px-1.5 py-2.5 text-center">
                 <Avatar
                   name={member.name}
                   seed={member.id}

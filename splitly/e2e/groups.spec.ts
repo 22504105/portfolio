@@ -36,7 +36,7 @@ test("home, as in the concept: a greeting, one group on the green card, its late
   await expect(page.getByRole("heading", { level: 1, name: "Hi, Alex!" })).toBeVisible();
 
   const card = page.getByRole("region", { name: "Istanbul weekend" });
-  await expect(card).toContainText("Total spent");
+  await expect(card).toContainText("Spent by the group");
   // 420 − 450 + 2,480 + 1,800 + 360.50 + 950: the cancelled deposit does not count.
   await expect(card).toContainText("5,560.50 TRY");
   await expect(card.getByRole("link", { name: "Add expense" })).toHaveAttribute("href", "/en/demo/add?group=demo-istanbul");
@@ -69,7 +69,7 @@ test("a group, as in the concept: faces, tabs, and everyone's balance with its s
   await expect(page.getByRole("link", { name: /Istanbul weekend/ })).toContainText("People: 4 · Expenses: 6 · TRY");
   await page.getByRole("link", { name: /Flat in Moda/ }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Flat in Moda" })).toBeVisible();
-  await expect(page.getByText("People: 3 · EUR")).toBeVisible();
+  await expect(page.getByText("People: 3 • EUR")).toBeVisible();
 
   // Rent 1,200.00 at 40 / 30 / 30, paid by Nika; internet 35.00 by you; groceries 86.40 by Sam.
   await expect(balances(page).filter({ hasText: "Nika" })).toContainText(/gets back \+799\.53\sEUR/);
@@ -293,11 +293,11 @@ test("the demo can be started over, and a group that is not there says so", asyn
 test("in Russian the same screens speak Russian, amounts included", async ({ page }) => {
   await page.goto("/ru/demo", { waitUntil: "networkidle" });
   await expect(page.getByRole("heading", { level: 1, name: "Привет, Алексей!" })).toBeVisible();
-  await expect(page.getByRole("region", { name: "Выходные в Стамбуле" })).toContainText(/Общие расходы5\s560,50\sTRY/);
+  await expect(page.getByRole("region", { name: "Выходные в Стамбуле" })).toContainText(/Общие расходы группы5\s560,50\sTRY/);
 
   await page.goto("/ru/demo/groups/demo-istanbul", { waitUntil: "networkidle" });
   await expect(page.getByRole("heading", { level: 1, name: "Выходные в Стамбуле" })).toBeVisible();
-  await expect(page.getByRole("tab")).toHaveText(["Расходы", "Долги", "Аналитика", "Настройки"]);
+  await expect(page.getByRole("tab")).toHaveText(["Расходы", "Долги1", "Аналитика", "Настройки"]);
   await expect(page.getByRole("region", { name: "Ваш баланс" })).toContainText("Вам должны");
   await expect(page.getByRole("region", { name: "Ваш баланс" })).toContainText(/1\s462,37\sTRY/);
   await main(page).getByRole("link", { name: "Добавить расход" }).click();

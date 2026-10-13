@@ -6,7 +6,8 @@ import { expect, test, type Page } from "@playwright/test";
 // The server's side is tested against a real database in tests/db/api.test.ts.
 
 const main = (page: Page) => page.getByRole("main");
-const tab = (page: Page, name: string) => page.getByRole("tab", { name, exact: true });
+/** A tab by its word; the Debts tab may carry a count of payments waiting after it. */
+const tab = (page: Page, name: string) => page.getByRole("tab", { name: new RegExp(`^${name}( \\d+)?$`) });
 const said = (page: Page, text: string) => page.getByRole("status").filter({ hasText: text });
 const overflow = (page: Page) => page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
 /** The transfers shown, as "Kerem → Alex 830.12 TRY". */
@@ -180,7 +181,11 @@ test("the expenses can be downloaded as a spreadsheet file", async ({ page }) =>
 
 test("the activity list and the analytics page look across groups", async ({ page, isMobile }) => {
   await page.goto("/en/demo", { waitUntil: "networkidle" });
-  await main(page).getByRole("link", { name: "Activity" }).click();
+  await page
+    .getByRole("navigation", { name: "Main" })
+    .filter({ visible: true })
+    .getByRole("link", { name: "Activity", exact: true })
+    .click();
   await expect(page.getByRole("heading", { level: 1, name: "Activity" })).toBeVisible();
   const events = main(page).getByRole("listitem");
   await expect(events.first()).toBeVisible();
@@ -190,7 +195,11 @@ test("the activity list and the analytics page look across groups", async ({ pag
   await events.filter({ hasText: "Rent, October" }).getByRole("link").click();
   await expect(page.getByRole("heading", { level: 1, name: "Flat in Moda" })).toBeVisible();
 
-  await page.getByRole("navigation", { name: "Main" }).filter({ visible: true }).getByRole("link", { name: "Analytics" }).click();
+  // Analytics across groups: on the rail of a wide screen, from Home on a phone.
+  await page.goto("/en/demo", { waitUntil: "networkidle" });
+  await (isMobile ? main(page) : page.getByRole("navigation", { name: "Main" }).filter({ visible: true }))
+    .getByRole("link", { name: "Analytics" })
+    .click();
   await expect(page.getByRole("heading", { level: 1, name: "Analytics" })).toBeVisible();
   await page.getByLabel("Period").selectOption("all");
   await expect(page.getByTestId("analytics-total")).toHaveText(/^5,560\.50\sTRY$/);

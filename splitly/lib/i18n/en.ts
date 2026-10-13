@@ -170,6 +170,9 @@ export const en = {
     inviteDemo: "Invitations bring in other people's Telegram accounts, and the demo has none. Here, add people by name.",
   },
   expense: {
+    haveReceipt: "Have a paper receipt?",
+    haveReceiptHint: "It is read on your device and split line by line.",
+    scan: "Scan",
     newTitle: "New expense",
     editTitle: "Change expense",
     editLead: "The old version stays on record, marked as changed.",

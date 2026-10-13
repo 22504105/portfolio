@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowDown, ArrowUp, ChevronRight, CircleCheck, Plus, ScanLine } from "lucide-react";
+import { ArrowDown, ArrowUp, ChartColumn, ChevronRight, CircleCheck, Plus, ScanLine } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { errorText, useApp, useLoad } from "@/components/app/AppProvider";
@@ -11,7 +11,7 @@ import type { GroupSummary } from "@/lib/domain/types";
 import { fill } from "@/lib/i18n";
 import { formatMoney } from "@/lib/money/amount";
 import { cn } from "@/lib/utils";
-import { ExpenseRow, MyBalance } from "./parts";
+import { ExpenseRow, MyBalance, totalNet } from "./parts";
 
 /**
  * The first screen, after Stitch's "Home": a greeting, the groups as chips,
@@ -129,6 +129,21 @@ export function HomeScreen() {
               </ul>
             </section>
           )}
+
+          {/* Every group together, each currency on its own line, and the way to the figures across groups. */}
+          <section aria-labelledby="home-balance" className="card mt-8 p-5">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <h2 id="home-balance" className="type-label text-ink-muted">
+                {t.balance.title}
+              </h2>
+              <Link href={`${base}/analytics`} className="text-primary inline-flex h-11 items-center gap-1.5 text-[0.875rem] font-semibold">
+                <ChartColumn aria-hidden="true" className="size-4" />
+                {t.nav.analytics}
+              </Link>
+            </div>
+            <MyBalance net={totalNet(groups ?? [])} large />
+            {Object.keys(totalNet(groups ?? [])).length > 1 && <p className="type-small text-ink-muted mt-4">{t.balance.apart}</p>}
+          </section>
         </>
       )}
     </>

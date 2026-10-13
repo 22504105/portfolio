@@ -34,13 +34,14 @@ test("every place in the navigation opens its screen and is marked as current", 
   // The bar at the bottom on a phone, the column on the left elsewhere: whichever is showing.
   const nav = page.getByRole("navigation", { name: "Main" }).filter({ visible: true });
   await expect(nav).toHaveCount(1);
-  // The concept's places: four and the plus on a phone; on a wide screen the rail adds receipts and calls the profile "Settings".
+  // Stitch's places: four and the plus on a phone; on a wide screen the rail adds analytics and receipts and calls the profile "Settings".
   const places = [
     ["Groups", "/en/demo/groups", "Groups"],
-    ["Analytics", "/en/demo/analytics", "Analytics"],
+    ["Activity", "/en/demo/activity", "Activity"],
     ...(isMobile
       ? [["Profile", "/en/demo/profile", "Profile"]]
       : [
+          ["Analytics", "/en/demo/analytics", "Analytics"],
           ["Receipts", "/en/demo/scan", "Scan a receipt"],
           ["Settings", "/en/demo/profile", "Profile"],
         ]),

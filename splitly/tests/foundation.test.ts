@@ -145,10 +145,10 @@ describe.each([
 });
 
 describe("the palette", () => {
-  it("keeps the brief's colours where they pass, and says where it had to move", () => {
+  it("keeps the Stitch colours where they pass, and says where it had to move", () => {
     expect([light.canvas, light.primary, light.accent, light.ink, light.line]).toEqual([
       "#f8f7f3",
-      "#173d35",
+      "#075f4a",
       "#b9e4c9",
       "#232826",
       "#e5e9e3",

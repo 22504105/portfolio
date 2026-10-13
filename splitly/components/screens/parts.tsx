@@ -124,7 +124,7 @@ export function ExpenseRow({ expense, names, photos, under, after }: ExpenseRowP
         )}
       </span>
       <span className="min-w-0 flex-1 text-left">
-        <span className={cn("block truncate font-semibold", !live && "text-ink-muted line-through")}>{expense.description}</span>
+        <span className={cn("line-clamp-2 font-semibold break-words", !live && "text-ink-muted line-through")}>{expense.description}</span>
         <span className="text-ink-muted mt-0.5 block truncate text-[0.75rem] leading-4">
           {paid} • {formatDay(expense.date, locale)}
           {!live && <span className="text-warning font-semibold"> • {t.expense.status[expense.status as "cancelled" | "replaced"]}</span>}
