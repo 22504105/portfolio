@@ -1,0 +1,471 @@
+[
+  {
+    "id": "316ce7a1a59b",
+    "url": "https://lh3.googleusercontent.com/aida/AEtjO1XZPWgZtMpCeKV2rdstVEma0htOBM2xesdMSZaAKPHXzjCb4WyhQCryNfioTQlkMX7YmuHKXncaOXv_v2ybbesIjFU49WGh5mtDVcE8Lqv-Px-lwATnbsuRosyCihY-9WvYYOS28-8JFPWgV9bB9RPJJRu59AodGqWuGRVJVRka79IpXffLN8GAOU8roEKxv1R11CopTYwmlvVZxEmhcMLF7s49z9keLyQCOj5zx-6G75UkaAsrR8b3dA",
+    "screens": [
+      "01_APPROVED_SCREENS/01_welcome",
+      "01_APPROVED_SCREENS/02_home_2",
+      "01_APPROVED_SCREENS/04_quest_details"
+    ],
+    "file": "316ce7a1a59b.jpg",
+    "contentType": "image/jpeg",
+    "bytes": 148350,
+    "width": 1376,
+    "height": 768,
+    "alpha": false,
+    "sameAsArchive": null,
+    "error": null
+  },
+  {
+    "id": "7fcd196e09a2",
+    "url": "https://lh3.googleusercontent.com/aida/AEtjO1XLlMHMp41YaPCVTqXIkTxW4fwf2zviXu61bI6EcEYnuVtS13Y6Df_3dKbw5fEqVFMEZqpi6GBFoLurC0RYhUvixVfZdaL0VNztFqiUARlXG2rSAMVHyw6AsOeYQFpRYUdFqOmB50CcvSahTtLMfEwmiXmOCg3DmQnsyXfNZNu02PAlTIo8QrcDr1nllNGdcP5BdeQMssm8U4sl5zpxF-FXl5nTOu4W2kb39_TolmiHldjE0qORNK4dQUU",
+    "screens": [
+      "01_APPROVED_SCREENS/01_welcome",
+      "01_APPROVED_SCREENS/02_home_2",
+      "01_APPROVED_SCREENS/11_profile_2",
+      "01_APPROVED_SCREENS/13_wardrobe_2",
+      "01_APPROVED_SCREENS/14_arcane_shop_2",
+      "01_APPROVED_SCREENS/15_inventory",
+      "03_EXPERIMENTS/01_welcome_animated_mystic_fog"
+    ],
+    "file": "7fcd196e09a2.jpg",
+    "contentType": "image/jpeg",
+    "bytes": 91579,
+    "width": 1024,
+    "height": 1024,
+    "alpha": false,
+    "sameAsArchive": null,
+    "error": null
+  },
+  {
+    "id": "92d312fab547",
+    "url": "https://lh3.googleusercontent.com/aida/AEtjO1XTKtvjiJwap1VHMHzogqeHUcKtkjmoI0NIsMRXmlv4cWSbqh0SGcu437hddimBQWMoAQtwxnoW8zndVerMemYdwJxBj5eeYphU4TB2wLjcRK7X9vcVXMBtQelMH6bI9FOeUQEaj5arQTDav-kM1QL9AQiZMFKxD7CIfLVawxz807WDRuNZvi4iJK100GoIWMpVecuvkwD7e0B76Ha4K6HyoYjpnHXRCvYIKTCDutOTazz78j3tQjzVzg",
+    "screens": [
+      "01_APPROVED_SCREENS/02_home_2",
+      "01_APPROVED_SCREENS/08_quick_quests"
+    ],
+    "file": "92d312fab547.jpg",
+    "contentType": "image/jpeg",
+    "bytes": 140243,
+    "width": 1024,
+    "height": 1024,
+    "alpha": false,
+    "sameAsArchive": null,
+    "error": null
+  },
+  {
+    "id": "a290d89b186d",
+    "url": "https://lh3.googleusercontent.com/aida/AEtjO1WOe05y4T7NpZNOVZ4L4g4qNHyVcUDF8Xip3ByVCfxpLwaumoFoIajzaCemt_-TUbsfB02pmu_d3Bf0UKF6K78c50u9SihmWmeD2Acu8EkI4bRzpmUtv2xS-DeBBKjebvUf8geu6eqm251TbreAQpiXTuoS4sZmWXnZ71Uqweh_GhxqGxArfi7383BYAQXdJudnT3JUZM5h3pmDTxIByiadbquJnCw_sXiwMGWTlmmomFdg6z6VtE_eux0",
+    "screens": [
+      "01_APPROVED_SCREENS/02_home_2",
+      "01_APPROVED_SCREENS/08_quick_quests",
+      "01_APPROVED_SCREENS/14_arcane_shop_2",
+      "02_STORY_STATES/05_story_player_4",
+      "02_STORY_STATES/05_story_player_never_2"
+    ],
+    "file": "a290d89b186d.jpg",
+    "contentType": "image/jpeg",
+    "bytes": 152526,
+    "width": 1024,
+    "height": 1024,
+    "alpha": false,
+    "sameAsArchive": null,
+    "error": null
+  },
+  {
+    "id": "9730a0f4d74f",
+    "url": "https://lh3.googleusercontent.com/aida/AEtjO1VTFXdGxgKALD2XwkHccCewBeYfVjSO3mtFmM2AEbHsqqcvbndhERgAWRop8Q_5noCUaKhBCxmatqa1cLGsc9tWz2vVNZ2wyK20HYKHeZE5GTuVb1R1IXl3QllPGf481dMq6ELSuvgbZ9wqFq5PZPVyspE0GfrjIRzMhXkeuQmSsbRMGWuDcXI-EG5MQ2Ph3nUy186qOCJ3jVek_CQ08YjtCv58-QaUsVlIm46djEoSpFf5K62iCD230A",
+    "screens": [
+      "01_APPROVED_SCREENS/03_story_map"
+    ],
+    "file": "9730a0f4d74f.jpg",
+    "contentType": "image/jpeg",
+    "bytes": 72103,
+    "width": 1024,
+    "height": 1024,
+    "alpha": false,
+    "sameAsArchive": null,
+    "error": null
+  },
+  {
+    "id": "443694f1801e",
+    "url": "https://lh3.googleusercontent.com/aida-public/AB6AXuCn9JZJMXg6ecDw2hvfF3w_gjOzl_4v2GoVpagDV5VWaZ2eb8wzuePeIODfMwiwqk3tzH1NKNQsegBQu98cTM89wj6VkjhkBkI1G3dAaTj_Y7ofGakE6rrNITH8TOp6TXrOW95vXEVZ639gT0jllkZG5U-thGn-I6IfpJIOf9UEobSq6lMnps7udxji8ekxODU6hLjAHZAWwgz8UZgbFzjc1WA5pq_Mg2kBjWREADyrsjnTUpLC-JuK",
+    "screens": [
+      "01_APPROVED_SCREENS/05_story_player_2",
+      "02_STORY_STATES/05_story_player_50_xp"
+    ],
+    "file": "443694f1801e.jpg",
+    "contentType": "image/jpeg",
+    "bytes": 167132,
+    "width": 1408,
+    "height": 768,
+    "alpha": false,
+    "sameAsArchive": null,
+    "error": null
+  },
+  {
+    "id": "d34d9e5f738a",
+    "url": "https://lh3.googleusercontent.com/aida-public/AB6AXuD0jI-nhlYDHmcEtbztZ8O0cUV1zvmEf-9r64rQqkSPksiVzrv7XLm_uOOXbFR-SF_G7QDxU0VK4AusiW1-kW1zJL0X_UL5iTeICL_McaYtBZBzSgcNRxEI4GE_HHuFC_1uPPMmqk47HdZTc3i1_67gETT1QI4xIDCA4NUr47wRuq7bEjy1PREUwMlLUuw7KIPrQhn9MJBkgCl_OMUkDR9g3BDBSu_a2E23BfYeKhLSz2zK37602f0I",
+    "screens": [
+      "01_APPROVED_SCREENS/06_interactive_puzzle"
+    ],
+    "file": "d34d9e5f738a.jpg",
+    "contentType": "image/jpeg",
+    "bytes": 147697,
+    "width": 1408,
+    "height": 768,
+    "alpha": false,
+    "sameAsArchive": null,
+    "error": null
+  },
+  {
+    "id": "002ff321e18d",
+    "url": "https://lh3.googleusercontent.com/aida-public/AB6AXuC1xNGCXaTZYkftJsK0yZnMuf_djccevXBViLaNMWmiO32H-nQxQGgIVK3q9yyHFM5QTF_oc0sLSFAYFPGmslabyP52pFoplcI3Lok1xI7jpwQ0oayBXDO89b8inykCdzMynjv45PX6CgtSmgF-Fl32h7KuZ4Qer3Amtn1tmZj_4bmWT-bevXfeWHbJ_-CzLnU7fvDUPwivQUS-qce8FSdMHwMr-X_N-5mxbuPB38GQwAExr1LG6Cmq",
+    "screens": [
+      "01_APPROVED_SCREENS/07_evidence_journal_2"
+    ],
+    "file": "002ff321e18d.jpg",
+    "contentType": "image/jpeg",
+    "bytes": 150117,
+    "width": 1408,
+    "height": 768,
+    "alpha": false,
+    "sameAsArchive": null,
+    "error": null
+  },
+  {
+    "id": "9585267193e0",
+    "url": "https://lh3.googleusercontent.com/aida-public/AB6AXuCNKDoFe7pqyo_CcerOipkUiyHWTQGZf0A8adMajR76kI5DAJw-6K1A8rGxiHjwk56VCMYTYSdAe8cJSASO91f7rAYWgdXSJHtCl_Qvxf7DQsfjLNI6BOlbGMgl-tvXf1KjdjHI7w6wQ7vQWpL6yIQFYuiTs7jov1OYfO0TKKMotYVrk_blxE9KcCyRYqmsmpWXpVTVhwN2j4YVeLYEMMwUIdd_ZdA-sZ6xRAwpN7Oz7CUXo5NRulGB",
+    "screens": [
+      "01_APPROVED_SCREENS/07_evidence_journal_2",
+      "03_EXPERIMENTS/07_evidence_journal_3d_artifact_interactive"
+    ],
+    "file": "9585267193e0.jpg",
+    "contentType": "image/jpeg",
+    "bytes": 114130,
+    "width": 1408,
+    "height": 768,
+    "alpha": false,
+    "sameAsArchive": null,
+    "error": null
+  },
+  {
+    "id": "52bfe43014ee",
+    "url": "https://lh3.googleusercontent.com/aida/AEtjO1WbpNE7uz7tcHs8kfnURKZjTTNLObw-zkyC35e4GP2UuE6d-WSK8j5kaPNbvbZuhpzxM6ivZ4GDO74HepT_PG1SouujhX-dn5jcIwMAYq_gkvFARIbGDM1MotqjeNoCSh3845bdTHUhA_oRKk78qUKqmaYYoIQk3DMTcOUalqGLepSh5F268YrOoQbGyfycvwMzFBL8DKF_HcQPVJ2OOZlfEMLvNEyDr1y2n_OqPY9NlqcNossY9dLlFMk",
+    "screens": [
+      "01_APPROVED_SCREENS/08_quick_quests",
+      "02_STORY_STATES/05_story_player_never_2"
+    ],
+    "file": "52bfe43014ee.jpg",
+    "contentType": "image/jpeg",
+    "bytes": 123067,
+    "width": 1024,
+    "height": 1024,
+    "alpha": false,
+    "sameAsArchive": null,
+    "error": null
+  },
+  {
+    "id": "4b34593af1d6",
+    "url": "https://lh3.googleusercontent.com/aida-public/AB6AXuCN3V3VnlRgpROm4Dan7Hw7SefV954wlILg4NES6NTYwZ90Ea2yffRBrSLRF7t7-7y-uquwDGsW0wwBDfgTnsGhcELYF1yVj6Q_jkDj9iWL3PJzMnvJ0Z7Jazarjdm9s8f3hgq9RYkVZrXCT70SxsjCv3nW9QuXI4l-onH0UkxS3wbrgEEwOyEEe8UeYJWICJ7-CSRCAS6REryt7f0x5sATrzSc7klV1AUZBqemBJ01PD-WZUVsscu3",
+    "screens": [
+      "01_APPROVED_SCREENS/09_daily_discovery"
+    ],
+    "file": "4b34593af1d6.jpg",
+    "contentType": "image/jpeg",
+    "bytes": 183278,
+    "width": 1376,
+    "height": 768,
+    "alpha": false,
+    "sameAsArchive": null,
+    "error": null
+  },
+  {
+    "id": "f31dae9d1f10",
+    "url": "https://lh3.googleusercontent.com/aida-public/AB6AXuBClHoG7dbz22vjTFYGRvpiVi0ZA7MuwPumLXfkEFXBI6pYvireDdGaX4vxqf9rpZApBMkKz2_if2L7a3XKMV46shVN1ybRUZh7z015wT2jVyV8BixV5zrhh00pgteRvXuMrltl4p5Lam6uCM7xehQfjSF9kS4TBTgNwzPzSpPBSwU72DsAf1rDkA6DFJEtiB37ZdW-OyA6q450ELJEIx1NOCtGJNbDZBhxxpPBu8IAC4UEBWytKUEV",
+    "screens": [
+      "01_APPROVED_SCREENS/10_rewards",
+      "03_EXPERIMENTS/10_rewards_animated_arcane_seal"
+    ],
+    "file": "f31dae9d1f10.jpg",
+    "contentType": "image/jpeg",
+    "bytes": 174292,
+    "width": 1408,
+    "height": 768,
+    "alpha": false,
+    "sameAsArchive": null,
+    "error": null
+  },
+  {
+    "id": "a3cd602120bc",
+    "url": "https://lh3.googleusercontent.com/aida-public/AB6AXuBoGz1Xh7torzJ2CS9vWMIVqrSOL99EZpeTgG65-vEAIMF2TMP0Em-ThjiDLL9KHwUQKWflntvbzjpuG3Bc8wiUyBAT7GWatUD_sfA0QrsOnZUxZzrXjGhTChtCAv2rlrCUe-WqGMu09a1pI8kKq0HUCRtQ72m9HXM8ADBW9KACeVnckO5mPAwi45TTwavAxOX7yLWR3sDuar1_Xz6_jVTrj0WFqDUH2hrd6XAfK5GmjnZTUtEUkvpo1a_s0RybVI78Bg",
+    "screens": [
+      "01_APPROVED_SCREENS/12_character_select",
+      "03_EXPERIMENTS/12_character_select_arcane_circle"
+    ],
+    "file": "a3cd602120bc.png",
+    "contentType": "image/png",
+    "bytes": 1549699,
+    "width": 1536,
+    "height": 1024,
+    "alpha": false,
+    "sameAsArchive": "questling-v2/04_VISUAL_REFERENCES/02_approved_cute_characters.png/screen.png",
+    "error": null
+  },
+  {
+    "id": "c78f31153e30",
+    "url": "https://lh3.googleusercontent.com/aida-public/AB6AXuB_GJTsyTB9f79sa8BIchHSJHYFmAUDA6-0tEzzDdJJKderBHzbdzUoVdGdxWXHWJJJlYN192FH329kZL2R1hzPZMmiYxmgd6NfKz_493N7JbnN0zxjH3zZMqef3zwwi2s_oa3ZswY5qGJu4byb-tk3J04ajdR18Gda2Sv-YvOnbKQW0qYMYG_osJWFW-VtE8cGgg--GWCk-FGebD8UJAyr1lX3j9BwhzNwrUqf34VvhCkguNZZCHJH",
+    "screens": [
+      "01_APPROVED_SCREENS/12_character_select",
+      "03_EXPERIMENTS/12_character_select_arcane_circle"
+    ],
+    "file": "c78f31153e30.jpg",
+    "contentType": "image/jpeg",
+    "bytes": 72105,
+    "width": 1024,
+    "height": 1024,
+    "alpha": false,
+    "sameAsArchive": null,
+    "error": null
+  },
+  {
+    "id": "9366a3ebb5a6",
+    "url": "https://lh3.googleusercontent.com/aida-public/AB6AXuDWv2Kdsv0RTCv9AK7HXb_IYYrAn9jEiLupOX-mHUpT6di7llP2OJ3fL9IJZBm9uR8hdifwz3ZMv9PnOChsAHPdyfWXLcDcRrCxUR9ZnxiKVLzZEWhKES7ae31a23h1sepy7mcrSX7Q42JFxVZs7Fkvi-2yhIAxFF6shMaOBhbVMgxCM6YC01B9RGyRipG3nGC4aqp_u2ZOknTxNYRLcVj1NIvYAit60qbKc6KSMFP3gwQqaxxeGhfc",
+    "screens": [
+      "01_APPROVED_SCREENS/16_teacher_dashboard"
+    ],
+    "file": "9366a3ebb5a6.jpg",
+    "contentType": "image/jpeg",
+    "bytes": 106393,
+    "width": 1408,
+    "height": 768,
+    "alpha": false,
+    "sameAsArchive": null,
+    "error": null
+  },
+  {
+    "id": "84189b0d0435",
+    "url": "https://lh3.googleusercontent.com/aida-public/AB6AXuCBCbpyECiWGBQamliqO2997lZuqEffq7SksxzwFegsUmuLVNxWEV5JFSUOrjv5RjBESRY_yy4gDZyHAGNfP4gmuDg0PogTHggZOuhy9eiLlJj_IuRkzY3RSUdxory-CcN5OZnQBUI6CHXIHs4bEO9CxqVguCMFtICdciffVshd4CC-wchRKbfmuSKAE-LujA_6_vHurxtAdDZu2BKmhT7NlhOMG-fTtzO1XbPM1PAFfDfJPYrwChSo",
+    "screens": [
+      "01_APPROVED_SCREENS/16_teacher_dashboard"
+    ],
+    "file": "84189b0d0435.jpg",
+    "contentType": "image/jpeg",
+    "bytes": 124161,
+    "width": 768,
+    "height": 1376,
+    "alpha": false,
+    "sameAsArchive": null,
+    "error": null
+  },
+  {
+    "id": "547d13c42bae",
+    "url": "https://lh3.googleusercontent.com/aida-public/AB6AXuA8m2h4_Y-etb8B-ki0HreGKTiA76a3GUznoJ_Y-99rryBt0T0Exda4B6iNnUJctlPYLGM1KtystGYQ0SmQSt52gq3RiMv4Z8a5u-7nfw7q7cOfgx3Q-bC_uId84PCnDidwtpZXPNs6CSEx5aT9v1Pd8lWryxtpLGjQWdDpkbLMtiE39uy9dkxnVmzBLREm1KfCYn8DoywrDbcUHVs416Yej0YfgJZ9wS50s_6JP27fBc6iYHqT9Ok4",
+    "screens": [
+      "01_APPROVED_SCREENS/16_teacher_dashboard"
+    ],
+    "file": "547d13c42bae.jpg",
+    "contentType": "image/jpeg",
+    "bytes": 127536,
+    "width": 1024,
+    "height": 1024,
+    "alpha": false,
+    "sameAsArchive": null,
+    "error": null
+  },
+  {
+    "id": "0a6dbaca2110",
+    "url": "https://lh3.googleusercontent.com/aida-public/AB6AXuBrjTz01T3kV8R00Mh1EMoAaLiwtPwolAagfxRC9iWjqRhZNboDX80xLOjbeFOPYHqaAvp-4bsZXMkawRiIj98X5sn99ub3jf-zbkYz4vMX1KKBktOrfPQynlWFCgz0U_cRIqUcxy2aHAYSg6LGL87fDBVeyx0SSkPq5_8AS2Iufww5VGGcFP39WMO237qzCsz5gc-sTixbnMQXJZCJUNdOLvw74lWwSBeYR3k1-SPz_Fc_uNMRI7pT",
+    "screens": [
+      "01_APPROVED_SCREENS/16_teacher_dashboard"
+    ],
+    "file": "0a6dbaca2110.jpg",
+    "contentType": "image/jpeg",
+    "bytes": 167405,
+    "width": 1024,
+    "height": 1024,
+    "alpha": false,
+    "sameAsArchive": null,
+    "error": null
+  },
+  {
+    "id": "ff0ba56375bf",
+    "url": "https://lh3.googleusercontent.com/aida-public/AB6AXuByeoi3TQQr8Mt4_mYkwBrHgjvXFwEepfGmrGENdXtOyZ8smo1YQfeAwW51j_y9mKqN9xtnSesyhU_cXvMZ6lip8rn7mg4nmEUyi_jGhg0H7sfxvlz0ZBoxJKtUE8zPk_hlfxXqUirsYWuav_HvODTPUlEyd3tp8dT9c8UOdWhXBy00N611eGZHCobb3vU_160AUcb7jKANQAYN_Zfj7jgYYG7onEa20KYhIjpwt03cd9zpXA8PDTNn",
+    "screens": [
+      "01_APPROVED_SCREENS/17_group_management"
+    ],
+    "file": "ff0ba56375bf.jpg",
+    "contentType": "image/jpeg",
+    "bytes": 108883,
+    "width": 1024,
+    "height": 1024,
+    "alpha": false,
+    "sameAsArchive": null,
+    "error": null
+  },
+  {
+    "id": "7cc8cc19de77",
+    "url": "https://lh3.googleusercontent.com/aida-public/AB6AXuCyqTrhNst7j8eCY264FWzlST9yA_5Hav9zwbjikJUAPtyG6qPBZYuYC7iVJ453YqBIEjmDh7COmQPyoRmn_IASgHQ6gn5Js0Amf1V8u7Shytq4xyEM6i63gDAMtM1VLj-CVhq70xUvQrLDwIDPhg0vQ81LZhzigvpP4KfAqsEvEqBuOH6sbf3jGDW9qucs35-AL6W6-388OOauwNAyQX-fyrQD2axHDxJk74iDnENIsjgAoaYKgl_u",
+    "screens": [
+      "01_APPROVED_SCREENS/17_group_management"
+    ],
+    "file": "7cc8cc19de77.jpg",
+    "contentType": "image/jpeg",
+    "bytes": 155927,
+    "width": 1408,
+    "height": 768,
+    "alpha": false,
+    "sameAsArchive": null,
+    "error": null
+  },
+  {
+    "id": "7da39dcc0e1f",
+    "url": "https://lh3.googleusercontent.com/aida-public/AB6AXuBS0XCYcDX-GtB4afRbJoQa50J62TyvdfaK5Byxvyp4cVSv-3XSIWN-YRLZtLqdQ23-8IklEVuUZwwJMaJfQUm7u6IUuTIVTxHkQOF7KdDOz1Jd_zj1QxTKH2mUIBd_pHEu3XJ6VKoCyV0LSPcKmsJTNtgJcmnNLw2ucbwaWYpOhjYS7XBD3jQp1Y1wMuZKHC04M04NqV1RbvNyQVpIeR2-LSopg3rkm5JkPo5xn2_4IKFG3blO9TLX",
+    "screens": [
+      "01_APPROVED_SCREENS/17_group_management"
+    ],
+    "file": "7da39dcc0e1f.jpg",
+    "contentType": "image/jpeg",
+    "bytes": 153633,
+    "width": 1408,
+    "height": 768,
+    "alpha": false,
+    "sameAsArchive": null,
+    "error": null
+  },
+  {
+    "id": "af4a04c786de",
+    "url": "https://lh3.googleusercontent.com/aida-public/AB6AXuBz7ncNr5qorwnGHFWktAYfcMNcea0BbQQR7evN0KAVcsk6AuD3Azqgt3BVFxb2O_4o1k4tZlLQkqyVJehW7GF_lFgVPdfdo-1GCVJtPpwSH-TswKONufKWtBGapc2AK3eRVAat2rBtPFfdI-8HiaTtrgfnU8WE13MthWpi9AaUY8eUXeG2dH8MiZloNWR6eFji5cjBRMkjN6kG0-3xis_BCLzwBxvn2eOGtihvZAvhDelufo8Qqg_h",
+    "screens": [
+      "01_APPROVED_SCREENS/17_group_management"
+    ],
+    "file": "af4a04c786de.jpg",
+    "contentType": "image/jpeg",
+    "bytes": 147381,
+    "width": 1408,
+    "height": 768,
+    "alpha": false,
+    "sameAsArchive": null,
+    "error": null
+  },
+  {
+    "id": "b8c20053a68a",
+    "url": "https://lh3.googleusercontent.com/aida-public/AB6AXuDJjAj8omEB2k0SKI223SXMID9nYhje8rAcf1XkyIHmh4DDD_r6aR8IKPwTruNUJvMz3oGwBN5S3sJaPI74yd6yjsjdxjEw_ORqdba5UahpSMlBHt-7-0uXkvwgV766n_zp3GvyCLnyyALifH-3C_rSoXTBGS6IJ6WY9aydt6WaD0L1Nb2A3cTkhLTpViHmhpaj_9QfytT5-pwRwbo8GWbSarFsHxiZTQQwDPg3AzdiMptNwpZlEwBz",
+    "screens": [
+      "01_APPROVED_SCREENS/17_group_management"
+    ],
+    "file": "b8c20053a68a.jpg",
+    "contentType": "image/jpeg",
+    "bytes": 180775,
+    "width": 1408,
+    "height": 768,
+    "alpha": false,
+    "sameAsArchive": null,
+    "error": null
+  },
+  {
+    "id": "2d11217df3fd",
+    "url": "https://lh3.googleusercontent.com/aida-public/AB6AXuB39wQ0KeV89g-ErlYf_u7elfRObe2Q_G2Nn4w9hFRunEdRmaiOeJK7rZ5EunSW1qV_iyRqKWqzSj2raPh0xjw6WpH9mklsETvPpdBRUCnIvJGpXgLB_Ho1NA3VUB4QCT5wqJxnqbITJYLI1hlqE61Yv7SssP-296Yt7g294A8HQGPmD3t480DK3aUXi1yszhI_1zB4TwaII9diXvmQ2AyYb2hyl0T9P0AjNpl1mxFsnz3GUiTwW7aa",
+    "screens": [
+      "01_APPROVED_SCREENS/17_group_management"
+    ],
+    "file": "2d11217df3fd.jpg",
+    "contentType": "image/jpeg",
+    "bytes": 147140,
+    "width": 1408,
+    "height": 768,
+    "alpha": false,
+    "sameAsArchive": null,
+    "error": null
+  },
+  {
+    "id": "3ea1bccff5f8",
+    "url": "https://lh3.googleusercontent.com/aida-public/AB6AXuB7VWfsr-5W4ouBp6ER1qhRijBVtkx8tlVb0rLXMHewSAK-js-LT9vGeMDcXzoicYZnF4nNmBJ0uAUqFiO76EbMGjWKse4txiZMZCLSRn09vtCodaenb42gFv1cRhEOzDSEBTT9KiQe4zn2wiOXJfEc-SosvFGsudQS6YzffKNfqE5ItTdJoBKo9KTFlTe9pzb2372PmtKiMaFDscluC-K4DQsWAra1gN31H_f8W16vo7JoYYX8wqBe",
+    "screens": [
+      "01_APPROVED_SCREENS/17_group_management"
+    ],
+    "file": "3ea1bccff5f8.jpg",
+    "contentType": "image/jpeg",
+    "bytes": 201441,
+    "width": 1408,
+    "height": 768,
+    "alpha": false,
+    "sameAsArchive": null,
+    "error": null
+  },
+  {
+    "id": "d6b4976d6129",
+    "url": "https://lh3.googleusercontent.com/aida-public/AB6AXuBLAliQwLLdYU9K5oXjIxqTVG-1M0D3zpnXv408-Mb66x6UG5XWogdRSrlTHfgGF4TsfaBYXCjiryep_9DaOV-W1Vl2OOmBf3QoGBe4ESkOyJWgTcesLECd8l2StFT5sB8EE2TmCQdKCJtTYKlAXHtx9OjyMoEtby5IEmEX-Z-6g8lV4BoBqUavas2JhTECtRU_8MF_CqrvfzrhhNUnATX1g2jn3hVkeBqTGqXzuhXsvByHJ7cEAbcM",
+    "screens": [
+      "01_APPROVED_SCREENS/19_story_library"
+    ],
+    "file": "d6b4976d6129.jpg",
+    "contentType": "image/jpeg",
+    "bytes": 136474,
+    "width": 1376,
+    "height": 768,
+    "alpha": false,
+    "sameAsArchive": null,
+    "error": null
+  },
+  {
+    "id": "3c813b951c2c",
+    "url": "https://lh3.googleusercontent.com/aida-public/AB6AXuADBgEhiEnahWIasVbAZmE2zMjL154IBcWmEeuzvzpbOOUjJZgdftW4CL9UkPtb72e8AmwjIoQiLIH-Dd58mTqiYQ-UHo_dQQx0kWEIP1N9Yf9ZrgfSO9DKJVF8VAsi_iTHr36Sj_tMGULbsoI-1hYcU1-voSvkWsNrsFUKMUy4-Z_bZMxy5i2SMugEI0MFsl3qpFi7zI0Vl_nY1K9PfCA-6c3ZJ8J50ugyRX1Z07MxBj8RW6yG5SCv",
+    "screens": [
+      "01_APPROVED_SCREENS/19_story_library"
+    ],
+    "file": "3c813b951c2c.jpg",
+    "contentType": "image/jpeg",
+    "bytes": 172771,
+    "width": 1408,
+    "height": 768,
+    "alpha": false,
+    "sameAsArchive": null,
+    "error": null
+  },
+  {
+    "id": "dbca6857d6a8",
+    "url": "https://lh3.googleusercontent.com/aida-public/AB6AXuA2Gt7ChmXPf5t-tqHXSpr6oRFQW9YoPG5MezME7sVuZyrA2vfb8scLV4JLAZ9lUmEl41h9MGqXzVxDq-PCXLu-f3boeu6Si-gD6CQ_GcQazVXAMuR7dSaHp0fgqQWhlAGn_7Ri2vh6aKSSZP9SKtWo2oSE86nRVaEllPMxKL6t78QlZGVmyogBZ6Res8QY9FxRxAdLPlfmgcnz8XOGJIOkn5WQQjbATbXswCwXSZBMCiHtEp_j1--n",
+    "screens": [
+      "01_APPROVED_SCREENS/19_story_library"
+    ],
+    "file": "dbca6857d6a8.jpg",
+    "contentType": "image/jpeg",
+    "bytes": 153589,
+    "width": 1408,
+    "height": 768,
+    "alpha": false,
+    "sameAsArchive": null,
+    "error": null
+  },
+  {
+    "id": "b78b17cb856d",
+    "url": "https://lh3.googleusercontent.com/aida-public/AB6AXuBpkBOe_nxQoBZ4DHlY4qcO1oPJZ_fEBMq_HLsWf5-Fb_BwLFSBwQCYVf433l47GNGQYBf1WMz8UpcZ1C1-ubM9LSXPBF9YUGLO7hyGuKVTRcuI9bv1KiFlE2mI9b16W0DsY8aedDZGyy8ysTVGCdtb8hlD8yaYpHDHLrq4qONIQG9IMFpVqp4FaLnXejxieZ6C-fUDsK-Ln7-PxpAyYPEZKf331hzpqQt7e3jpJaAnM3DuxCYAt61g",
+    "screens": [
+      "02_STORY_STATES/05_story_player_3"
+    ],
+    "file": "b78b17cb856d.jpg",
+    "contentType": "image/jpeg",
+    "bytes": 144833,
+    "width": 1408,
+    "height": 768,
+    "alpha": false,
+    "sameAsArchive": null,
+    "error": null
+  },
+  {
+    "id": "8230a717bfa9",
+    "url": "https://lh3.googleusercontent.com/aida-public/AB6AXuCfQEucwz9v1yyeyVtljBWPcBPMreflwsCyneSH2gGHPaWXHuAqAgoiQnH8xF6BJrO8niYX4Kc48Jo1jBV6LNxLkCBlp4ttskZ6KJNxwZ54uj3Y-kHn4mUOav0uQtUji75QfxwqTTopyacxLYUPkBSszWi1jL9Qe78Pru2iAYYwaAVpKPKkZJH5yVcS9UbsjoVrL3kYeupU_H9p0Mry_Xri2BF0pPDqsAGNKwmeI6w1aKpvjDXN4kSQ",
+    "screens": [
+      "02_STORY_STATES/05_story_player_4"
+    ],
+    "file": "8230a717bfa9.jpg",
+    "contentType": "image/jpeg",
+    "bytes": 182048,
+    "width": 1408,
+    "height": 768,
+    "alpha": false,
+    "sameAsArchive": null,
+    "error": null
+  }
+]

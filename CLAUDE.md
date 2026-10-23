@@ -386,6 +386,39 @@
   - CSP: `frame-ancestors` разрешает только Telegram; `X-Frame-Options` не ставить — он не умеет
     «только эти сайты» и сломает Telegram Web.
 
+## Questling (questling): постоянные инструкции
+
+- **Источник требований** — `questling/QUESTLING_CLAUDE_CODE_MASTER_PROMPT.txt` (мастер-промпт с
+  гейтами). Макеты Stitch — два ZIP в `questling/` и их распаковка в `questling/design-source/`
+  (в git не идут). Карта «экран → маршрут» — `docs/design-screen-map.md`, ассеты —
+  `docs/ASSET_AUDIT.md`, архитектура — `docs/architecture.md`.
+- **Гейты**: только по явной команде владельца, после гейта отчёт и остановка. Ветки
+  `questling/gate-NN`. Гейт 1 (каркас, Home, плеер истории) сделан 2026-10-23 в
+  `questling/gate-01`, ждёт ревью; в `main` не влит, не задеплоен.
+- **Открытые решения владельца**: какой проект Supabase занять (`docs/architecture.md`), заголовки в шапках макетов
+  (скопированы между экранами), единая нижняя навигация, картинки со впечатанным интерфейсом.
+- **Стек** — как у Splitly (Next 16.4.2, React 19, Tailwind v4, точные версии). Проверка из
+  `questling/`: `npm run typecheck`, `npx eslint .`, `npx vitest run`, `npx playwright test`
+  (порт 3300, сам собирает). Визуальная сверка — `npm run visual` против `npx next start -p 3100`,
+  результаты и известные расхождения — `docs/visual-qa/README.md` (PNG в git не идут).
+- **Демо** живёт под `/demo` с плашкой «Демо»; ответы в демо проверяются в браузере, в настоящем
+  прогоне — на сервере (ключ ответов отдельно от узла, `lib/story`).
+- **Грабли**:
+  - next/font добавляет к шрифту запасной Times New Roman, растянутый на 137 %: у шрифтов без
+    кириллицы (Cinzel, Gelasio) русский текст выходил на треть крупнее. Их в CSS называть по имени,
+    не через переменную next/font. `adjustFontFallback: false` Next 16 игнорирует.
+  - Цитаты на пергаменте в макетах — Georgia (видно на screen.png, не в code.html): вместо неё
+    Gelasio, метрический двойник.
+  - Иконки — подмножество настоящего шрифта Material Symbols (`scripts/build-icons.mjs`, перед
+    dev/build). Иконку, имя которой приходит из данных, добавлять в union-тип `…Icon` в `lib/`,
+    иначе её не будет в шрифте. SVG-набор вместо шрифта рисует тоньше — не возвращаться.
+  - Класс `.material-symbols-outlined` — в `@layer base`, иначе он перебивает размеры и цвета утилит.
+  - Tailwind v3 → v4: `backdrop-blur-sm`→`xs`, `shadow-sm`→`xs`; цвет рамок по умолчанию возвращён
+    в gray-200.
+  - Картинки в code.html — ссылки lh3; 29 из 30 есть только там (`npm run assets:fetch`).
+  - `networkidle` на страницах приложения не наступает из-за prefetch ссылок: ждать `load`.
+  - `npm audit` без `--omit=dev` показывает 5 «high» в зависимостях линтера — как в Splitly, не трогать.
+
 ## NOVA Residence: постоянные инструкции
 
 - **Источник требований** — `nova-residence/docs/brief.md` (Master Prompt + Multi-Agent
