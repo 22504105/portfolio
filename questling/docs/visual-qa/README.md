@@ -12,20 +12,30 @@ at 390×844, captures the full page, and writes four images per screen:
 The script needs a running production build (`npm run build && npx next start -p 3100`; `--base` points
 it elsewhere). The images are regenerated, not hand-edited.
 
-## Results (Gate 1, Next 16.4.2, Chrome, 2026-10-23)
+## Results (Gate 1, Next 16.4.2, Chrome, 2026-10-24)
+
+The Russian routes are compared, since the exports are in Russian. The English screens use the same
+components; `e2e/gate1.spec.ts` checks that they fit every phone width.
 
 | Screen | Export | App route | Size | Differing pixels |
 |---|---|---|---|---|
-| `home` | `01_APPROVED_SCREENS/02_home_2` | `/demo/home` | 390×844 | 0.00% |
-| `player` | `01_APPROVED_SCREENS/05_story_player_2` | `/demo/play`, option selected | 390×902 | 1.36% |
-| `player-correct` | `02_STORY_STATES/05_story_player_50_xp` | `/demo/play`, after a correct check | 390×1045 | 1.89% |
-| `player-incorrect` | `02_STORY_STATES/05_story_player_3` | `/demo/play`, after a wrong check | 390×1304 | 4.72% |
+| `home` | `01_APPROVED_SCREENS/02_home_2` | `/ru/demo/home` | 390×844 | 0.00% |
+| `profile` | `01_APPROVED_SCREENS/11_profile_2` | `/ru/demo/profile` | 390×1435 | 1.90% |
+| `player` | `01_APPROVED_SCREENS/05_story_player_2` | `/ru/demo/play`, option selected | 390×902 | 1.68% |
+| `player-correct` | `02_STORY_STATES/05_story_player_50_xp` | `/ru/demo/play`, after a correct check | 390×1045 | 2.15% |
+| `player-incorrect` | `02_STORY_STATES/05_story_player_3` | `/ru/demo/play`, after a wrong check | 390×1304 | 4.94% |
 
 Page heights match the exports exactly on every screen, so no block is missing, added or resized.
 
 ## Known deltas
 
 All remaining differences are accounted for; none is a layout difference.
+
+- **Owner's decisions of 2026-10-24** (`docs/design-screen-map.md`, conflicts 1 and 6):
+  - the header names the screen in the interface language: "Задание" instead of "Quest Details" on the
+    story player, "Профиль" instead of "Profile" on the profile;
+  - every main screen has Home's bottom bar; the profile's own bar (castle, menu_book, sports_esports,
+    shield_person) is replaced.
 
 - **Parchment quote and explanations — Gelasio instead of Georgia.** The approved screenshots render
   these in Georgia, which is not free to serve. Gelasio is its metric-compatible free twin: same advance

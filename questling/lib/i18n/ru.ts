@@ -1,0 +1,81 @@
+// Interface texts in Russian: the wording of the approved Stitch screens. en.ts has the same keys.
+// Story content (clues, answers, explanations) is not here: it is data, see lib/demo.
+
+const days = { one: "{n} день", few: "{n} дня", many: "{n} дней", other: "{n} дня" };
+
+export const ru = {
+  meta: {
+    description: "Английский через тёмное фэнтези: истории, загадки и улики в Telegram.",
+    demoTitle: "{page} — Questling (демо)",
+  },
+  demo: { badge: "Демо" },
+  nav: { home: "Главная", story: "Сюжет", quests: "Квесты", profile: "Профиль" },
+  common: { back: "Назад", profile: "Профиль", days },
+  home: {
+    title: "Главная",
+    notifications: "Уведомления",
+    levelShort: "Ур.",
+    streak: "Серия",
+    gold: "Золото",
+    xp: "Опыт",
+    continue: "Продолжить",
+    worldMap: "Карта мира",
+    dailyQuests: "Ежедневные квесты",
+    allQuests: "Все квесты",
+    wordOfTheDay: "Слово дня",
+    pronounce: "Слушать произношение",
+  },
+  player: {
+    title: "Задание",
+    options: "Варианты ответа",
+    check: "Проверить ответ",
+    checking: "Проверяем…",
+    checkFailed: "Не удалось проверить ответ. Проверь соединение и попробуй ещё раз.",
+    rewardChip: "Награда за разгадку улик",
+    clueOf: "Улика {n} из {total}",
+    clues: "Улики",
+    correct: "Верно!",
+    solved: "Тайна разгадана",
+    journalTitle: "Улика внесена в Журнал",
+    journalText: "«{title}» разблокировано в вашем инвентаре расследования.",
+    nextClue: "К следующей улике",
+    attempt: "Попытка {used} из {max}",
+    mode: "Интерактивный перевод и дедукция",
+    chooseAgainNeeded: "Требуется повторный выбор",
+    fragment: "Manuscript Fragment",
+    whereIsKey: "Где спрятан ключ?",
+    chooseAgain: "Выберите заново",
+    wrong: "НЕВЕРНО",
+    archivistHint: "✦ Подсказка Архивариуса ✦",
+    retry: "Попробовать снова",
+    showTranslation: "Перечитать манускрипт с переводом",
+    hideTranslation: "Скрыть перевод",
+  },
+  profile: {
+    title: "Профиль",
+    level: "Уровень {level} • {school}",
+    goldUnit: "золота",
+    streakUnit: "в огне серии",
+    progress: "Учебный прогресс",
+    demoData: "Учебные показатели являются демонстрационными данными архива",
+    quickAccess: "Быстрый доступ",
+    wardrobe: "Мой гардероб и снаряжение",
+    inventory: "Инвентарь артефактов",
+    group: "Моя группа: «{name}»",
+    mentor: "Наставник: {name}",
+    settings: "Настройки и Telegram ID",
+    linkedAccount: "Связанный аккаунт: @{username} (ID #{id})",
+  },
+  settings: {
+    title: "Настройки",
+    language: "Язык интерфейса",
+    languageNote: "Истории и улики остаются на английском — его вы и учите.",
+    /** Each language named in this one; the switch shows it under the language's own name when they differ. */
+    languageNames: { ru: "Русский", en: "Английский" },
+    telegram: "Telegram",
+    linkedAccount: "Связанный аккаунт",
+    account: "@{username} (ID #{id})",
+  },
+};
+
+export type Dictionary = typeof ru;

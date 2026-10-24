@@ -15,13 +15,14 @@ deltas (see `docs/visual-qa/README.md`), `ok` accepted.
 | `02_home_2` | `/home` | Hero panel (character, level, streak, coins, XP), featured story card, daily quests, word of the day, bottom nav | ui | diff 0.00% | 1 |
 | `03_story_map` | `/map` | Vertical quest path with locked/complete locations | — | — | 3 |
 | `04_quest_details` | `/quests/[questId]` | Quest intro, learning goals, rewards, start/resume | — | — | 2 |
-| `05_story_player_2` | `/play/[runId]` — `StoryPlayer` | Question node: clue parchment, three options, one selected, "Проверить ответ" | ui | diff 1.36% | 1 |
+| `05_story_player_2` | `/play/[runId]` — `StoryPlayer` | Question node: clue parchment, three options, one selected, "Проверить ответ" | ui | diff 1.68% | 1 |
 | `06_interactive_puzzle` | `StoryPlayer` puzzle node (`PuzzleNode`) | Word-order cipher: slots + word bank, hint, check | — | — | 3 |
 | `07_evidence_journal_2` | `/journal` | Collected clues list, clue detail, progress | — | — | 3 |
 | `08_quick_quests` | `/quests` | Daily/assigned short activities with progress and rewards | — | — | 2 |
 | `09_daily_discovery` | `/discovery` | Word of the day (IPA, translation, example), fact, mini quiz | — | — | 2 |
 | `10_rewards` | `/rewards` | Chests, achievements with progress, economy feedback | — | — | 2 |
-| `11_profile_2` | `/profile` | Character preview, level, stats, quick links | — | — | 2 |
+| `11_profile_2` | `/profile` | Character preview, level, stats, quick links | ui (demo) | diff 1.90% | 1 (demo), 2 |
+| — (no screen) | `/settings` | Interface language (ru/en), linked Telegram account. Built only from parts of approved screens; reached from the profile row "Настройки и Telegram ID" | ui (demo) | — | 1 (demo), 2 |
 | `12_character_select` | `/onboarding/character` | Six free starting characters, confirm | — | — | 2 |
 | `13_wardrobe_2` | `/wardrobe` | Full-body preview, slot tabs, item grid, equip/save | — | — | 4 |
 | `14_arcane_shop_2` | `/shop` | Featured item with preview, categories, catalogue, buy | — | — | 4 |
@@ -34,9 +35,9 @@ One runtime engine (`lib/story/engine.ts`), one component (`StoryPlayer`). The f
 
 | Source folder | Engine state | What the screen shows | Impl | Visual QA |
 |---|---|---|---|---|
-| `05_story_player_2` (approved) | `answering` (option selected, not yet checked) | Stepper 2/5 active, selected option glows gold, CTA "Проверить ответ", reward chip +50 XP | ui | diff 1.36% |
-| `05_story_player_50_xp` | `correct` → reward granted | Correct option in green with "ВЕРНО!" and explanation, wrong ones struck out, "Тайна разгадана +50 XP", "Улика внесена в Журнал", CTA "К следующей улике" | ui | diff 1.89% |
-| `05_story_player_3` | `incorrect` (attempt 1 of 2 used, retry allowed) | Red step, "Попытка 1 из 2", wrong option with explanation, "Подсказка архивариуса", CTA "Попробовать снова" | ui | diff 4.72% |
+| `05_story_player_2` (approved) | `answering` (option selected, not yet checked) | Stepper 2/5 active, selected option glows gold, CTA "Проверить ответ", reward chip +50 XP | ui | diff 1.68% |
+| `05_story_player_50_xp` | `correct` → reward granted | Correct option in green with "ВЕРНО!" and explanation, wrong ones struck out, "Тайна разгадана +50 XP", "Улика внесена в Журнал", CTA "К следующей улике" | ui | diff 2.15% |
+| `05_story_player_3` | `incorrect` (attempt 1 of 2 used, retry allowed) | Red step, "Попытка 1 из 2", wrong option with explanation, "Подсказка архивариуса", CTA "Попробовать снова" | ui | diff 4.94% |
 | `05_story_player_4` | `exhausted` (all attempts used, quest paused) | "Попытки исчерпаны (2 из 2)", "Пауза квеста", help paths: ask the teacher, grimoire; back to library | — | — |
 | `05_story_player_never_2` | `grimoire` sheet over `exhausted` | Bottom sheet "Гримуар знаний": grammar rule, deduction, a mini quiz; on success "+1 попытка восстановлена", CTA "Применить знание и разгадать" | — | — |
 
@@ -92,3 +93,20 @@ where marked.
    (castle, menu_book, sports_esports, shield_person). Story Map: the third tab is "Игры" and the icons
    are shield/map/sports_esports/person. The remaining student screens have no `<nav>` element in the
    export. Each route renders the nav of its own screenshot; unifying them needs an owner decision.
+
+## Owner's decisions (2026-10-24, "ок по всем")
+
+- **Conflict 1, header titles:** each screen is named after itself, in the interface language:
+  `09_daily_discovery` and `15_inventory` stop saying "Puzzle Chamber", `10_rewards` stops saying
+  "Profile", `08_quick_quests` stops saying "Games Quests", the story player and its states say
+  "Задание" / "Quest" instead of "Quest Details".
+- **Conflict 6, bottom navigation:** one bar on every main screen, Home's (Главная / Сюжет / Квесты /
+  Профиль with Home's icons). Screens in the middle of an activity (welcome, quest details, story
+  player, puzzle, journal, daily discovery, character select, wardrobe, inventory) keep having none.
+  The story map's "Игры" tab and the shop's "Лавка" tab go; the shop is reached from the profile.
+- **Conflict 5, images with UI baked in:** none of them ships. The error state keeps the clean library
+  picture; the others get clean illustrations from the archives or newly generated ones without text.
+- **No new design.** Only what the approved screens show is used. A screen that has no export
+  (settings) is put together from pieces of approved screens, nothing else.
+- **Two interface languages, Russian and English.** The language is the first part of the address
+  (`/ru/…`, `/en/…`); the switch is on the settings screen. Story content (clues, answers) stays English.

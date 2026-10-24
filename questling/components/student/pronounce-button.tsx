@@ -9,7 +9,7 @@ import { useSyncExternalStore } from "react";
 const subscribe = () => () => {};
 const hasSpeech = () => typeof window !== "undefined" && "speechSynthesis" in window;
 
-export function PronounceButton({ word }: { word: string }) {
+export function PronounceButton({ word, label }: { word: string; label: string }) {
   const supported = useSyncExternalStore(subscribe, hasSpeech, () => true);
 
   function speak() {
@@ -26,7 +26,7 @@ export function PronounceButton({ word }: { word: string }) {
       type="button"
       onClick={speak}
       disabled={!supported}
-      aria-label="Слушать произношение"
+      aria-label={label}
       className="border-magicViolet/40 text-magicViolet flex h-6 w-6 items-center justify-center rounded-full border bg-[#272338] transition-colors hover:text-white disabled:opacity-40"
     >
       <svg className="h-3.5 w-3.5 fill-current" viewBox="0 0 24 24">

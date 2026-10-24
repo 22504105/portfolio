@@ -5,8 +5,8 @@
 // our own site. Google Fonts cuts the subset (`icon_names`); the result is stored
 // with the list it was made for, so builds only go online when the list changes.
 //
-// An icon is used when a component says <Icon name="…">, or when a lib type named
-// `…Icon` lists names as a string union (icons chosen by data).
+// An icon is used when a component says <Icon name="…">, or when a type named `…Icon`
+// lists names as a string union (icons chosen by data or passed to a component as a prop).
 // Run: npm run icons   (also before dev, build and typecheck)
 import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
@@ -27,19 +27,16 @@ async function walk(dir) {
 }
 
 const wanted = new Set();
-for (const dir of ["app", "components"]) {
+for (const dir of ["app", "components", "lib"]) {
   for (const file of await walk(path.join(root, dir))) {
     const code = await readFile(file, "utf8");
     for (const tag of code.matchAll(/<Icon\b[^>]*?>/g)) {
       const name = tag[0].match(/\bname="([a-z0-9_]+)"/)?.[1];
       if (name) wanted.add(name);
     }
-  }
-}
-for (const file of await walk(path.join(root, "lib"))) {
-  const code = await readFile(file, "utf8");
-  for (const union of code.matchAll(/type\s+\w*Icon\s*=\s*([^;]+);/g)) {
-    for (const name of union[1].matchAll(/"([a-z0-9_]+)"/g)) wanted.add(name[1]);
+    for (const union of code.matchAll(/type\s+\w*Icon\s*=\s*([^;]+);/g)) {
+      for (const name of union[1].matchAll(/"([a-z0-9_]+)"/g)) wanted.add(name[1]);
+    }
   }
 }
 

@@ -4,8 +4,10 @@
 import Link from "next/link";
 import { useReducer, useState, useTransition } from "react";
 import { Icon } from "@/components/ui/icon";
+import { fill, type Dictionary } from "@/lib/i18n";
 import { canCheck, initialState, reduce, type QuestionState } from "@/lib/story/engine";
 import type { GradeResult, QuestionNode } from "@/lib/story/types";
+import { BackHeader } from "./back-header";
 
 // The story player for a question node. Ported from the Stitch story-player screens:
 //   answering — 01_APPROVED_SCREENS/05_story_player_2
@@ -20,6 +22,7 @@ import type { GradeResult, QuestionNode } from "@/lib/story/types";
 export type Grader = (nodeId: string, optionId: string) => Promise<GradeResult>;
 
 type Props = {
+  t: Dictionary;
   node: QuestionNode;
   grade: Grader;
   hint: { topic: string; text: string };
@@ -29,7 +32,7 @@ type Props = {
   nextHref: string;
 };
 
-export function StoryPlayer({ node, grade, hint, clueTranslation, backHref, profileHref, nextHref }: Props) {
+export function StoryPlayer({ t, node, grade, hint, clueTranslation, backHref, profileHref, nextHref }: Props) {
   const [state, dispatch] = useReducer((s: QuestionState, a: Parameters<typeof reduce>[2]) => reduce(node, s, a), node, initialState);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -42,16 +45,18 @@ export function StoryPlayer({ node, grade, hint, clueTranslation, backHref, prof
       try {
         dispatch({ type: "graded", result: await grade(node.id, optionId) });
       } catch {
-        setError("Не удалось проверить ответ. Проверь соединение и попробуй ещё раз.");
+        setError(t.player.checkFailed);
       }
     });
   }
 
   return (
     <div className="bg-background font-body-md text-body-md text-on-surface flex min-h-dvh flex-col antialiased" data-phase={state.phase}>
-      <Header backHref={backHref} profileHref={profileHref} />
+      {/* The approved screens say "Quest Details" here; the owner chose real screen names (conflict 1). */}
+      <BackHeader title={t.player.title} backHref={backHref} profileHref={profileHref} t={t} />
       {state.phase === "incorrect" ? (
         <IncorrectView
+          t={t}
           node={node}
           state={state}
           hint={hint}
@@ -64,7 +69,7 @@ export function StoryPlayer({ node, grade, hint, clueTranslation, backHref, prof
           <div className="flex w-full flex-col">
             <StoryHeading node={node} />
             <Scene node={node} />
-            <Stepper node={node} solved={state.phase === "correct"} />
+            <Stepper t={t} node={node} solved={state.phase === "correct"} />
             <div className="mb-space-sm px-margin text-center">
               <p className="font-body-md text-body-md text-text-ivory leading-relaxed">
                 {node.prompt.lead}
@@ -74,9 +79,9 @@ export function StoryPlayer({ node, grade, hint, clueTranslation, backHref, prof
             </div>
             <Parchment text={node.clue.text} />
             {state.phase === "correct" ? (
-              <CorrectOptions node={node} state={state} />
+              <CorrectOptions t={t} node={node} state={state} />
             ) : (
-              <div className="mb-space-xl gap-space-sm px-margin flex flex-col" role="radiogroup" aria-label="Варианты ответа">
+              <div className="mb-space-xl gap-space-sm px-margin flex flex-col" role="radiogroup" aria-label={t.player.options}>
                 {node.options.map((option) => {
                   // An option already answered wrong stays listed but can no longer be chosen.
                   if (state.eliminated.includes(option.id)) return <RuledOutOption key={option.id} option={option} />;
@@ -116,14 +121,14 @@ export function StoryPlayer({ node, grade, hint, clueTranslation, backHref, prof
                 })}
               </div>
             )}
-            {state.phase === "correct" ? <RewardCard node={node} xp={state.xpGranted} /> : null}
+            {state.phase === "correct" ? <RewardCard t={t} node={node} xp={state.xpGranted} /> : null}
             <div className="px-margin pb-space-lg flex flex-col items-center">
               {state.phase === "correct" ? (
                 <Link
                   href={nextHref}
                   className="font-label-md text-label-md flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-b from-[#e4c285] to-[#b99a61] font-semibold tracking-wider text-[#271900] uppercase shadow-[0_6px_24px_rgba(185,154,97,0.45)] transition-all hover:brightness-105 active:scale-[0.98] motion-safe:animate-pulse"
                 >
-                  <span>К следующей улике</span>
+                  <span>{t.player.nextClue}</span>
                   <Icon name="arrow_forward" className="text-[20px]" />
                 </Link>
               ) : (
@@ -136,7 +141,7 @@ export function StoryPlayer({ node, grade, hint, clueTranslation, backHref, prof
                     aria-busy={pending}
                     className="font-label-md text-label-md flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-b from-[#e4c285] to-[#b99a61] font-semibold tracking-wider text-[#271900] uppercase shadow-[0_6px_20px_rgba(185,154,97,0.35)] transition-transform active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    <span>{pending ? "Проверяем…" : "Проверить ответ"}</span>
+                    <span>{pending ? t.player.checking : t.player.check}</span>
                     <Icon name="chevron_right" className="text-[18px]" />
                   </button>
                   {error ? (
@@ -148,7 +153,7 @@ export function StoryPlayer({ node, grade, hint, clueTranslation, backHref, prof
                     <Icon name="explore" filled className="text-primary text-[18px]" />
                     <span className="font-label-md text-label-md text-primary font-medium tracking-wide">+{node.reward.xp} XP</span>
                     <span className="text-text-muted text-[10px]">✦</span>
-                    <span className="font-caption text-caption text-text-muted">Награда за разгадку улик</span>
+                    <span className="font-caption text-caption text-text-muted">{t.player.rewardChip}</span>
                   </div>
                 </>
               )}
@@ -157,31 +162,6 @@ export function StoryPlayer({ node, grade, hint, clueTranslation, backHref, prof
         </main>
       )}
     </div>
-  );
-}
-
-function Header({ backHref, profileHref }: { backHref: string; profileHref: string }) {
-  return (
-    <header className="bg-surface/85 pt-safe fixed top-0 z-50 w-full shadow-[0_4px_20px_rgba(0,0,0,0.4)] backdrop-blur-xl">
-      <div className="px-margin mx-auto flex h-16 w-full max-w-[420px] items-center justify-between">
-        <div className="gap-space-xs flex items-center">
-          <Link
-            href={backHref}
-            aria-label="Назад"
-            className="text-primary hover:text-text-ivory flex h-11 w-11 items-center justify-center rounded-full transition-colors"
-          >
-            <Icon name="arrow_back_ios_new" className="text-[24px]" />
-          </Link>
-          {/* "Quest Details" is the approved screens' title; see docs/design-screen-map.md, conflict 1. */}
-          <h1 className="font-headline-md text-headline-md text-text-ivory max-w-[210px] truncate tracking-wide">Quest Details</h1>
-        </div>
-        <div className="gap-space-sm flex items-center">
-          <Link href={profileHref} aria-label="Профиль" className="bg-primary flex h-8 w-8 items-center justify-center rounded-full">
-            <Icon name="person" className="text-on-primary text-[18px]" />
-          </Link>
-        </div>
-      </div>
-    </header>
   );
 }
 
@@ -219,7 +199,7 @@ function Scene({ node }: { node: QuestionNode }) {
   );
 }
 
-function Stepper({ node, solved }: { node: QuestionNode; solved: boolean }) {
+function Stepper({ t, node, solved }: { t: Dictionary; node: QuestionNode; solved: boolean }) {
   const steps = Array.from({ length: node.clue.total }, (_, i) => i + 1);
   // Once solved, the current clue counts as done and the next one is the active step.
   const done = solved ? node.clue.index : node.clue.index - 1;
@@ -228,14 +208,14 @@ function Stepper({ node, solved }: { node: QuestionNode; solved: boolean }) {
       <div className="mb-space-sm text-text-muted flex items-center gap-1.5">
         <span className="text-primary text-[9px]">✦</span>
         <span className="font-caption text-caption text-on-surface-variant font-medium tracking-wider uppercase">
-          Улика {node.clue.index} из {node.clue.total}
+          {fill(t.player.clueOf, { n: node.clue.index, total: node.clue.total })}
         </span>
         <span className="text-primary text-[9px]">✦</span>
       </div>
       <div
         className="px-space-sm flex w-full max-w-[270px] items-center justify-center"
         role="progressbar"
-        aria-label="Улики"
+        aria-label={t.player.clues}
         aria-valuemin={0}
         aria-valuemax={node.clue.total}
         aria-valuenow={done}
@@ -309,7 +289,7 @@ function Parchment({ text }: { text: string }) {
   );
 }
 
-function CorrectOptions({ node, state }: { node: QuestionNode; state: QuestionState }) {
+function CorrectOptions({ t, node, state }: { t: Dictionary; node: QuestionNode; state: QuestionState }) {
   return (
     <div className="mb-space-xl gap-space-sm px-margin flex flex-col">
       {node.options.map((option) =>
@@ -328,7 +308,7 @@ function CorrectOptions({ node, state }: { node: QuestionNode; state: QuestionSt
                   <div className="flex items-center gap-2">
                     <span className="font-title-sm text-title-sm text-text-ivory tracking-wide">{option.label}</span>
                     <span className="bg-status-success/20 text-status-success flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wider uppercase">
-                      <Icon name="done_all" className="text-[12px]" /> Верно!
+                      <Icon name="done_all" className="text-[12px]" /> {t.player.correct}
                     </span>
                   </div>
                   <span className="font-caption text-caption text-text-muted">{option.gloss}</span>
@@ -375,7 +355,7 @@ function RuledOutOption({ option }: { option: QuestionNode["options"][number] })
   );
 }
 
-function RewardCard({ node, xp }: { node: QuestionNode; xp: number }) {
+function RewardCard({ t, node, xp }: { t: Dictionary; node: QuestionNode; xp: number }) {
   return (
     <div className="mb-space-lg px-margin">
       <div
@@ -386,7 +366,7 @@ function RewardCard({ node, xp }: { node: QuestionNode; xp: number }) {
         <div className="mb-2 flex items-center justify-between">
           <div className="flex items-center gap-1.5">
             <span className="text-primary text-[10px]">✦</span>
-            <span className="font-label-sm text-label-sm text-primary font-semibold tracking-widest uppercase">Тайна разгадана</span>
+            <span className="font-label-sm text-label-sm text-primary font-semibold tracking-widest uppercase">{t.player.solved}</span>
             <span className="text-primary text-[10px]">✦</span>
           </div>
           <div className="border-status-success/40 bg-status-success/20 flex items-center gap-1 rounded-full border px-2.5 py-0.5">
@@ -399,10 +379,8 @@ function RewardCard({ node, xp }: { node: QuestionNode; xp: number }) {
             <Icon name="menu_book" className="text-[20px]" />
           </div>
           <div className="flex flex-col">
-            <span className="font-title-sm text-title-sm text-text-ivory">Улика внесена в Журнал</span>
-            <p className="font-caption text-caption text-text-muted mt-0.5">
-              «{node.clue.title}» разблокировано в вашем инвентаре расследования.
-            </p>
+            <span className="font-title-sm text-title-sm text-text-ivory">{t.player.journalTitle}</span>
+            <p className="font-caption text-caption text-text-muted mt-0.5">{fill(t.player.journalText, { title: node.clue.title })}</p>
           </div>
         </div>
       </div>
@@ -411,6 +389,7 @@ function RewardCard({ node, xp }: { node: QuestionNode; xp: number }) {
 }
 
 function IncorrectView({
+  t,
   node,
   state,
   hint,
@@ -418,6 +397,7 @@ function IncorrectView({
   onSelect,
   onRetry,
 }: {
+  t: Dictionary;
   node: QuestionNode;
   state: QuestionState;
   hint: { topic: string; text: string };
@@ -446,7 +426,7 @@ function IncorrectView({
           <h2 className="font-headline-xl-mobile text-headline-xl-mobile text-text-ivory leading-tight tracking-wide">{node.storyTitle}</h2>
           <p className="font-caption text-caption text-text-muted flex items-center gap-1.5">
             <Icon name="auto_stories" className="text-primary text-[14px]" />
-            Интерактивный перевод и дедукция
+            {t.player.mode}
           </p>
         </div>
         <div className="bg-surface-container-lowest relative h-44 w-full overflow-hidden rounded-xl shadow-lg">
@@ -458,20 +438,18 @@ function IncorrectView({
           </div>
           <div className="bg-error-container/80 font-caption text-caption text-on-error-container absolute top-3 right-3 flex items-center gap-1 rounded-full px-2.5 py-1 backdrop-blur-md">
             <Icon name="history" className="text-[13px]" />
-            <span>
-              Попытка {state.attemptsUsed} из {node.maxAttempts}
-            </span>
+            <span>{fill(t.player.attempt, { used: state.attemptsUsed, max: node.maxAttempts })}</span>
           </div>
         </div>
 
         <div className="gap-space-sm bg-surface-container p-space-md flex flex-col rounded-xl shadow-md">
           <div className="font-caption text-caption text-text-muted flex items-center justify-between">
             <span className="text-primary font-semibold tracking-wider uppercase">
-              ✦ Улика {node.clue.index} из {node.clue.total} ✦
+              ✦ {fill(t.player.clueOf, { n: node.clue.index, total: node.clue.total })} ✦
             </span>
             <span className="text-error flex items-center gap-1 font-medium">
               <span className="bg-status-error h-1.5 w-1.5 rounded-full motion-safe:animate-ping"></span>
-              Требуется повторный выбор
+              {t.player.chooseAgainNeeded}
             </span>
           </div>
           <div className="flex w-full items-center justify-between pt-1">
@@ -505,7 +483,7 @@ function IncorrectView({
         <div className="p-space-lg relative w-full overflow-hidden rounded-xl bg-[#D9C49B] text-[#231D15] shadow-[0_10px_28px_rgba(0,0,0,0.65)]">
           <div className="flex items-center justify-between pb-1 text-[12px] opacity-60">
             <span>✦</span>
-            <span className="font-georgia text-[11px] font-semibold tracking-widest uppercase">Manuscript Fragment</span>
+            <span className="font-georgia text-[11px] font-semibold tracking-widest uppercase">{t.player.fragment}</span>
             <span>✦</span>
           </div>
           <div className="py-space-sm flex flex-col items-center text-center">
@@ -517,15 +495,15 @@ function IncorrectView({
           </div>
           <div className="flex items-center justify-between pt-1 text-[12px] opacity-60">
             <span>✦</span>
-            <span className="font-caption text-caption tracking-wider text-[#483B2A]">Где спрятан ключ?</span>
+            <span className="font-caption text-caption tracking-wider text-[#483B2A]">{t.player.whereIsKey}</span>
             <span>✦</span>
           </div>
         </div>
 
         <div className="gap-space-sm flex flex-col">
           <div className="flex items-center justify-between px-1">
-            <span className="font-label-md text-label-md text-text-ivory">Варианты ответа</span>
-            <span className="font-caption text-caption text-text-muted">Выберите заново</span>
+            <span className="font-label-md text-label-md text-text-ivory">{t.player.options}</span>
+            <span className="font-caption text-caption text-text-muted">{t.player.chooseAgain}</span>
           </div>
           {wrong ? (
             <div className="bg-surface-container-high p-space-md flex flex-col rounded-xl shadow-md transition-all">
@@ -537,7 +515,7 @@ function IncorrectView({
                   <span className="font-title-sm text-title-sm text-text-ivory line-through opacity-75">{wrong.label}</span>
                 </div>
                 <span className="bg-error-container font-caption text-caption text-on-error-container rounded-sm px-2 py-0.5 font-semibold tracking-wider">
-                  НЕВЕРНО
+                  {t.player.wrong}
                 </span>
               </div>
               <div className="font-body-md text-body-md text-error mt-2.5 bg-transparent pt-2 pl-9 leading-relaxed">
@@ -571,7 +549,7 @@ function IncorrectView({
           <div className="flex items-center justify-between">
             <div className="text-secondary flex items-center gap-1.5">
               <Icon name="psychology" className="text-[20px]" />
-              <span className="font-label-sm text-label-sm font-semibold tracking-wider uppercase">✦ Подсказка Архивариуса ✦</span>
+              <span className="font-label-sm text-label-sm font-semibold tracking-wider uppercase">{t.player.archivistHint}</span>
             </div>
             <span className="bg-surface font-caption text-caption text-secondary-fixed-dim rounded-full px-2 py-0.5 font-medium">
               {hint.topic}
@@ -588,7 +566,7 @@ function IncorrectView({
             onClick={onRetry}
             className="from-primary-fixed-dim to-primary-container font-label-md text-label-md text-surface-container-lowest flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-b font-bold tracking-wider uppercase shadow-[0_4px_16px_rgba(185,154,97,0.35)] transition-transform active:scale-[0.98]"
           >
-            <span>Попробовать снова</span>
+            <span>{t.player.retry}</span>
             <Icon name="cached" className="text-[18px]" />
           </button>
           <button
@@ -598,7 +576,7 @@ function IncorrectView({
             className="font-caption text-caption text-text-muted hover:text-text-ivory flex w-full items-center justify-center gap-1.5 py-2 transition-colors"
           >
             <Icon name="menu_book" className="text-[16px]" />
-            <span>{showTranslation ? "Скрыть перевод" : "Перечитать манускрипт с переводом"}</span>
+            <span>{showTranslation ? t.player.hideTranslation : t.player.showTranslation}</span>
           </button>
         </div>
       </div>

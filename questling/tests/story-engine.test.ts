@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { demoQuestion as node, demoQuestionKey as key } from "@/lib/demo/story";
+import { demoStory } from "@/lib/demo/story";
 import { attemptsLeft, canCheck, grade, initialState, reduce, type QuestionAction, type QuestionState } from "@/lib/story/engine";
+
+const { question: node, key } = demoStory("ru");
 
 const run = (...actions: QuestionAction[]) => actions.reduce<QuestionState>((s, a) => reduce(node, s, a), initialState(node));
 const answer = (optionId: string): QuestionAction[] => [
@@ -71,5 +73,21 @@ describe("question node", () => {
   it("ignores a grade for an option other than the selected one", () => {
     const s = run({ type: "select", optionId: "cellar" });
     expect(reduce(node, s, { type: "graded", result: grade(key, "garden") })).toBe(s);
+  });
+});
+
+describe("demo story in both languages", () => {
+  it("is the same question: only the interface-language texts differ", () => {
+    const ru = demoStory("ru");
+    const en = demoStory("en");
+    const shape = (s: typeof ru) => ({
+      clue: s.question.clue.text,
+      options: s.question.options.map((o) => [o.id, o.label, o.icon]),
+      correct: s.key.correctOptionId,
+      explained: Object.keys(s.key.explanations).sort(),
+      attempts: s.question.maxAttempts,
+      xp: s.question.reward.xp,
+    });
+    expect(shape(en)).toEqual(shape(ru));
   });
 });

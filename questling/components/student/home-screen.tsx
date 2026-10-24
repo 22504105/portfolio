@@ -1,6 +1,8 @@
 /* eslint-disable @next/next/no-img-element -- illustrations are pre-sized WebP in public/images (scripts/import-images.mjs) */
 import Link from "next/link";
-import { pluralDays, xpPercent, type HomeView } from "@/lib/student/home";
+import { getDictionary, plural, type Locale } from "@/lib/i18n";
+import { xpPercent, type HomeView } from "@/lib/student/home";
+import { BottomNav } from "./bottom-nav";
 import { PronounceButton } from "./pronounce-button";
 
 // Ported from design-source/questling-v2/01_APPROVED_SCREENS/02_home_2/code.html.
@@ -9,8 +11,9 @@ import { PronounceButton } from "./pronounce-button";
 
 const chevron = <path d="M9 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"></path>;
 
-export function HomeScreen({ view, base }: { view: HomeView; base: string }) {
+export function HomeScreen({ view, base, locale }: { view: HomeView; base: string; locale: Locale }) {
   const { hero, featured, dailyQuests, word } = view;
+  const t = getDictionary(locale);
   return (
     <div data-scope="home" className="flex min-h-dvh justify-center bg-[#0b0b0f] font-sans text-[#E8E1D5] select-none">
       <div className="relative flex h-dvh w-full max-w-[390px] flex-col overflow-hidden border border-stone-800/60 bg-[#101016] shadow-2xl">
@@ -21,7 +24,7 @@ export function HomeScreen({ view, base }: { view: HomeView; base: string }) {
           </div>
           <div className="flex items-center space-x-2">
             <button
-              aria-label="Уведомления"
+              aria-label={t.home.notifications}
               className="text-parchment/80 relative flex h-9 w-9 items-center justify-center rounded-full border border-[#3A3228] bg-[#1C1B27] transition-transform active:scale-95"
             >
               <svg className="h-4 w-4 text-[#CFAC6E]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -52,7 +55,7 @@ export function HomeScreen({ view, base }: { view: HomeView; base: string }) {
                   src={hero.image}
                 />
                 <span className="font-cinzel absolute bottom-0 left-2 z-20 flex items-center gap-1 rounded-full border border-[#8B6F3E] bg-[#14131D] px-2 py-0.5 text-[10px] font-bold text-[#CFAC6E] shadow-md">
-                  <span>Ур.</span> {hero.level}
+                  <span>{t.home.levelShort}</span> {hero.level}
                 </span>
               </div>
               <div className="flex h-36 min-w-0 flex-1 flex-col justify-between py-0.5">
@@ -67,21 +70,23 @@ export function HomeScreen({ view, base }: { view: HomeView; base: string }) {
                   <div className="flex items-center space-x-1.5 rounded-lg border border-[#3A3228] bg-[#14131D]/90 px-2 py-1 shadow-xs">
                     <span className="text-xs text-orange-400">🔥</span>
                     <div className="flex flex-col">
-                      <span className="text-parchmentMuted text-[9px] leading-none font-medium">Серия</span>
-                      <span className="text-xs leading-tight font-semibold text-[#F0EBE1]">{pluralDays(hero.streakDays)}</span>
+                      <span className="text-parchmentMuted text-[9px] leading-none font-medium">{t.home.streak}</span>
+                      <span className="text-xs leading-tight font-semibold text-[#F0EBE1]">
+                        {plural(locale, hero.streakDays, t.common.days)}
+                      </span>
                     </div>
                   </div>
                   <div className="flex items-center space-x-1.5 rounded-lg border border-[#3A3228] bg-[#14131D]/90 px-2 py-1 shadow-xs">
                     <span className="text-xs text-[#CFAC6E]">🪙</span>
                     <div className="flex flex-col">
-                      <span className="text-parchmentMuted text-[9px] leading-none font-medium">Золото</span>
+                      <span className="text-parchmentMuted text-[9px] leading-none font-medium">{t.home.gold}</span>
                       <span className="text-xs leading-tight font-semibold text-[#CFAC6E]">{hero.coins}</span>
                     </div>
                   </div>
                 </div>
                 <div className="space-y-1">
                   <div className="flex items-center justify-between text-[10px]">
-                    <span className="text-parchmentMuted font-medium">Опыт</span>
+                    <span className="text-parchmentMuted font-medium">{t.home.xp}</span>
                     <span className="font-mono tracking-tight text-[#CFAC6E]">
                       {hero.xp.current} / {hero.xp.next} XP
                     </span>
@@ -89,7 +94,7 @@ export function HomeScreen({ view, base }: { view: HomeView; base: string }) {
                   <div
                     className="border-magicViolet/30 h-1.5 w-full overflow-hidden rounded-full border bg-[#252233] p-[1px]"
                     role="progressbar"
-                    aria-label="Опыт"
+                    aria-label={t.home.xp}
                     aria-valuemin={0}
                     aria-valuemax={hero.xp.next}
                     aria-valuenow={hero.xp.current}
@@ -129,14 +134,14 @@ export function HomeScreen({ view, base }: { view: HomeView; base: string }) {
                     className="flex flex-1 items-center justify-center space-x-2 rounded-xl border border-[#F3DE9C]/30 bg-[linear-gradient(135deg,#CFAC6E_0%,#B99A61_50%,#8C6F3A_100%)] px-4 py-2.5 shadow-[0_4px_14px_rgba(0,0,0,0.5)] transition-all hover:brightness-110 active:brightness-95"
                   >
                     <span className="text-[9px] text-[#33220A]">✦</span>
-                    <span className="font-cormorant text-base font-bold tracking-wide text-[#251A08]">Продолжить</span>
+                    <span className="font-cormorant text-base font-bold tracking-wide text-[#251A08]">{t.home.continue}</span>
                     <svg className="h-4 w-4 stroke-[2.5] text-[#251A08]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path d="M9 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round"></path>
                     </svg>
                   </Link>
                   <Link
                     href={featured.mapHref}
-                    aria-label="Карта мира"
+                    aria-label={t.home.worldMap}
                     className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#6E5A3A]/80 bg-[#171622]/90 text-[#CFAC6E] shadow-md transition-colors hover:border-[#CFAC6E]"
                   >
                     <svg className="h-5 w-5 text-[#CFAC6E]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -154,11 +159,11 @@ export function HomeScreen({ view, base }: { view: HomeView; base: string }) {
           <section className="space-y-2 pt-1">
             <div className="flex items-center justify-between px-1">
               <h3 className="font-cormorant text-parchment flex items-center space-x-2 text-lg font-semibold tracking-wide">
-                <span>Ежедневные квесты</span>
+                <span>{t.home.dailyQuests}</span>
               </h3>
               <Link
                 href={`${base}/quests`}
-                aria-label="Все квесты"
+                aria-label={t.home.allQuests}
                 className="text-parchmentMuted flex items-center space-x-1 text-xs transition-colors hover:text-[#CFAC6E]"
               >
                 <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -200,7 +205,7 @@ export function HomeScreen({ view, base }: { view: HomeView; base: string }) {
           </section>
 
           <section className="space-y-2 pt-1 pb-2">
-            <h3 className="font-cormorant text-parchment px-1 text-lg font-semibold tracking-wide">Слово дня</h3>
+            <h3 className="font-cormorant text-parchment px-1 text-lg font-semibold tracking-wide">{t.home.wordOfTheDay}</h3>
             <article className="relative overflow-hidden rounded-xl border border-[#524432] bg-[#1C1B27] p-3.5 shadow-lg">
               <span className="absolute top-2.5 right-2.5 text-xs text-[#CFAC6E]/70">✧</span>
               <div className="flex items-center space-x-3.5">
@@ -214,7 +219,7 @@ export function HomeScreen({ view, base }: { view: HomeView; base: string }) {
                     <Link href={word.href} className="font-cormorant text-parchment text-xl font-bold tracking-wide">
                       {word.word}
                     </Link>
-                    <PronounceButton word={word.word} />
+                    <PronounceButton word={word.word} label={t.home.pronounce} />
                   </div>
                   <p className="text-parchmentMuted -mt-0.5 text-xs font-medium">{word.translation}</p>
                 </div>
@@ -226,76 +231,8 @@ export function HomeScreen({ view, base }: { view: HomeView; base: string }) {
           </section>
         </main>
 
-        <BottomNav base={base} active="home" />
+        <BottomNav base={base} active="home" labels={t.nav} />
       </div>
     </div>
-  );
-}
-
-const tabs = [
-  {
-    id: "home",
-    label: "Главная",
-    path: "/home",
-    width: "1.8",
-    d: "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6",
-  },
-  {
-    id: "story",
-    label: "Сюжет",
-    path: "/map",
-    width: "1.6",
-    d: "M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253",
-  },
-  {
-    id: "quests",
-    label: "Квесты",
-    path: "/quests",
-    width: "1.6",
-    d: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z",
-  },
-  {
-    id: "profile",
-    label: "Профиль",
-    path: "/profile",
-    width: "1.6",
-    d: "M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z",
-  },
-] as const;
-
-// Home's own bottom bar (other screens draw theirs differently; see docs/design-screen-map.md, conflict 6).
-function BottomNav({ base, active }: { base: string; active: (typeof tabs)[number]["id"] }) {
-  return (
-    <nav className="absolute inset-x-0 bottom-0 z-30 flex items-center justify-around border-t border-[#3A3228] bg-[#14131D]/95 px-4 pt-2 pb-[max(1.5rem,env(safe-area-inset-bottom))] shadow-[0_-4px_20px_rgba(0,0,0,0.6)] backdrop-blur-md">
-      {tabs.map((tab) =>
-        tab.id === active ? (
-          <Link
-            key={tab.id}
-            href={`${base}${tab.path}`}
-            aria-label={tab.label}
-            aria-current="page"
-            className="group relative flex w-16 flex-col items-center pt-1"
-          >
-            <span className="absolute top-0 h-[2px] w-8 bg-gradient-to-r from-transparent via-[#CFAC6E] to-transparent"></span>
-            <svg className="mb-1 h-5 w-5 text-[#CFAC6E]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path d={tab.d} strokeLinecap="round" strokeLinejoin="round" strokeWidth={tab.width}></path>
-            </svg>
-            <span className="text-[10px] font-medium tracking-tight text-[#CFAC6E]">{tab.label}</span>
-          </Link>
-        ) : (
-          <Link
-            key={tab.id}
-            href={`${base}${tab.path}`}
-            aria-label={tab.label}
-            className="group text-parchmentMuted hover:text-parchment flex w-16 flex-col items-center pt-1 transition-colors"
-          >
-            <svg className="mb-1 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path d={tab.d} strokeLinecap="round" strokeLinejoin="round" strokeWidth={tab.width}></path>
-            </svg>
-            <span className="text-[10px] font-normal tracking-tight">{tab.label}</span>
-          </Link>
-        ),
-      )}
-    </nav>
   );
 }

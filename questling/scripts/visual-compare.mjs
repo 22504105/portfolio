@@ -6,7 +6,7 @@
 // of pixels that differ. The app must be running (npm run dev or start).
 //
 // Usage: node scripts/visual-compare.mjs <screen> [<screen> …] [--base http://localhost:3100] [--width 390] [--height 844]
-//   screens: home, player, player-correct, player-incorrect (see SCREENS below)
+//   screens: home, player, player-correct, player-incorrect, profile (see SCREENS below)
 import { readFile, mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
@@ -19,16 +19,17 @@ const remoteDir = path.join(root, "design-source", "remote-assets");
 
 // screen -> reference html, app route, and how to bring the app into the same state
 const SCREENS = {
-  home: { html: "01_APPROVED_SCREENS/02_home_2/code.html", route: "/demo/home" },
-  player: { html: "01_APPROVED_SCREENS/05_story_player_2/code.html", route: "/demo/play", steps: [["click", "[data-option=cellar]"]] },
+  home: { html: "01_APPROVED_SCREENS/02_home_2/code.html", route: "/ru/demo/home" },
+  profile: { html: "01_APPROVED_SCREENS/11_profile_2/code.html", route: "/ru/demo/profile" },
+  player: { html: "01_APPROVED_SCREENS/05_story_player_2/code.html", route: "/ru/demo/play", steps: [["click", "[data-option=cellar]"]] },
   "player-correct": {
     html: "02_STORY_STATES/05_story_player_50_xp/code.html",
-    route: "/demo/play",
+    route: "/ru/demo/play",
     steps: [["click", "[data-option=cellar]"], ["click", "[data-action=check]"], ["wait", "[data-phase=correct]"]],
   },
   "player-incorrect": {
     html: "02_STORY_STATES/05_story_player_3/code.html",
-    route: "/demo/play",
+    route: "/ru/demo/play",
     steps: [["click", "[data-option=garden]"], ["click", "[data-action=check]"], ["wait", "[data-phase=incorrect]"]],
   },
 };
