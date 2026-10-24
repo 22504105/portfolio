@@ -1,0 +1,312 @@
+@import "tailwindcss";
+
+/*
+ * Gothic Arcana tokens, carried over from the Stitch exports' inline Tailwind configs
+ * (`npm run tokens` lists them with the screens that define each one). Class names stay
+ * as in the export so the markup ports one to one. Values that some screens redefine are
+ * CSS variables, overridden per screen with `data-scope` (see the end of this file), and
+ * declared in `@theme inline` so Tailwind reads the variable where it is used.
+ */
+
+@theme inline {
+  /* Shared Material-style palette: 22 of 23 Stitch screens. */
+  --color-primary: #e4c285;
+  --color-on-primary: #412d00;
+  --color-primary-container: #b99a61;
+  --color-on-primary-container: #473202;
+  --color-primary-fixed: #ffdea5;
+  --color-primary-fixed-dim: #e4c285;
+  --color-on-primary-fixed: #271900;
+  --color-on-primary-fixed-variant: #5a4312;
+  --color-inverse-primary: #745a28;
+  --color-secondary: var(--q-secondary);
+  --color-on-secondary: #381f6f;
+  --color-secondary-container: #523a8a;
+  --color-on-secondary-container: #c3abff;
+  --color-secondary-fixed: #e9ddff;
+  --color-secondary-fixed-dim: #d0bcff;
+  --color-on-secondary-fixed: #23015a;
+  --color-on-secondary-fixed-variant: #4f3887;
+  --color-tertiary: #d9c49b;
+  --color-on-tertiary: #3b2f11;
+  --color-tertiary-container: #af9c76;
+  --color-on-tertiary-container: #413416;
+  --color-tertiary-fixed: #f6e0b5;
+  --color-tertiary-fixed-dim: #d9c49b;
+  --color-on-tertiary-fixed: #251a01;
+  --color-on-tertiary-fixed-variant: #534525;
+  --color-error: #ffb4ab;
+  --color-on-error: #690005;
+  --color-error-container: #93000a;
+  --color-on-error-container: #ffdad6;
+  --color-background: var(--q-background);
+  --color-on-background: #e4e1ea;
+  --color-surface: #1c1b27;
+  --color-surface-dim: var(--q-surface-dim);
+  --color-surface-bright: #39383f;
+  --color-surface-tint: #e4c285;
+  --color-surface-variant: #35343b;
+  --color-surface-container-lowest: #0e0e14;
+  --color-surface-container-low: #1b1b21;
+  --color-surface-container: #1f1f25;
+  --color-surface-container-high: #2a2930;
+  --color-surface-container-highest: #35343b;
+  --color-on-surface: #e4e1ea;
+  --color-on-surface-variant: #d0c5b5;
+  --color-inverse-surface: #e4e1ea;
+  --color-inverse-on-surface: #303036;
+  --color-outline: #998f81;
+  --color-outline-variant: #4d463a;
+  --color-border-antique: #6e5a3a;
+  --color-text-ivory: #e8e1d5;
+  --color-text-muted: #afa8b7;
+  --color-status-success: #63ba9e;
+  --color-status-error: #e88484;
+
+  /* Home and Character Select palette. */
+  --color-graphite: #101016;
+  --color-graphite-surface: #1c1b27;
+  --color-graphite-dim: #131319;
+  --color-graphite-border: #3a3347;
+  --color-graphite-borderGold: #6e5a3a;
+  --color-card: #1c1b27;
+  --color-cardBorder: #3a3228;
+  --color-gold: #b99a61;
+  --color-gold-light: var(--q-gold-light);
+  --color-gold-dark: var(--q-gold-dark);
+  --color-magicViolet: #8d75c9;
+  --color-magicVioletGlow: #6a4fb8;
+  --color-parchment: #e8e1d5;
+  --color-parchmentMuted: #9b968d;
+  --color-arcana-violet: #8d75c9;
+  --color-arcana-violetGaze: #8d75c925;
+  --color-arcana-ivory: #e8e1d5;
+  --color-arcana-muted: #a59fa9;
+
+  /* Wardrobe palette (13_wardrobe_2). */
+  --color-arcana-bg: #101016;
+  --color-arcana-surface: #1c1b27;
+  --color-arcana-surfaceLow: #15141f;
+  --color-arcana-surfaceBright: #262436;
+  --color-arcana-border: #6e5a3a;
+  --color-arcana-borderMuted: #3a332b;
+  --color-arcana-gold: #b99a61;
+  --color-arcana-goldLight: #d4b87d;
+  --color-arcana-violetGlow: #6b4eb6;
+  --color-arcana-ivoryMuted: #9e988e;
+
+  /* Fonts: loaded by next/font in app/fonts.ts, which sets these variables on <html>. */
+  --font-sans: var(--q-font-sans);
+  --font-cormorant: var(--font-cormorant-garamond), serif;
+  /* Cinzel and Gelasio lack Cyrillic. Their next/font variables append a size-adjusted fallback face, which
+     would draw the Cyrillic text 37% larger than the reference; so they are named directly here. */
+  --font-cinzel: "Cinzel", serif;
+  --font-garamond: var(--font-eb-garamond), serif;
+  --font-georgia: "Gelasio", Georgia, ui-serif, serif;
+  --font-plus-jakarta: "Plus Jakarta Sans", sans-serif;
+  --font-headline-xl: var(--font-eb-garamond);
+  --font-headline-xl-mobile: var(--font-eb-garamond);
+  --font-headline-lg: var(--font-eb-garamond);
+  --font-headline-md: var(--font-eb-garamond);
+  --font-title-sm: var(--font-eb-garamond);
+  --font-body-lg: var(--font-inter);
+  --font-body-md: var(--font-inter);
+  --font-label-md: var(--font-inter);
+  --font-label-sm: var(--font-inter);
+  --font-caption: var(--font-inter);
+
+  /* Type scale from DESIGN.md, as the exports define it. */
+  --text-headline-xl: 34px;
+  --text-headline-xl--line-height: 40px;
+  --text-headline-xl--letter-spacing: -0.01em;
+  --text-headline-xl--font-weight: 600;
+  --text-headline-xl-mobile: 28px;
+  --text-headline-xl-mobile--line-height: 34px;
+  --text-headline-xl-mobile--letter-spacing: -0.01em;
+  --text-headline-xl-mobile--font-weight: 600;
+  --text-headline-lg: 26px;
+  --text-headline-lg--line-height: 32px;
+  --text-headline-lg--letter-spacing: 0em;
+  --text-headline-lg--font-weight: 600;
+  --text-headline-md: 22px;
+  --text-headline-md--line-height: 28px;
+  --text-headline-md--letter-spacing: 0.01em;
+  --text-headline-md--font-weight: 500;
+  --text-title-sm: 18px;
+  --text-title-sm--line-height: 24px;
+  --text-title-sm--letter-spacing: 0.02em;
+  --text-title-sm--font-weight: 600;
+  --text-body-lg: 16px;
+  --text-body-lg--line-height: 24px;
+  --text-body-lg--font-weight: 400;
+  --text-body-md: 14px;
+  --text-body-md--line-height: 20px;
+  --text-body-md--font-weight: 400;
+  --text-label-md: 14px;
+  --text-label-md--line-height: 18px;
+  --text-label-md--letter-spacing: 0.04em;
+  --text-label-md--font-weight: 600;
+  --text-label-sm: 12px;
+  --text-label-sm--line-height: 16px;
+  --text-label-sm--letter-spacing: 0.05em;
+  --text-label-sm--font-weight: 500;
+  --text-caption: 11px;
+  --text-caption--line-height: 14px;
+  --text-caption--font-weight: 400;
+
+  /* Named spacing of the exports (px-margin, gap-space-md, …). */
+  --spacing-space-xs: 0.25rem;
+  --spacing-space-sm: 0.5rem;
+  --spacing-space-md: 0.75rem;
+  --spacing-space-lg: 1rem;
+  --spacing-space-xl: 1.5rem;
+  --spacing-gutter: 1rem;
+  --spacing-margin: 1rem;
+
+  --shadow-gold-glow: var(--q-gold-glow);
+  --shadow-violet-glow: 0 0 18px rgba(141, 117, 201, 0.35);
+  --shadow-inner-glow: inset 0 1px 1px 0 rgba(255, 255, 255, 0.12);
+  --shadow-arcana-card: 0 4px 20px 0 rgba(0, 0, 0, 0.65);
+  --shadow-glow-violet: 0 0 35px -8px rgba(141, 117, 201, 0.45);
+  --shadow-gold-rim: 0 0 0 1px rgba(185, 154, 97, 0.5), 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-slot-active: 0 0 14px rgba(141, 117, 201, 0.35);
+  --shadow-orbit-slot: 0 0 12px rgba(185, 154, 97, 0.4);
+}
+
+:root {
+  --q-secondary: #d0bcff;
+  --q-background: #131319;
+  --q-surface-dim: #131319;
+  --q-gold-light: #d4b87e;
+  --q-gold-dark: #8c6f36;
+  --q-gold-glow: 0 0 16px -2px rgba(185, 154, 97, 0.45);
+  --q-font-sans: var(--font-inter), sans-serif;
+}
+
+/* Per-screen redefinitions, exactly as each screen's own config had them. */
+[data-scope="home"] {
+  --q-gold-light: #e2bd78;
+  --q-gold-dark: #8b6f3e;
+  --q-gold-glow: 0 0 15px rgba(185, 154, 97, 0.25);
+}
+[data-scope="profile"] {
+  --q-secondary: #8d75c9;
+  --q-background: #101016;
+  --q-surface-dim: #101016;
+}
+[data-scope="shop"] {
+  --q-font-sans: "Plus Jakarta Sans", sans-serif;
+}
+
+/* Decorations the wardrobe and shop exports define in their own style blocks. */
+@layer components {
+  .hide-scrollbar,
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .hero-podium-gradient {
+    background: radial-gradient(circle at 50% 68%, rgba(141, 117, 201, 0.35) 0%, rgba(28, 27, 39, 0.75) 45%, rgba(16, 16, 22, 0.95) 85%);
+  }
+  .runic-circle {
+    border: 1px dashed rgba(185, 154, 97, 0.45);
+    box-shadow: 0 0 25px rgba(141, 117, 201, 0.3) inset;
+  }
+  .orbit-ring {
+    border: 1px dashed rgba(141, 117, 201, 0.28);
+  }
+  .gold-gradient-bg {
+    background: linear-gradient(180deg, #d4af67 0%, #b99a61 50%, #947942 100%);
+  }
+  .arcane-glow {
+    box-shadow: 0 0 16px -2px rgba(141, 117, 201, 0.4);
+  }
+  .gold-glow {
+    box-shadow: 0 0 14px -1px rgba(185, 154, 97, 0.4);
+  }
+  .frame-corner {
+    position: relative;
+  }
+  .frame-corner::after {
+    content: "❖";
+    position: absolute;
+    font-size: 8px;
+    color: #b99a61;
+    top: 2px;
+    right: 4px;
+    opacity: 0.7;
+  }
+  @keyframes rune-rotate {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .rotate-slow {
+      animation: rune-rotate 28s linear infinite;
+    }
+  }
+}
+
+/* Tailwind v3 (which the exports ran on) drew borders in gray-200 by default; v4 uses currentColor. */
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentColor);
+  }
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+  html,
+  body {
+    margin: 0;
+    padding: 0;
+    overscroll-behavior: none;
+  }
+}
+
+::-webkit-scrollbar {
+  width: 0;
+  display: none;
+}
+
+/* Material Symbols, subset to the icons in use (scripts/build-icons.mjs). Same rules as Google's own CSS. */
+@font-face {
+  font-family: "Material Symbols Outlined";
+  font-style: normal;
+  font-weight: 100 700;
+  font-display: block;
+  src: url("/fonts/material-symbols.woff2") format("woff2");
+}
+/* In the base layer, so text-size and colour utilities on an icon win, as they did in the export. */
+@layer base {
+  .material-symbols-outlined {
+    font-family: "Material Symbols Outlined";
+    font-weight: normal;
+    font-style: normal;
+    font-size: 24px;
+    line-height: 1;
+    letter-spacing: normal;
+    text-transform: none;
+    display: inline-block;
+    white-space: nowrap;
+    word-wrap: normal;
+    direction: ltr;
+    -webkit-font-feature-settings: "liga";
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+.pt-safe {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}

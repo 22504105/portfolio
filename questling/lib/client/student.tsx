@@ -1,0 +1,50 @@
+"use client";
+
+import { createContext, useContext, useEffect, useState } from "react";
+import type { Facts } from "@/lib/game/facts";
+import type { Action, Outcome, Refusal } from "@/lib/game/ops";
+import { getDictionary, type Dictionary, type Locale } from "@/lib/i18n";
+import type { Account } from "@/lib/student/profile";
+
+// What every student screen reads: the student's facts, the clock, and a way to act.
+// Two providers fill it: the demo one (facts in this browser, actions run here, labelled
+// "Демо") and the live one (facts from the server, actions sent to it). Screens do not know
+// which one they are under, so the demo shows exactly what a student would see.
+
+export type ActResult = { ok: true; outcome: Outcome } | { ok: false; refusal: Refusal | "network" | "server" };
+
+export type StudentApi = {
+  mode: "demo" | "live";
+  locale: Locale;
+  t: Dictionary;
+  /** Where this mode's screens live: "/ru/demo" or "/ru/app". */
+  base: string;
+  facts: Facts;
+  /** The Telegram account and group, for the profile and settings. */
+  account: Account;
+  act: (action: Action) => Promise<ActResult>;
+};
+
+const StudentContext = createContext<StudentApi | null>(null);
+
+export const StudentProvider = StudentContext.Provider;
+
+export function useStudent(): StudentApi {
+  const api = useContext(StudentContext);
+  if (!api) throw new Error("useStudent outside a student provider");
+  return api;
+}
+
+/** The current time, moving on every minute: for countdowns and for the day turning over. */
+export function useNow(): Date {
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 60_000);
+    return () => clearInterval(timer);
+  }, []);
+  return now;
+}
+
+export function dictionaryFor(locale: Locale): Dictionary {
+  return getDictionary(locale);
+}
