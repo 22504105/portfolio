@@ -1,0 +1,12 @@
+{
+  "comment": "How equipment sits on each hero (Gate 4). Every layer is a cut of a 1024-px master (art/layers, from scripts/extract-layers.mjs) split by scripts/build-layers.mjs; a fit places the whole master of an item on the hero's rig canvas: rig = fit.x + source * fit.scale. One fit per item and species, so the back and front parts of an item move together.",
+  "canvas": [1024, 1280],
+  "fits": {
+    "cat": {
+      "base": { "x": 0, "y": 256, "scale": 1 },
+      "witch-hat": { "x": 111, "y": -145, "scale": 0.8 },
+      "ceremonial-cape": { "x": 233, "y": 602, "scale": 0.62 },
+      "star-amulet": { "x": 399, "y": 783, "scale": 0.22 }
+    }
+  }
+}
