@@ -1,4 +1,5 @@
 import "server-only";
+import { randomInt } from "node:crypto";
 import { z } from "zod";
 import { applyEffects, type Facts } from "@/lib/game/facts";
 import { run, type Action, type Outcome, type Refusal } from "@/lib/game/ops";
@@ -102,7 +103,7 @@ export async function act(
   const facts = await loadFacts(db, userId);
   if (!facts) throw new ServiceError("not_found", 404);
 
-  const result = run(facts, parsed.data as Action, { now, locale, demo: false });
+  const result = run(facts, parsed.data as Action, { now, locale, demo: false, random: () => randomInt(1_000_000) / 1_000_000 });
   if (!result.ok) throw new ServiceError(result.refusal, REFUSAL_STATUS[result.refusal]);
   await persist(db, userId, result.effects, now);
   return { outcome: result.outcome, facts: applyEffects(facts, result.effects, now.toISOString()) };

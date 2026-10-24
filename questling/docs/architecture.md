@@ -140,9 +140,11 @@ Integrity rules carried into SQL, not left to the client:
   subfolder project, CLI deploy. *Deploy only with owner approval.*
 - **Database:** PostgreSQL on Supabase Free: project `Questling` (`xqkhmbvstcjvfttkdvxg`, eu-west-1),
   created 2026-10-24 on the owner's word; the other projects are paused. Limits: 500 MB database,
-  5 GB egress, idle projects paused after a week. The migration is not applied yet: that writes to
-  the owner's database and waits for the database password and the owner's go-ahead
-  (`npm run db:migrate` with `DATABASE_URL` in `.env.local`).
+  5 GB egress, idle projects paused after a week. Migrations applied 2026-10-24 on the owner's
+  go-ahead (`npm run db:migrate`, journal in `questling_meta.migrations`).
+- **Bot:** @QuestlingEnglish_bot. The Mini App opens `https://<deployment>/ru/app`.
+- **Live check:** `node scripts/live-check.mjs [base URL]` signs in the way Telegram does, plays a few
+  actions against the real database and deletes its test student (13 checks).
 - **Local and tests:** embedded PostgreSQL in `.tmp/` (no Docker on this machine).
 - **Staging proof (Gate 1 deliverable):** a production `next build` and `next start` run locally and
   are smoke-tested by Playwright. A real Vercel preview deploy waits for the owner's approval.

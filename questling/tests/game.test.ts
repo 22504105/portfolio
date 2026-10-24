@@ -254,7 +254,7 @@ describe("coins and items", () => {
     expect(bare.equipped).toEqual({ outfit: "violet-tunic" });
   });
 
-  it("open the weekly chest after five quests in the week, once, giving the named item", () => {
+  it("open the weekly chest after five quests in the week, once, giving a random cloak or glasses not owned yet", () => {
     let facts = newcomer();
     const monday = new Date("2026-10-19T09:00:00Z");
     for (const [offset, count] of [
@@ -266,8 +266,12 @@ describe("coins and items", () => {
     }
     expect(weeklyQuestCount(facts, TODAY)).toBe(5);
     expect(chestReady(facts, TODAY)).toBe(true);
-    facts = play(facts, [{ type: "openChest" }]);
-    expect(owns(facts, "midnight-cloak")).toBe(true);
+    // The draw is the context's: here it picks the last item still to win.
+    const result = run(facts, { type: "openChest" }, { now: NOW, locale: "ru", demo: false, random: () => 0.999 });
+    if (!result.ok) throw new Error(result.refusal);
+    facts = applyEffects(facts, result.effects, NOW.toISOString());
+    expect(result.outcome).toEqual({ kind: "chest", item: "round-glasses", coins: 0 });
+    expect(owns(facts, "round-glasses")).toBe(true);
     expect(refusal(facts, { type: "openChest" })).toBe("not_ready");
   });
 });

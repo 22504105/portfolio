@@ -163,14 +163,14 @@ test("the hero is changed from the profile and shown everywhere", async ({ page 
   await expect(page.getByRole("link", { name: "Сменить героя" })).toContainText("Рен");
 });
 
-test("the weekly chest opens once its five quests are done, and names what is inside", async ({ page }) => {
+test("the weekly chest opens once its five quests are done, with a random cloak or glasses", async ({ page }) => {
   await page.goto("/ru/demo/rewards");
   await ready(page);
   const chest = page.locator("[data-action=open-chest]");
-  await expect(chest).toContainText("Внутри: «Полуночный плащ»");
+  await expect(chest).toContainText("Случайный предмет: плащ или очки");
   if (await chest.isEnabled()) {
     await chest.click();
-    await expect(chest).toContainText("Получено: «Полуночный плащ»");
+    await expect(chest).toContainText("Получено: «");
     await expect(chest).toBeDisabled();
   } else {
     await expect(chest).toContainText("Квестов до вскрытия");

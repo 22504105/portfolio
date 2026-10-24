@@ -31,7 +31,7 @@ every screen, in both languages, fits 320/360/390/430-px phones without sideways
 | journal | `07_evidence_journal_2` | `/ru/demo/journal` | 390×1430 → 1420 | 23.14% | the demo has found clue 1, the export shows clue 2 (B); clean pictures (E) |
 | quests | `08_quick_quests` | `/ru/demo/quests` | 390×1184 → 1348 | 31.07% | the finished daily quest is listed too, at the end (B); header, nav (C) |
 | discovery | `09_daily_discovery` | `/ru/demo/discovery` | 390×1144 → 1166 | 9.98% | the day's word comes from the calendar (B); header (C) |
-| rewards | `10_rewards` | `/ru/demo/rewards` | 390×980 → same | 5.41% | header, nav (C); real progress figures (B); named chest prize (F) |
+| rewards | `10_rewards` | `/ru/demo/rewards` | 390×980 → same | 5.41% | header, nav (C); real progress figures (B) |
 | profile | `11_profile_2` | `/ru/demo/profile` | 390×1435 → same | 7.76% | hero art (A); real progress figures (B); header, nav (C) |
 | character | `12_character_select` | `/ru/demo/character` | 390×1119 → same | 12.57% | standalone character art (A) |
 | wardrobe | `13_wardrobe_2` | `/ru/demo/wardrobe` | 390×844 → same | 14.32% | hero art (A); item pictures for emoji (G); more tabs; no "3D ВИД" (F) |
@@ -63,7 +63,8 @@ images show row for row.
 - **E. Pictures with interface painted in** (`ASSET_AUDIT.md`) are not used; the clean illustration
   of the same place is.
 - **F. The brief over the export.** No learning advantage from cosmetics (no "+15% опыта", "Бонус
-  сета", "+10 Концентрация"), no loot box (the weekly chest names its prize), no claim of a 3D model.
+  сета", "+10 Концентрация"), no claim of a 3D model. (The weekly chest's random prize stays as the
+  export has it: the owner's decision of 2026-10-24.)
 - **G. Item pictures.** The exports show emoji for items; the app shows each item's own standalone
   picture from the archive.
 

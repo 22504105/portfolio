@@ -204,8 +204,12 @@ export const itemById = new Map(items.map((entry) => [entry.id, entry]));
 /** Given to every student when they choose their hero. */
 export const STARTER_ITEMS = ["wizard-hat", "wand", "violet-tunic"] as const;
 
-/** What the weekly chest gives, in order: the first one not owned yet; coins once all are. */
-export const CHEST_ITEMS = ["midnight-cloak"] as const;
+/**
+ * What the weekly chest may give: one of these cloaks and glasses not owned yet, drawn at random
+ * when it opens, and not shown beforehand (owner's decision 2026-10-24, as the approved rewards
+ * screen has it); coins once all are owned.
+ */
+export const CHEST_ITEMS = ["midnight-cloak", "green-cape", "sunset-cloak", "brown-coat", "round-glasses"] as const;
 export const CHEST_COINS = 60;
 
 export const RARITY_LABEL: Record<Rarity, Text> = {

@@ -24,9 +24,9 @@ import { BottomNav } from "./bottom-nav";
 import { CoinHeader } from "./coin-header";
 
 // Ported from design-source/questling-v2/01_APPROVED_SCREENS/10_rewards/code.html.
-// The weekly chest opens after five quests in the academy week and gives a named item (the
-// export's "random item" would be a loot box, which the brief rules out), or coins once that
-// item is owned. Achievements show the student's own progress and are granted automatically.
+// The weekly chest opens after five quests in the academy week and gives a random cloak or
+// glasses not owned yet, as the export says (owner's decision 2026-10-24), or coins once all
+// are owned. Achievements show the student's own progress and are granted automatically.
 // Owner's decisions 2026-10-24: the header names the screen (the export said "Profile"), Home's bottom bar.
 // Tailwind v3 → v4: shadow-sm → shadow-xs, rounded → rounded-sm, drop-shadow → drop-shadow-sm.
 
@@ -46,8 +46,8 @@ export function RewardsScreen() {
   const weekly = Math.min(weeklyQuestCount(facts, today), WEEKLY_CHEST_GOAL);
   const ready = chestReady(facts, today);
   const opened = chestOpened(facts, today);
-  const prizeId = CHEST_ITEMS.find((id) => !owns(facts, id));
-  const prize = prizeId ? itemById.get(prizeId) : null;
+  // The prize is drawn when the chest opens; until then only its kind is known.
+  const anyLeft = CHEST_ITEMS.some((id) => !owns(facts, id));
   const progress = achievementProgress(facts);
   const earned = progress.filter((p) => p.earned).length;
   const [pending, startTransition] = useTransition();
@@ -174,10 +174,7 @@ export function RewardsScreen() {
                   <div className="mt-space-sm gap-space-xs bg-surface-container-lowest/80 px-space-sm flex items-center rounded-sm py-1">
                     <Icon name="auto_awesome" className="text-tertiary text-[14px]" />
                     <span className="font-caption text-caption text-tertiary truncate">
-                      {gift ??
-                        (prize
-                          ? fill(t.rewards.prizeItem, { item: tr(prize.name, locale) })
-                          : fill(t.rewards.prizeCoins, { n: CHEST_COINS }))}
+                      {gift ?? (anyLeft ? t.rewards.prizeRandom : fill(t.rewards.prizeCoins, { n: CHEST_COINS }))}
                     </span>
                   </div>
                 </div>

@@ -243,7 +243,7 @@ export const en: Dictionary = {
     chestLeft: "Quests until the magic seal breaks: {n}.",
     chestReady: "The seal is broken! Tap to open the chest.",
     chestOpened: "This week's chest is open. A new one comes on Monday.",
-    prizeItem: "Inside: “{item}”",
+    prizeRandom: "A random item: a cloak or glasses",
     prizeCoins: "Inside: {n} coins",
     gotItem: "You got “{item}”",
     gotCoins: "You got {n} coins",

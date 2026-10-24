@@ -25,7 +25,7 @@ the browser) and under `/{ru,en}/app/…` (the signed-in Telegram student, kept 
 | `07_evidence_journal_2` | `/journal` | Clues found in the chapter, the newest open, deduction, clue files | live | 23.14% | 2 (UI), 3 |
 | `08_quick_quests` | `/quests`, `/quests/[quest]` | Today's three quests and the mentor's, filters, progress, day's bonus, countdown; playing a quest | live | 31.07% | 2 |
 | `09_daily_discovery` | `/discovery` | Day's word (IPA, read aloud, example), quiz, fact (save, other language), claim | live | 9.98% | 2 |
-| `10_rewards` | `/rewards` | Balances, level, weekly chest (opens), four achievements with real progress | live | 5.41% | 2 |
+| `10_rewards` | `/rewards` | Balances, level, weekly chest (random cloak or glasses), four achievements with real progress | live | 5.41% | 2 |
 | `11_profile_2` | `/profile` | Hero (pencil = change hero), level, rank, worn items, learning progress, quick links | live | 7.76% | 2 |
 | — (no screen) | `/settings` | Interface language, linked Telegram account. Built only from parts of approved screens | live | — | 1–2 |
 | `12_character_select` | `/character` | Six free starting characters; first choice hands out the starting kit | live | 12.57% | 2 |
@@ -127,8 +127,11 @@ where marked.
    ("+10 Концентрация", "+25% Опыт чтения", "Бонус сета: +5% Маны") promise advantages; the brief and
    the screens' own footers say cosmetics give none. Implemented without any bonus; the lines show
    the item's description, the set badge counts filled slots.
-8. **A random chest prize.** "Случайный предмет: Редкий плащ или очки" would be a loot box, which the
-   brief forbids. The weekly chest names its prize (`CHEST_ITEMS`), then gives coins once it is owned.
+8. **A random chest prize.** "Случайный предмет: Редкий плащ или очки" is a loot box, which the brief
+   forbids. **Owner's decision 2026-10-24: keep it as the export has it** ("оставь лутбокс пусть ниче
+   не называет заранее"). The weekly chest gives a random cloak or glasses not owned yet
+   (`CHEST_ITEMS`, drawn on the server from a cryptographic source), then coins once all are owned.
+   It is earned by learning only and costs nothing: no coins, no real money.
 9. **"3D ВИД".** There is no 3D model, and the brief forbids claiming one: the badge is left out.
 10. **Portraits cut from a labelled reference sheet** (character select) and a dressed cat used as
     the hero everywhere. The six standalone base models are used instead, the same on every screen.

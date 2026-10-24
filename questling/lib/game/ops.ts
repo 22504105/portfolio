@@ -66,7 +66,8 @@ export type Outcome =
   | { kind: "chest"; item: string | null; coins: number }
   | { kind: "ok" };
 
-export type Context = { now: Date; locale: Locale; demo: boolean };
+/** `random` draws the weekly chest's prize: a number in [0, 1). The server uses a cryptographic source. */
+export type Context = { now: Date; locale: Locale; demo: boolean; random?: () => number };
 
 export type OpResult = { ok: true; effects: Effect[]; outcome: Outcome } | { ok: false; refusal: Refusal };
 
@@ -283,7 +284,9 @@ function perform(facts: Facts, action: Action, ctx: Context): OpResult {
     case "openChest": {
       if (!chestReady(facts, today)) return refuse("not_ready");
       const week = weekOf(today);
-      const prize = CHEST_ITEMS.find((id) => !owns(facts, id)) ?? null;
+      const left = CHEST_ITEMS.filter((id) => !owns(facts, id));
+      const draw = Math.min(left.length - 1, Math.floor((ctx.random ?? Math.random)() * left.length));
+      const prize = left.length ? left[draw] : null;
       const effects: Effect[] = [{ type: "completion", kind: "chest", ref: week }];
       if (prize) effects.push({ type: "own", item: prize, source: "chest" });
       else effects.push({ type: "ledger", currency: "coins", amount: CHEST_COINS, key: `chest:${week}`, reason: "chest" });
