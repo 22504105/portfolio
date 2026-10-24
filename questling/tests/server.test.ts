@@ -15,8 +15,20 @@ describe("verifying Telegram sign-in data", () => {
     expect(result).toEqual({
       ok: true,
       authDate: NOW - 30,
+      startParam: null,
       user: { id: 42, firstName: "Ayşe", lastName: "Yılmaz", username: "ayse", languageCode: "tr", photoUrl: null },
     });
+  });
+
+  it("reads a group's invite code from the signed start parameter, and nothing that is not a code", () => {
+    const opened = verifyInitData(sign({ auth_date: String(NOW), user: USER, start_param: "DETA2XYZ" }), TOKEN, NOW);
+    expect(opened.ok && opened.startParam).toBe("DETA2XYZ");
+    const odd = verifyInitData(sign({ auth_date: String(NOW), user: USER, start_param: "<script>" }), TOKEN, NOW);
+    expect(odd.ok && odd.startParam).toBeNull();
+    // Added after signing: the signature breaks, so a code cannot be slipped in.
+    const params = new URLSearchParams(sign({ auth_date: String(NOW), user: USER }));
+    params.set("start_param", "DETA2XYZ");
+    expect(verifyInitData(params.toString(), TOKEN, NOW)).toEqual({ ok: false, reason: "signature" });
   });
 
   it("covers every field, including ones added later: changing or adding any breaks the signature", () => {
