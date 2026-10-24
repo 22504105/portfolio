@@ -401,9 +401,11 @@
   (`DATABASE_URL` через пулер `aws-0-eu-west-1.pooler.supabase.com:6543`, `TELEGRAM_BOT_TOKEN`,
   `SESSION_SECRET`) и в Vercel (проект `questling`, команда `riddle6`, Production; `node scripts/vercel-env.mjs`).
   Проверка на живой базе — `node scripts/live-check.mjs [адрес]` (13 пунктов, удаляет своего ученика).
-  Выкладка `npx vercel deploy --prod --yes --scope riddle6` из `questling/` в этой сессии заблокирована
-  авто-режимом Claude Code — владелец запускает её сам (через `!`) или разрешает правилом.
-  После выкладки: кнопка меню бота на `https://<адрес>/ru/app` (Bot API `setChatMenuButton`).
+  **Сайт: https://questling-dusky.vercel.app** (выложен владельцем 2026-10-24 командой
+  `npx vercel deploy --prod --yes --scope riddle6` из `questling/`; авто-режим Claude Code выкладку
+  сам не пропускает — владелец запускает через `!`). Кнопка меню бота «Играть» ведёт на
+  `/ru/app` (`setChatMenuButton`). Живая проверка на сайте — 13 из 13. На телефоне в Telegram
+  ещё не проверено. Проект Vercel к GitHub не подключён.
 - **Сундук недели — случайный приз** (плащ или очки, не названный заранее) — решение владельца
   2026-10-24 («оставь лутбокс»), вопреки правилу брифа; бесплатный, только за учёбу.
 - **База Questling — свой проект Supabase** `xqkhmbvstcjvfttkdvxg` (организация Riddle, eu-west-1),
