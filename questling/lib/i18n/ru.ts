@@ -357,6 +357,7 @@ export const ru = {
     account: "@{username} (ID #{id})",
   },
   wardrobe: {
+    notDrawn: "Пока не нарисованы на фигуре: {items}",
     title: "Гардероб",
     subtitle: "Облик героя",
     studio: "Студия персонажа",

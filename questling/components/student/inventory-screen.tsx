@@ -11,6 +11,7 @@ import { useStudent } from "@/lib/client/student";
 import { balance, foundClues, levelOf, owns } from "@/lib/game/stats";
 import { clueChapter } from "@/lib/student/story";
 import { fill } from "@/lib/i18n";
+import { HeroFigure } from "./hero-figure";
 
 // Ported from design-source/questling-v2/01_APPROVED_SCREENS/15_inventory/code.html.
 // The bag holds the student's own items and the story artefacts (clues) they have found;
@@ -121,10 +122,12 @@ export function InventoryScreen() {
             <div className="gap-space-sm relative z-10 grid grid-cols-12 items-center">
               <div className="relative col-span-5 flex flex-col items-center justify-center">
                 <div className="from-surface-container to-surface-container-lowest relative flex h-32 w-32 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-b p-1 shadow-[0_0_24px_rgba(185,154,97,0.18)]">
-                  <img
+                  <HeroFigure
+                    species={hero.id}
+                    equipped={facts.equipped}
                     alt={heroName}
-                    className="h-full w-full scale-105 transform rounded-lg object-cover transition-transform duration-300"
-                    src={hero.image}
+                    className="h-full w-auto"
+                    plainClassName="h-full w-full scale-105 transform rounded-lg object-cover transition-transform duration-300"
                   />
                   <div className="bg-surface-container-lowest/80 absolute bottom-1 rounded-full px-2 py-0.5 text-center backdrop-blur-xs">
                     <span className="font-caption text-caption text-primary tracking-wide">

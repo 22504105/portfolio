@@ -349,6 +349,7 @@ export const en: Dictionary = {
     account: "@{username} (ID #{id})",
   },
   wardrobe: {
+    notDrawn: "Not drawn on the figure yet: {items}",
     title: "Wardrobe",
     subtitle: "The hero's look",
     studio: "Character studio",

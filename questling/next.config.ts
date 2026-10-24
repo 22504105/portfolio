@@ -20,6 +20,8 @@ const contentSecurityPolicy = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  // next dev would otherwise write an AGENTS.md into the project.
+  agentRules: false,
   async headers() {
     return [
       {

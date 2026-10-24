@@ -35,6 +35,8 @@ const REFUSAL_STATUS: Record<Refusal, number> = {
   not_ready: 409,
   exhausted: 409,
   not_exhausted: 409,
+  wrong_species: 409,
+  conflict: 409,
 };
 
 /** Finds or creates the student a Telegram account belongs to. */

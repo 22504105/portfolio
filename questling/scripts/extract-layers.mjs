@@ -47,16 +47,27 @@ export async function extract({ file, step, limit, low, high }) {
   let head = 0;
   let tail = 0;
   const seed = (i) => {
-    if (!outside[i] && !far(i)) ((outside[i] = 1), (queue[tail++] = i));
+    if (outside[i] || far(i)) return;
+    outside[i] = 1;
+    queue[tail++] = i;
   };
-  for (let x = 0; x < w; x++) (seed(x), seed((h - 1) * w + x));
-  for (let y = 0; y < h; y++) (seed(y * w), seed(y * w + w - 1));
+  for (let x = 0; x < w; x++) {
+    seed(x);
+    seed((h - 1) * w + x);
+  }
+  for (let y = 0; y < h; y++) {
+    seed(y * w);
+    seed(y * w + w - 1);
+  }
   const close = (i, j) => Math.abs(at(i, 0) - at(j, 0)) + Math.abs(at(i, 1) - at(j, 1)) + Math.abs(at(i, 2) - at(j, 2)) <= step * 3;
   while (head < tail) {
     const i = queue[head++];
     const x = i % w;
     for (const j of [x > 0 ? i - 1 : -1, x < w - 1 ? i + 1 : -1, i >= w ? i - w : -1, i < n - w ? i + w : -1]) {
-      if (j >= 0 && !outside[j] && !far(j) && close(i, j)) ((outside[j] = 1), (queue[tail++] = j));
+      if (j >= 0 && !outside[j] && !far(j) && close(i, j)) {
+        outside[j] = 1;
+        queue[tail++] = j;
+      }
     }
   }
 
@@ -103,7 +114,10 @@ export async function extract({ file, step, limit, low, high }) {
       count++;
       const x = i % w;
       for (const j of [x > 0 ? i - 1 : -1, x < w - 1 ? i + 1 : -1, i >= w ? i - w : -1, i < n - w ? i + w : -1])
-        if (j >= 0 && label[j] === -1 && !outside[j]) ((label[j] = id), (queue[qt++] = j));
+        if (j >= 0 && label[j] === -1 && !outside[j]) {
+          label[j] = id;
+          queue[qt++] = j;
+        }
     }
     sizes.push(count);
   }

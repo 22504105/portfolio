@@ -64,7 +64,9 @@ export type Refusal =
   | "level_too_low"
   | "not_ready"
   | "exhausted"
-  | "not_exhausted";
+  | "not_exhausted"
+  | "wrong_species"
+  | "conflict";
 
 /** What the page is told besides the new facts: the grade of an answer, the item a chest gave. */
 export type Outcome =
@@ -303,7 +305,14 @@ function perform(facts: Facts, action: Action, ctx: Context): OpResult {
         if (!item || item.slot !== slot) return refuse("invalid");
         if (!owns(facts, item.id)) return refuse("not_owned");
         if (level < item.level) return refuse("level_too_low");
+        if (!item.species.includes(facts.profile.characterId!)) return refuse("wrong_species");
         if (facts.equipped[item.slot] !== item.id) effects.push({ type: "equip", slot: item.slot, item: item.id });
+      }
+      // The look as it would be: no worn item may share it with a slot it rules out.
+      const look: Partial<Record<Slot, string | null>> = { ...facts.equipped, ...wanted };
+      for (const id of Object.values(look)) {
+        const item = id ? itemById.get(id) : undefined;
+        if (item?.conflicts.some((slot) => look[slot])) return refuse("conflict");
       }
       return done(effects);
     }
