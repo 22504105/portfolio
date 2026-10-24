@@ -116,3 +116,7 @@ export function clueChapter(campaign: Campaign, clueId: string): Chapter {
     campaign.chapters.find((chapter) => chapter.scenes.some((scene) => "clue" in scene && scene.clue === clueId)) ?? campaign.chapters[0]
   );
 }
+
+/** The chapter page of a chapter: built-in chapters by id, a teacher's with its campaign named (their ids may repeat). */
+export const questHref = (base: string, campaign: Campaign, chapter: Chapter) =>
+  campaign.id.startsWith("t-") ? `${base}/quest/${chapter.id}?c=${campaign.id}` : `${base}/quest/${chapter.id}`;

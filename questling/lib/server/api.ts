@@ -1,11 +1,15 @@
 import "server-only";
 import { accountsConfigured, serverEnv, standalone, transaction, type Db } from "./db";
-import { act, allowed, ServiceError, signInWithTelegram, state } from "./service";
+import { act, allowed, join, ServiceError, signInWithTelegram, state } from "./service";
 import { issueSession, readSession } from "./session";
+import { signInTeacher, StudioError, studioAct, studioState } from "./studio-service";
+import { recover, signIn, signUp, teacherAuthConfigured, updatePassword } from "./teacher-auth";
 import { verifyInitData } from "./telegram";
 
-// The student API, /api/v1/…. Each request is parsed, the session read, and the work handed to
-// the service inside one transaction. Errors carry a code and nothing a stranger could use.
+// The API, /api/v1/…: the student app's routes and Teacher Studio's (studio/…). Each request is
+// parsed, the session read, and the work handed to the service inside one transaction. Errors carry
+// a code and nothing a stranger could use. Teachers hold the same kind of session as students; every
+// studio route checks that the session's user is a teacher and works on that teacher's things only.
 // (Same shape as Splitly's, which is already reviewed and deployed.)
 
 const MAX_BODY_BYTES = 16 * 1024;
@@ -76,6 +80,22 @@ async function enforce(request: Request, limit: Limit) {
 
 type Route = (context: { request: Request; db: Db }) => Promise<unknown>;
 
+const email = (value: unknown) => {
+  const clean = typeof value === "string" ? value.trim().toLowerCase() : "";
+  if (clean.length < 3 || clean.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clean)) throw new RequestError("invalid", 422);
+  return clean;
+};
+const password = (value: unknown) => {
+  if (typeof value !== "string" || value.length < 8 || value.length > 72) throw new RequestError("weak_password", 422);
+  return value;
+};
+const studioLocale = (value: unknown) => (value === "en" ? "en" : "ru");
+const siteOrigin = (request: Request) => new URL(request.url).origin;
+
+function requireTeacherAuth() {
+  if (!teacherAuthConfigured()) throw new RequestError("not_configured", 503);
+}
+
 const ROUTES: Record<string, [Route, Limit?]> = {
   // Trades Telegram's signed sign-in data for a session. The only route that needs no session.
   "POST session": [
@@ -84,18 +104,87 @@ const ROUTES: Record<string, [Route, Limit?]> = {
       const verified = verifyInitData(initData, serverEnv().botToken);
       if (!verified.ok) throw new RequestError("unauthenticated", 401);
       const userId = await signInWithTelegram(db, verified.user);
+      // Opened from a group's invite link: join it (a stale or wrong code is simply ignored).
+      if (verified.startParam) await join(db, userId, verified.startParam).catch(() => null);
       const session = issueSession(userId, serverEnv().sessionSecret);
       return { token: session.token, expiresAt: session.expiresAt, ...(await state(db, userId)) };
     },
     { scope: "session", by: "address", max: 30, seconds: 600 },
   ],
   "GET state": [async ({ request, db }) => state(db, sessionUser(request))],
+  // Joins a group by the code a teacher gave (the settings screen).
+  "POST join": [
+    async ({ request, db }) => join(db, sessionUser(request), (await body(request)).code),
+    { scope: "join", by: "user", max: 20, seconds: 3600 },
+  ],
   "POST actions": [
     async ({ request, db }) => {
       const userId = sessionUser(request);
       return act(db, userId, await body(request));
     },
     { scope: "action", by: "user", max: 600, seconds: 3600 },
+  ],
+
+  // ——— Teacher Studio ———
+
+  // A new teacher: Supabase emails a confirmation link back to the studio's sign-in page.
+  "POST studio/signup": [
+    async ({ request }) => {
+      requireTeacherAuth();
+      const input = await body(request);
+      const name = typeof input.name === "string" ? input.name.trim() : "";
+      if (name.length < 2 || name.length > 60 || /[<>{}]/.test(name)) throw new RequestError("invalid", 422);
+      const result = await signUp(
+        email(input.email),
+        password(input.password),
+        name,
+        `${siteOrigin(request)}/${studioLocale(input.locale)}/studio/login?confirmed=1`,
+      );
+      if (!result.ok)
+        throw new RequestError(result.reason, result.reason === "unavailable" ? 502 : result.reason === "rate_limited" ? 429 : 409);
+      return { status: "confirm_email" };
+    },
+    { scope: "studio-signup", by: "address", max: 5, seconds: 3600 },
+  ],
+  "POST studio/signin": [
+    async ({ request, db }) => {
+      requireTeacherAuth();
+      const input = await body(request);
+      const result = await signIn(email(input.email), typeof input.password === "string" ? input.password.slice(0, 72) : "");
+      if (!result.ok)
+        throw new RequestError(result.reason, result.reason === "unavailable" ? 502 : result.reason === "rate_limited" ? 429 : 401);
+      if (!result.account.confirmed) throw new RequestError("email_not_confirmed", 401);
+      const userId = await signInTeacher(db, result.account);
+      const session = issueSession(userId, serverEnv().sessionSecret);
+      return { token: session.token, expiresAt: session.expiresAt, facts: await studioState(db, userId) };
+    },
+    { scope: "studio-signin", by: "address", max: 20, seconds: 600 },
+  ],
+  "POST studio/recover": [
+    async ({ request }) => {
+      requireTeacherAuth();
+      const input = await body(request);
+      await recover(email(input.email), `${siteOrigin(request)}/${studioLocale(input.locale)}/studio/reset`);
+      // The same answer whether or not the address has an account.
+      return { status: "sent" };
+    },
+    { scope: "studio-recover", by: "address", max: 5, seconds: 3600 },
+  ],
+  "POST studio/password": [
+    async ({ request }) => {
+      requireTeacherAuth();
+      const input = await body(request);
+      const token = typeof input.accessToken === "string" && input.accessToken.length < 4096 ? input.accessToken : "";
+      const result = await updatePassword(token, password(input.password));
+      if (!result.ok) throw new RequestError(result.reason, result.reason === "unavailable" ? 502 : 401);
+      return { status: "updated" };
+    },
+    { scope: "studio-password", by: "address", max: 10, seconds: 3600 },
+  ],
+  "GET studio/state": [async ({ request, db }) => ({ facts: await studioState(db, sessionUser(request)) })],
+  "POST studio/actions": [
+    async ({ request, db }) => studioAct(db, sessionUser(request), await body(request)),
+    { scope: "studio-action", by: "user", max: 900, seconds: 3600 },
   ],
 };
 
@@ -112,6 +201,7 @@ export async function handle(request: Request, path: string[]): Promise<Response
   } catch (error) {
     if (error instanceof RequestError) return fail(error.code, error.status);
     if (error instanceof ServiceError) return fail(error.code, error.status);
+    if (error instanceof StudioError) return json({ error: error.code, problems: error.problems }, error.status);
     // The database refusing a second grant or a negative balance: the request was wrong, not the server.
     const code = (error as { code?: string }).code;
     if (code === "23505") return fail("already_done", 409);

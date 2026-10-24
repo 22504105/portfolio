@@ -4,14 +4,15 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Icon } from "@/components/ui/icon";
-import { campaignById, campaigns } from "@/lib/content/campaigns";
 import { tr } from "@/lib/content/text";
 import { useStudent } from "@/lib/client/student";
 import type { Facts } from "@/lib/game/facts";
 import { campaignOpen, currentChapter, playedCampaign, runOf } from "@/lib/game/stats";
+import { findCampaign, studentCampaigns } from "@/lib/game/world";
 import { isGraded, type Campaign } from "@/lib/story/graph";
 import { locate } from "@/lib/story/run";
 import { fill } from "@/lib/i18n";
+import { questHref } from "@/lib/student/story";
 import { BackHeader } from "./back-header";
 
 // Ported from design-source/questling-v2/01_APPROVED_SCREENS/07_evidence_journal_2/code.html.
@@ -24,10 +25,10 @@ import { BackHeader } from "./back-header";
 
 function caseCampaign(facts: Facts, named?: string): Campaign {
   const latest =
-    (named ? campaignById.get(named) : null) ??
+    (named ? findCampaign(facts, named) : null) ??
     currentChapter(facts)?.campaign ??
-    [...campaigns].reverse().find((c) => runOf(facts, c.id)) ??
-    campaigns[0];
+    [...studentCampaigns(facts)].reverse().find((c) => runOf(facts, c.id)) ??
+    studentCampaigns(facts)[0];
   return playedCampaign(facts, latest);
 }
 
@@ -52,7 +53,7 @@ export function JournalScreen({ campaignId }: { campaignId?: string }) {
 
   return (
     <div className="bg-background font-body-md text-body-md text-on-surface flex min-h-dvh flex-col antialiased">
-      <BackHeader title={t.journal.title} backHref={`${base}/quest/${chapter.id}`} profileHref={`${base}/profile`} t={t} />
+      <BackHeader title={t.journal.title} backHref={questHref(base, campaign, chapter)} profileHref={`${base}/profile`} t={t} />
       <main className="pb-safe bg-background mx-auto w-full max-w-[420px] flex-1 pt-16">
         <div className="flex w-full flex-col space-y-4 pb-8">
           <section className="mx-margin bg-surface p-space-md rounded-xl shadow-md">

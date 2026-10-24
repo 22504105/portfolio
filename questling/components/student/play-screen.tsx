@@ -2,15 +2,15 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { campaignById, campaigns } from "@/lib/content/campaigns";
 import { tr } from "@/lib/content/text";
 import { useStudent } from "@/lib/client/student";
 import type { Facts } from "@/lib/game/facts";
 import type { Outcome } from "@/lib/game/ops";
 import { campaignFinished, campaignOpen, completed, currentChapter, playedCampaign, runOf } from "@/lib/game/stats";
+import { findCampaign, studentCampaigns } from "@/lib/game/world";
 import { isGraded, type Campaign } from "@/lib/story/graph";
 import { locate, sceneProgress, startRun, type Move } from "@/lib/story/run";
-import { puzzleNode, questionNode } from "@/lib/student/story";
+import { puzzleNode, questHref, questionNode } from "@/lib/student/story";
 import { PuzzleScreen } from "./puzzle-screen";
 import { ChapterDoneScreen, ChoiceScreen, DialogueScreen, EndingScreen, NarrationScreen, type Frame } from "./story-scenes";
 import { StoryPlayer, type Help } from "./story-player";
@@ -23,15 +23,16 @@ import { StoryPlayer, type Help } from "./story-player";
 
 /** The campaign to play: the one named, else the current one, else the last one played. */
 function pick(facts: Facts, named?: string): Campaign | null {
-  if (named) return campaignById.get(named) ?? null;
-  return currentChapter(facts)?.campaign ?? [...campaigns].reverse().find((c) => runOf(facts, c.id)) ?? campaigns[0];
+  if (named) return findCampaign(facts, named);
+  const list = studentCampaigns(facts);
+  return currentChapter(facts)?.campaign ?? [...list].reverse().find((c) => runOf(facts, c.id)) ?? list[0];
 }
 
 export function PlayScreen({ campaignId }: { campaignId?: string }) {
   const { t, locale, base, facts, act, account } = useStudent();
   const router = useRouter();
   const [id] = useState(() => pick(facts, campaignId)?.id ?? null);
-  const latest = id ? campaignById.get(id) : undefined;
+  const latest = id ? (findCampaign(facts, id) ?? undefined) : undefined;
   const open = latest ? campaignOpen(facts, latest) : false;
   const campaign = latest && open ? playedCampaign(facts, latest) : null;
   const run = campaign ? (runOf(facts, campaign.id) ?? startRun(campaign)) : null;
@@ -62,7 +63,7 @@ export function PlayScreen({ campaignId }: { campaignId?: string }) {
   if (!here) return <div className="bg-background min-h-dvh" aria-busy="true"></div>;
   const { chapter, scene } = here;
 
-  const backHref = `${base}/quest/${chapter.id}`;
+  const backHref = questHref(base, campaign, chapter);
   const profileHref = `${base}/profile`;
   const mapHref = `${base}/map`;
   const frame: Frame = {
@@ -172,7 +173,7 @@ export function PlayScreen({ campaignId }: { campaignId?: string }) {
           />
         );
       case "ending": {
-        const following = campaigns.find((c) => c.requires === campaign.id);
+        const following = studentCampaigns(facts).find((c) => c.requires === campaign.id);
         return (
           <EndingScreen
             key={scene.id}

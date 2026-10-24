@@ -1,12 +1,13 @@
 import { notFound } from "next/navigation";
 import { QuestDetailsScreen } from "@/components/student/quest-details-screen";
-import { findChapter } from "@/lib/content/campaigns";
 import { pageMetadata } from "@/lib/i18n/metadata";
 
 export const generateMetadata = pageMetadata("app", (t) => t.details.title);
 
-export default async function Page({ params }: PageProps<"/[locale]/app/quest/[chapter]">) {
+// The chapter is found among the student's campaigns on the screen; ?c= names a teacher's campaign.
+export default async function Page({ params, searchParams }: PageProps<"/[locale]/app/quest/[chapter]">) {
   const { chapter } = await params;
-  if (!findChapter(chapter)) notFound();
-  return <QuestDetailsScreen chapterId={chapter} />;
+  const { c } = await searchParams;
+  if (!/^[a-z0-9][a-z0-9-]{0,39}$/.test(chapter)) notFound();
+  return <QuestDetailsScreen chapterId={chapter} campaignId={typeof c === "string" ? c : undefined} />;
 }

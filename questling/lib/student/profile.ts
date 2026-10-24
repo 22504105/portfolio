@@ -1,8 +1,8 @@
 import { characters } from "@/lib/content/characters";
-import { campaigns } from "@/lib/content/campaigns";
 import { itemById, SLOTS, type Slot } from "@/lib/content/items";
 import { tr } from "@/lib/content/text";
 import type { Facts } from "@/lib/game/facts";
+import { studentCampaigns } from "@/lib/game/world";
 import { balance, currentChapter, currentStreak, levelOf, rankOf, skillProgress } from "@/lib/game/stats";
 import { plural, type Dictionary, type Locale } from "@/lib/i18n";
 
@@ -66,7 +66,7 @@ export function profileView(facts: Facts, locale: Locale, t: Dictionary, account
   const grammar = skillProgress(facts, "grammar");
   const reading = skillProgress(facts, "reading");
   const listening = skillProgress(facts, "listening");
-  const chapter = currentChapter(facts)?.chapter ?? campaigns.at(-1)!.chapters.at(-1)!;
+  const chapter = currentChapter(facts)?.chapter ?? studentCampaigns(facts).at(-1)!.chapters.at(-1)!;
   return {
     name: facts.profile.heroName ?? tr(character.name, locale),
     level,

@@ -4,7 +4,6 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Icon } from "@/components/ui/icon";
-import { campaigns } from "@/lib/content/campaigns";
 import { characters } from "@/lib/content/characters";
 import { tr } from "@/lib/content/text";
 import { useStudent } from "@/lib/client/student";
@@ -19,10 +18,11 @@ import {
   playedCampaign,
   runOf,
 } from "@/lib/game/stats";
+import { studentCampaigns } from "@/lib/game/world";
 import { isGraded, type Campaign, type Chapter } from "@/lib/story/graph";
 import type { ChapterState } from "@/lib/story/run";
 import { fill } from "@/lib/i18n";
-import { sceneLine } from "@/lib/student/story";
+import { questHref, sceneLine } from "@/lib/student/story";
 import { BottomNav } from "./bottom-nav";
 
 // Ported from design-source/questling-v2/01_APPROVED_SCREENS/03_story_map/code.html.
@@ -42,7 +42,7 @@ export function MapScreen() {
   const [view, setView] = useState<"map" | "list">("map");
   const campaign = playedCampaign(facts, currentCampaign(facts));
   const current = currentChapter(facts);
-  const path: Stop[] = campaigns.flatMap((c) => {
+  const path: Stop[] = studentCampaigns(facts).flatMap((c) => {
     const played = playedCampaign(facts, c);
     return played.chapters.map((chapter) => ({ campaign: played, chapter, status: chapterStatus(facts, played, chapter) }));
   });
@@ -298,7 +298,7 @@ function CurrentNode({ stop, heroImage }: { stop: Stop; heroImage: string | null
         </div>
         <p className="font-body-md text-body-md text-on-surface-variant line-clamp-3 leading-snug italic">«{sceneLine(scene)}»</p>
         <Link
-          href={`${base}/quest/${chapter.id}`}
+          href={questHref(base, campaign, chapter)}
           className="font-label-md text-label-md mt-1 flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-b from-[#D5B87E] to-[#B99A61] font-bold tracking-wider text-[#101016] uppercase shadow-[0_0_18px_rgba(185,154,97,0.35)] transition-transform active:scale-[0.98]"
         >
           <span>{status === "open" ? t.map.start : t.map.continue}</span>
@@ -329,7 +329,7 @@ function ChapterNode({ stop, previous, boss, compact }: { stop: Stop; previous: 
           </div>
         ) : null}
         <Link
-          href={`${base}/quest/${chapter.id}`}
+          href={questHref(base, campaign, chapter)}
           aria-label={tr(chapter.title, locale)}
           className="group bg-surface-container relative flex h-20 w-20 items-center justify-center rounded-full shadow-[0_4px_20px_rgba(0,0,0,0.6)] transition-transform active:scale-95"
         >

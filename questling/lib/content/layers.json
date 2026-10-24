@@ -2,71 +2,36 @@
   "cat-base": {
     "item": "base",
     "part": "body",
-    "box": [
-      228,
-      95,
-      630,
-      830
-    ]
+    "box": [228, 95, 630, 830]
   },
   "witch-hat-back": {
     "item": "witch-hat",
     "part": "back",
-    "box": [
-      327,
-      620,
-      352,
-      200
-    ]
+    "box": [327, 620, 352, 200]
   },
   "witch-hat-front": {
     "item": "witch-hat",
     "part": "front",
-    "box": [
-      103,
-      188,
-      806,
-      606
-    ]
+    "box": [103, 188, 806, 606]
   },
   "ceremonial-cape-back": {
     "item": "ceremonial-cape",
     "part": "back",
-    "box": [
-      158,
-      241,
-      589,
-      681
-    ]
+    "box": [158, 241, 589, 681]
   },
   "ceremonial-cape-front": {
     "item": "ceremonial-cape",
     "part": "front",
-    "box": [
-      147,
-      290,
-      613,
-      651
-    ]
+    "box": [147, 290, 613, 651]
   },
   "star-amulet-back": {
     "item": "star-amulet",
     "part": "back",
-    "box": [
-      428,
-      0,
-      166,
-      262
-    ]
+    "box": [428, 0, 166, 262]
   },
   "star-amulet-front": {
     "item": "star-amulet",
     "part": "front",
-    "box": [
-      286,
-      262,
-      452,
-      525
-    ]
+    "box": [286, 262, 452, 525]
   }
 }

@@ -2,6 +2,7 @@ import type { CharacterId } from "@/lib/content/characters";
 import type { Slot } from "@/lib/content/items";
 import type { Skill } from "@/lib/content/quick-quests";
 import type { RunState } from "@/lib/story/run";
+import type { World } from "./world";
 
 // A student's record: everything the game knows about them, as plain facts. Balances,
 // levels, streaks and achievement progress are never stored: they are worked out from
@@ -62,6 +63,8 @@ export type Facts = {
   equipped: Partial<Record<Slot, string>>;
   /** One run per campaign started: where the student is in its story (lib/story/run.ts). */
   runs: RunState[];
+  /** Groups, assignments, teachers' campaigns and replies (lib/game/world.ts): loaded, never changed by effects. */
+  world?: World;
 };
 
 export type Effect =
@@ -99,6 +102,7 @@ export function applyEffects(facts: Facts, effects: Effect[], at: string): Facts
     inventory: [...facts.inventory],
     equipped: { ...facts.equipped },
     runs: [...facts.runs],
+    world: facts.world,
   };
   for (const effect of effects) {
     switch (effect.type) {

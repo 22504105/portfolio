@@ -1,7 +1,8 @@
 import { characters } from "@/lib/content/characters";
-import { campaigns } from "@/lib/content/campaigns";
 import { tr } from "@/lib/content/text";
 import type { Facts } from "@/lib/game/facts";
+import { studentCampaigns } from "@/lib/game/world";
+import { questHref } from "./story";
 import { balance, chestReady, completed, currentChapter, currentStreak, dailyEntry, dailyQuests, levelOf, rankOf } from "@/lib/game/stats";
 import type { Locale } from "@/lib/i18n";
 
@@ -37,7 +38,8 @@ export function homeView(facts: Facts, locale: Locale, base: string, today: stri
   const character = characters[facts.profile.characterId ?? "cat"];
   const { level, into, next } = levelOf(balance(facts, "xp"));
   // Once every campaign is finished, the last chapter played stays featured.
-  const chapter = currentChapter(facts)?.chapter ?? campaigns.at(-1)!.chapters.at(-1)!;
+  const current = currentChapter(facts);
+  const chapter = current?.chapter ?? studentCampaigns(facts).at(-1)!.chapters.at(-1)!;
   const entry = dailyEntry(today);
   return {
     hero: {
@@ -54,7 +56,7 @@ export function homeView(facts: Facts, locale: Locale, base: string, today: stri
       cefr: chapter.cefr,
       title: tr(chapter.title, locale),
       image: chapter.image,
-      continueHref: `${base}/quest/${chapter.id}`,
+      continueHref: questHref(base, current?.campaign ?? studentCampaigns(facts).at(-1)!, chapter),
       mapHref: `${base}/map`,
     },
     dailyQuests: dailyQuests(today)

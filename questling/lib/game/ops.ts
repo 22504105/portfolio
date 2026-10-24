@@ -1,5 +1,4 @@
 import { achievements } from "@/lib/content/achievements";
-import { campaignById } from "@/lib/content/campaigns";
 import { keysOf } from "@/lib/content/campaigns/keys";
 import { isCharacterId } from "@/lib/content/characters";
 import { dailyQuizKeys } from "@/lib/content/daily-keys";
@@ -9,7 +8,7 @@ import { DAILY_BONUS, quickQuestById } from "@/lib/content/quick-quests";
 import { DAILY_CLAIM_XP } from "@/lib/content/daily";
 import type { Locale } from "@/lib/i18n";
 import { gradeAnswer, validAnswer, type Graded } from "@/lib/learning/questions";
-import { isGraded } from "@/lib/story/graph";
+import { isGraded, type Campaign, type CampaignKeys } from "@/lib/story/graph";
 import { isExhausted, locate, move, sceneProgress, startRun, type Move } from "@/lib/story/run";
 import { applyEffects, type Effect, type Facts } from "./facts";
 import {
@@ -32,6 +31,7 @@ import {
   runState,
 } from "./stats";
 import { dayOf, weekOf } from "./time";
+import { findCampaign } from "./world";
 
 // What a student can do, as pure functions: (facts, input) → effects, or a refusal.
 // The server runs these on the facts it holds, under a lock on the student, and stores
@@ -85,8 +85,17 @@ export type Outcome =
   | { kind: "chest"; item: string | null; coins: number }
   | { kind: "ok" };
 
-/** `random` draws the weekly chest's prize: a number in [0, 1). The server uses a cryptographic source. */
-export type Context = { now: Date; locale: Locale; demo: boolean; random?: () => number };
+/**
+ * `random` draws the weekly chest's prize: a number in [0, 1). The server uses a cryptographic source.
+ * `keys` gives a teacher's campaign its answer keys (the server holds them); built-in ones have their own.
+ */
+export type Context = {
+  now: Date;
+  locale: Locale;
+  demo: boolean;
+  random?: () => number;
+  keys?: (campaign: Campaign) => CampaignKeys | null;
+};
 
 export type OpResult = { ok: true; effects: Effect[]; outcome: Outcome } | { ok: false; refusal: Refusal };
 
@@ -225,13 +234,14 @@ function perform(facts: Facts, action: Action, ctx: Context): OpResult {
     }
 
     case "story": {
-      const latest = campaignById.get(action.campaign);
+      const latest = findCampaign(facts, action.campaign);
       if (!latest) return refuse("not_available");
       const existing = runOf(facts, latest.id);
       if (!existing && !campaignOpen(facts, latest)) return refuse("not_available");
       const campaign = playedCampaign(facts, latest);
       const before = existing ?? startRun(campaign);
-      const result = move(campaign, keysOf(campaign), before, action.move);
+      const keys = ctx.keys?.(campaign) ?? keysOf(campaign);
+      const result = move(campaign, keys, before, action.move);
       if (!result.ok) return refuse(result.refusal);
 
       const after = result.run;
@@ -266,7 +276,7 @@ function perform(facts: Facts, action: Action, ctx: Context): OpResult {
     }
 
     case "askMentor": {
-      const latest = campaignById.get(action.campaign);
+      const latest = findCampaign(facts, action.campaign);
       const run = latest ? runOf(facts, latest.id) : null;
       if (!latest || !run || run.scene !== action.scene) return refuse("not_available");
       const scene = locate(playedCampaign(facts, latest), run.scene)?.scene;

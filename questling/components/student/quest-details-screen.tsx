@@ -3,11 +3,13 @@
 /* eslint-disable @next/next/no-img-element -- illustrations are pre-sized WebP in public/images (scripts/import-images.mjs) */
 import Link from "next/link";
 import { Icon } from "@/components/ui/icon";
-import { findChapter } from "@/lib/content/campaigns";
 import { tr } from "@/lib/content/text";
 import { speak, useSpeechSupported } from "@/lib/client/sound";
 import { useStudent } from "@/lib/client/student";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import { chapterProgress, chapterStatus, playedCampaign, runOf } from "@/lib/game/stats";
+import { findCampaign, studentCampaigns } from "@/lib/game/world";
 import { isGraded } from "@/lib/story/graph";
 import { fill } from "@/lib/i18n";
 import { sceneLine } from "@/lib/student/story";
@@ -20,12 +22,26 @@ import { BackHeader } from "./back-header";
 // diary quotes the scene the run is at (or the last one solved).
 // Tailwind v3 → v4: drop-shadow-sm → drop-shadow-xs.
 
-export function QuestDetailsScreen({ chapterId }: { chapterId: string }) {
+export function QuestDetailsScreen({ chapterId, campaignId }: { chapterId: string; campaignId?: string }) {
+  const { base, facts } = useStudent();
+  const router = useRouter();
+  // The chapter among the student's campaigns (a teacher's chapter ids may repeat across campaigns).
+  const latest = campaignId
+    ? findCampaign(facts, campaignId)
+    : studentCampaigns(facts).find((c) => c.chapters.some((ch) => ch.id === chapterId));
+  const found = latest?.chapters.some((ch) => ch.id === chapterId) ? latest : null;
+  useEffect(() => {
+    if (!found) router.replace(`${base}/map`);
+  }, [found, router, base]);
+  if (!found) return <div className="bg-background min-h-dvh" aria-busy="true"></div>;
+  return <Details chapterId={chapterId} latest={found} />;
+}
+
+function Details({ chapterId, latest }: { chapterId: string; latest: NonNullable<ReturnType<typeof findCampaign>> }) {
   const { t, locale, base, facts } = useStudent();
   const speech = useSpeechSupported();
-  const found = findChapter(chapterId)!;
-  const campaign = playedCampaign(facts, found.campaign);
-  const chapter = campaign.chapters.find((c) => c.id === chapterId) ?? found.chapter;
+  const campaign = playedCampaign(facts, latest);
+  const chapter = campaign.chapters.find((c) => c.id === chapterId) ?? latest.chapters.find((c) => c.id === chapterId)!;
   const run = runOf(facts, campaign.id);
   const status = chapterStatus(facts, campaign, chapter);
   const { solved, total } = chapterProgress(facts, campaign, chapter);

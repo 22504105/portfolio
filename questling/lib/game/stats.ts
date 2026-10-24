@@ -1,5 +1,4 @@
 import { achievements, WEEKLY_CHEST_GOAL, type Achievement } from "@/lib/content/achievements";
-import { campaigns, campaignVersion } from "@/lib/content/campaigns";
 import { dailyEntries, type DailyEntry } from "@/lib/content/daily";
 import { items, type Item } from "@/lib/content/items";
 import { DAILY_QUEST_COUNT, quickQuestById, quickQuests, type QuickQuest, type Skill } from "@/lib/content/quick-quests";
@@ -8,6 +7,7 @@ import type { Campaign, Chapter, Clue } from "@/lib/story/graph";
 import { chapterSolved, chapterState, locate, type ChapterState, type RunState as StoryRun } from "@/lib/story/run";
 import type { Facts } from "./facts";
 import { dayNumber, dayOf, weekOf } from "./time";
+import { findCampaign, isAssigned, studentCampaigns } from "./world";
 
 // Everything worked out from a student's facts: balances, level, streak, today's quests,
 // story progress, achievement progress. Pure functions; no answer keys, so the signed-in
@@ -159,17 +159,19 @@ export const runOf = (facts: Facts, campaignId: string): StoryRun | null => fact
 /** The version of a campaign the student plays: the one their run started on, else the latest. */
 export function playedCampaign(facts: Facts, campaign: Campaign): Campaign {
   const run = runOf(facts, campaign.id);
-  return (run && campaignVersion(run.campaign, run.version)) ?? campaign;
+  return (run && findCampaign(facts, run.campaign, run.version)) ?? campaign;
 }
 
 export const campaignFinished = (facts: Facts, campaignId: string) => Boolean(runOf(facts, campaignId)?.ending);
 
-/** A campaign opens once the one it requires is finished, whichever ending. */
-export const campaignOpen = (facts: Facts, campaign: Campaign) => !campaign.requires || campaignFinished(facts, campaign.requires);
+/** A campaign opens once the one it requires is finished, whichever ending; one a teacher assigned is open at once. */
+export const campaignOpen = (facts: Facts, campaign: Campaign) =>
+  isAssigned(facts, campaign.id) || !campaign.requires || campaignFinished(facts, campaign.requires);
 
 /** The campaign being played: the first open one not finished yet; the last one once all are. */
 export function currentCampaign(facts: Facts): Campaign {
-  return campaigns.find((c) => campaignOpen(facts, c) && !campaignFinished(facts, c.id)) ?? campaigns[campaigns.length - 1];
+  const list = studentCampaigns(facts);
+  return list.find((c) => campaignOpen(facts, c) && !campaignFinished(facts, c.id)) ?? list[list.length - 1];
 }
 
 export function chapterStatus(facts: Facts, campaign: Campaign, chapter: Chapter): ChapterState {
@@ -192,7 +194,7 @@ export function chapterProgress(facts: Facts, campaign: Campaign, chapter: Chapt
 /** Every clue found, newest last, with the campaign it belongs to. */
 export function foundClues(facts: Facts): { campaign: Campaign; clue: Clue }[] {
   return facts.runs.flatMap((run) => {
-    const campaign = campaignVersion(run.campaign, run.version);
+    const campaign = findCampaign(facts, run.campaign, run.version);
     return campaign ? run.clues.flatMap((id) => campaign.clues.filter((clue) => clue.id === id).map((clue) => ({ campaign, clue }))) : [];
   });
 }
