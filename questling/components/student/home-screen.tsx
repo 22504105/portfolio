@@ -1,7 +1,11 @@
+"use client";
+
 /* eslint-disable @next/next/no-img-element -- illustrations are pre-sized WebP in public/images (scripts/import-images.mjs) */
 import Link from "next/link";
-import { getDictionary, plural, type Locale } from "@/lib/i18n";
-import { xpPercent, type HomeView } from "@/lib/student/home";
+import { useNow, useStudent } from "@/lib/client/student";
+import { dayOf } from "@/lib/game/time";
+import { plural } from "@/lib/i18n";
+import { homeView, xpPercent } from "@/lib/student/home";
 import { BottomNav } from "./bottom-nav";
 import { PronounceButton } from "./pronounce-button";
 
@@ -11,9 +15,10 @@ import { PronounceButton } from "./pronounce-button";
 
 const chevron = <path d="M9 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"></path>;
 
-export function HomeScreen({ view, base, locale }: { view: HomeView; base: string; locale: Locale }) {
+export function HomeScreen() {
+  const { t, locale, base, facts } = useStudent();
+  const view = homeView(facts, locale, base, dayOf(useNow()));
   const { hero, featured, dailyQuests, word } = view;
-  const t = getDictionary(locale);
   return (
     <div data-scope="home" className="flex min-h-dvh justify-center bg-[#0b0b0f] font-sans text-[#E8E1D5] select-none">
       <div className="relative flex h-dvh w-full max-w-[390px] flex-col overflow-hidden border border-stone-800/60 bg-[#101016] shadow-2xl">
@@ -23,7 +28,8 @@ export function HomeScreen({ view, base, locale }: { view: HomeView; base: strin
             <h1 className="font-cinzel text-xs font-bold tracking-[0.25em] text-[#CFAC6E] drop-shadow-xs">QUESTLING</h1>
           </div>
           <div className="flex items-center space-x-2">
-            <button
+            <Link
+              href={`${base}/rewards`}
               aria-label={t.home.notifications}
               className="text-parchment/80 relative flex h-9 w-9 items-center justify-center rounded-full border border-[#3A3228] bg-[#1C1B27] transition-transform active:scale-95"
             >
@@ -38,7 +44,7 @@ export function HomeScreen({ view, base, locale }: { view: HomeView; base: strin
               {view.unreadNotifications ? (
                 <span className="bg-magicViolet absolute top-1.5 right-1.5 h-1.5 w-1.5 rounded-full shadow-[0_0_6px_#8D75C9]"></span>
               ) : null}
-            </button>
+            </Link>
           </div>
         </header>
 
@@ -67,7 +73,10 @@ export function HomeScreen({ view, base, locale }: { view: HomeView; base: strin
                   <h3 className="font-cormorant text-parchment mt-0.5 truncate text-lg leading-tight font-bold">{hero.name}</h3>
                 </div>
                 <div className="my-1 grid grid-cols-2 gap-1.5">
-                  <div className="flex items-center space-x-1.5 rounded-lg border border-[#3A3228] bg-[#14131D]/90 px-2 py-1 shadow-xs">
+                  <Link
+                    href={`${base}/rewards`}
+                    className="flex items-center space-x-1.5 rounded-lg border border-[#3A3228] bg-[#14131D]/90 px-2 py-1 shadow-xs"
+                  >
                     <span className="text-xs text-orange-400">🔥</span>
                     <div className="flex flex-col">
                       <span className="text-parchmentMuted text-[9px] leading-none font-medium">{t.home.streak}</span>
@@ -75,14 +84,17 @@ export function HomeScreen({ view, base, locale }: { view: HomeView; base: strin
                         {plural(locale, hero.streakDays, t.common.days)}
                       </span>
                     </div>
-                  </div>
-                  <div className="flex items-center space-x-1.5 rounded-lg border border-[#3A3228] bg-[#14131D]/90 px-2 py-1 shadow-xs">
+                  </Link>
+                  <Link
+                    href={`${base}/shop`}
+                    className="flex items-center space-x-1.5 rounded-lg border border-[#3A3228] bg-[#14131D]/90 px-2 py-1 shadow-xs"
+                  >
                     <span className="text-xs text-[#CFAC6E]">🪙</span>
                     <div className="flex flex-col">
                       <span className="text-parchmentMuted text-[9px] leading-none font-medium">{t.home.gold}</span>
                       <span className="text-xs leading-tight font-semibold text-[#CFAC6E]">{hero.coins}</span>
                     </div>
-                  </div>
+                  </Link>
                 </div>
                 <div className="space-y-1">
                   <div className="flex items-center justify-between text-[10px]">

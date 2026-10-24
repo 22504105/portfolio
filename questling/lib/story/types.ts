@@ -1,9 +1,9 @@
-// A question node as the player sees it, and the part of it only the grader
-// may see. The split is the point: a client never receives `QuestionKey`, so the
+// A story node as the player sees it, and the part of it only the grader
+// may see. The split is the point: a client never receives the key, so the
 // answer cannot be read out of the page. (In the demo both live in the browser,
-// which is why the demo is labelled and never writes anything.)
+// which is why the demo is labelled and never writes anything to the server.)
 
-export type OptionIcon = "stairs" | "park" | "fort";
+export type OptionIcon = "stairs" | "park" | "fort" | "local_library" | "restaurant" | "nightlight" | "skull" | "water_drop" | "door_front";
 
 export type QuestionOption = {
   id: string;
@@ -14,9 +14,9 @@ export type QuestionOption = {
   icon: OptionIcon;
 };
 
-export type QuestionNode = {
+/** What every node shows about where it is in the story. */
+type NodeFrame = {
   id: string;
-  kind: "question";
   chapter: string;
   cefr: string;
   storyTitle: string;
@@ -24,20 +24,32 @@ export type QuestionNode = {
   image: string;
   /** Position of this clue in the chapter, 1-based, and how many clues the chapter has. */
   clue: { index: number; total: number; text: string; title: string };
-  prompt: { lead: string; task: string };
-  options: QuestionOption[];
   maxAttempts: number;
   reward: { xp: number };
 };
 
-export type QuestionKey = {
-  nodeId: string;
-  correctOptionId: string;
-  /** Why each option is right or wrong; shown after it has been chosen. */
-  explanations: Record<string, string>;
-  /** Shown after a wrong answer. */
+export type QuestionNode = NodeFrame & {
+  kind: "question";
+  prompt: { lead: string; task: string };
+  options: QuestionOption[];
+  /** The parchment's line in the interface language, offered after a wrong answer. */
+  translation: string;
+  /** Shown after a wrong answer: points the way without giving the answer. */
   hint: { topic: string; text: string };
 };
+
+/** A word-order cipher (06_interactive_puzzle). */
+export type PuzzleNode = NodeFrame & {
+  kind: "puzzle";
+  title: string;
+  task: string;
+  scroll: string;
+  altar: string;
+  tiles: string[];
+  hint: string;
+};
+
+export type StoryNode = QuestionNode | PuzzleNode;
 
 export type GradeResult = {
   optionId: string;

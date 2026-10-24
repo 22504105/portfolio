@@ -1,17 +1,8 @@
-import type { Metadata } from "next";
-import { notFound } from "next/navigation";
-import { demoStory } from "@/lib/demo/story";
-import { fill, getDictionary, isLocale } from "@/lib/i18n";
-import { DemoStoryPlayer } from "./demo-story-player";
+import { PlayScreen } from "@/components/student/play-screen";
+import { pageMetadata } from "@/lib/i18n/metadata";
 
-export async function generateMetadata({ params }: PageProps<"/[locale]/demo/play">): Promise<Metadata> {
-  const { locale } = await params;
-  if (!isLocale(locale)) return {};
-  return { title: fill(getDictionary(locale).meta.demoTitle, { page: demoStory(locale).question.storyTitle }) };
-}
+export const generateMetadata = pageMetadata("demo", (t) => t.player.title);
 
-export default async function DemoPlayPage({ params }: PageProps<"/[locale]/demo/play">) {
-  const { locale } = await params;
-  if (!isLocale(locale)) notFound();
-  return <DemoStoryPlayer locale={locale} t={getDictionary(locale)} />;
+export default function Page() {
+  return <PlayScreen />;
 }

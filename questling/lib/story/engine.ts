@@ -1,4 +1,4 @@
-import type { GradeResult, QuestionKey, QuestionNode } from "./types";
+import type { GradeResult, QuestionNode } from "./types";
 
 // The question node's state machine. The five Stitch story-player screens are
 // its phases (docs/design-screen-map.md):
@@ -42,14 +42,6 @@ export function attemptsLeft(node: QuestionNode, state: QuestionState): number {
 /** Whether "check" may be pressed: something chosen, while answering. */
 export function canCheck(state: QuestionState): boolean {
   return state.phase === "answering" && state.selected !== null;
-}
-
-export function grade(key: QuestionKey, optionId: string): GradeResult {
-  return {
-    optionId,
-    correct: optionId === key.correctOptionId,
-    explanation: key.explanations[optionId] ?? "",
-  };
 }
 
 export function reduce(node: QuestionNode, state: QuestionState, action: QuestionAction): QuestionState {

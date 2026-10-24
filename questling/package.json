@@ -20,7 +20,8 @@
     "test:e2e": "playwright test",
     "assets:fetch": "node scripts/fetch-remote-assets.mjs",
     "assets:audit": "node scripts/audit-images.mjs",
-    "visual": "node scripts/visual-compare.mjs"
+    "visual": "node scripts/visual-compare.mjs",
+    "db:migrate": "node scripts/migrate.mjs"
   },
   "dependencies": {
     "clsx": "2.1.1",

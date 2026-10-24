@@ -33,6 +33,13 @@ for (const dir of ["app", "components", "lib"]) {
     for (const tag of code.matchAll(/<Icon\b[^>]*?>/g)) {
       const name = tag[0].match(/\bname="([a-z0-9_]+)"/)?.[1];
       if (name) wanted.add(name);
+      // name={on ? "volume_up" : "volume_off"}: every literal in the expression.
+      const expression = tag[0].match(/\bname=\{([^}]*)\}/)?.[1] ?? "";
+      for (const literal of expression.matchAll(/"([a-z0-9_]+)"/g)) wanted.add(literal[1]);
+    }
+    // icon: "lock", icon: boss ? ("military_tech" as const) : ("auto_awesome" as const)
+    for (const property of code.matchAll(/\bicon:\s*([^,\n}]+)/g)) {
+      for (const literal of property[1].matchAll(/"([a-z0-9_]+)"/g)) wanted.add(literal[1]);
     }
     for (const union of code.matchAll(/type\s+\w*Icon\s*=\s*([^;]+);/g)) {
       for (const name of union[1].matchAll(/"([a-z0-9_]+)"/g)) wanted.add(name[1]);

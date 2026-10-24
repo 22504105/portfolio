@@ -1,14 +1,20 @@
+"use client";
+
 /* eslint-disable @next/next/no-img-element -- illustrations are pre-sized WebP in public/images (scripts/import-images.mjs) */
 import Link from "next/link";
 import { Icon } from "@/components/ui/icon";
-import { fill, getDictionary, plural, type Locale } from "@/lib/i18n";
+import { useNow, useStudent } from "@/lib/client/student";
+import { dayOf } from "@/lib/game/time";
+import { fill, plural } from "@/lib/i18n";
 import { xpPercent } from "@/lib/student/home";
-import type { ProfileView } from "@/lib/student/profile";
+import { profileView } from "@/lib/student/profile";
 import { BottomNav } from "./bottom-nav";
 
 // Ported from design-source/questling-v2/01_APPROVED_SCREENS/11_profile_2/code.html.
 // Owner's decisions (2026-10-24): the header names the screen in the interface language
 // (the export says "Profile"), and the bottom bar is Home's, as on every main screen.
+// Every figure is the student's own (lib/student/profile.ts); the export's note that the learning
+// figures are demo data is shown in the demo only. The pencil opens the hero choice (12).
 // Tailwind v3 → v4 renames: shadow-sm → shadow-xs, blur-sm → blur-xs.
 
 type QuickLinkIcon = "checkroom" | "backpack" | "account_balance" | "settings";
@@ -28,8 +34,10 @@ const skillTones = {
   tertiary: { badge: "bg-tertiary/10 text-tertiary", value: "text-tertiary", bar: "bg-tertiary shadow-[0_0_6px_rgba(217,196,155,0.4)]" },
 };
 
-export function ProfileScreen({ view, base, locale }: { view: ProfileView; base: string; locale: Locale }) {
-  const t = getDictionary(locale);
+export function ProfileScreen() {
+  const { t, locale, base, facts, account, mode } = useStudent();
+  const view = profileView(facts, locale, t, account, dayOf(useNow()));
+  const { telegram, group } = view.account;
   return (
     <div data-scope="profile" className="bg-background text-text-ivory flex min-h-dvh flex-col">
       <header className="pt-safe fixed inset-x-0 top-0 z-50 border-b border-[#6E5A3A]/20 bg-[#1C1B27]/90 shadow-[0_1px_8px_rgba(0,0,0,0.5)] backdrop-blur-xl">
@@ -41,10 +49,14 @@ export function ProfileScreen({ view, base, locale }: { view: ProfileView; base:
             <h1 className="font-headline-md text-headline-md text-text-ivory tracking-tight">{t.profile.title}</h1>
           </div>
           <div className="gap-space-md flex items-center">
-            <div className="gap-space-xs bg-surface-container-high px-space-md flex items-center rounded-full border border-[#6E5A3A]/30 py-1 shadow-[0_0_12px_rgba(185,154,97,0.15)]">
+            <Link
+              href={`${base}/shop`}
+              aria-label={t.shop.title}
+              className="gap-space-xs bg-surface-container-high px-space-md flex items-center rounded-full border border-[#6E5A3A]/30 py-1 shadow-[0_0_12px_rgba(185,154,97,0.15)]"
+            >
               <Icon name="monetization_on" className="text-primary text-[18px]" />
               <span className="font-label-md text-label-md text-primary font-bold">{view.coins}</span>
-            </div>
+            </Link>
             <div className="bg-primary flex h-8 w-8 items-center justify-center rounded-full shadow-[0_0_8px_rgba(228,194,133,0.3)]">
               <Icon name="person" className="text-on-primary text-[18px]" />
             </div>
@@ -59,11 +71,16 @@ export function ProfileScreen({ view, base, locale }: { view: ProfileView; base:
             <div className="pointer-events-none absolute right-0 bottom-10 h-44 w-44 rounded-full bg-[#B99A61]/15 blur-2xl"></div>
             <div className="relative z-10 flex flex-col items-center text-center">
               <div className="flex items-center gap-2">
-                {/* Renaming arrives with accounts (Gate 2); in the demo the pencil only shows where it will be. */}
-                <div className="bg-surface-container-low/90 flex items-center gap-1.5 rounded-full border border-[#6E5A3A]/40 px-3 py-1">
-                  <span className="font-headline-md text-headline-md text-text-ivory">{view.name}</span>
+                <Link
+                  href={`${base}/character`}
+                  aria-label={t.profile.changeHero}
+                  className="bg-surface-container-low/90 hover:bg-surface-container-high group flex items-center gap-1.5 rounded-full border border-[#6E5A3A]/40 px-3 py-1 transition-colors"
+                >
+                  <span className="font-headline-md text-headline-md text-text-ivory group-hover:text-primary transition-colors">
+                    {view.name}
+                  </span>
                   <Icon name="edit" className="text-primary text-[16px]" />
-                </div>
+                </Link>
               </div>
               <div className="mt-1.5 flex items-center gap-2">
                 <div className="bg-secondary-container/40 inline-flex items-center gap-1 rounded-full border border-[#8D75C9]/40 px-2.5 py-0.5 shadow-[0_0_10px_rgba(141,117,201,0.2)]">
@@ -180,10 +197,12 @@ export function ProfileScreen({ view, base, locale }: { view: ProfileView; base:
                   </div>
                 );
               })}
-              <div className="pt-space-xs text-caption text-text-muted flex items-center justify-center gap-1.5 italic opacity-75">
-                <Icon name="info" className="text-[13px]" />
-                <span>{t.profile.demoData}</span>
-              </div>
+              {mode === "demo" ? (
+                <div className="pt-space-xs text-caption text-text-muted flex items-center justify-center gap-1.5 italic opacity-75">
+                  <Icon name="info" className="text-[13px]" />
+                  <span>{t.profile.demoData}</span>
+                </div>
+              ) : null}
             </div>
           </section>
 
@@ -195,18 +214,20 @@ export function ProfileScreen({ view, base, locale }: { view: ProfileView; base:
             <div className="gap-space-xs flex flex-col">
               <QuickLink href={`${base}/wardrobe`} icon="checkroom" title={t.profile.wardrobe} note={view.wardrobeNote} />
               <QuickLink href={`${base}/inventory`} icon="backpack" title={t.profile.inventory} note={view.inventoryNote} />
+              {/* The group screen is part of Teacher Studio (Gate 4): the row says which group, and opens nothing yet. */}
               <QuickLink
-                href={`${base}/group`}
                 icon="account_balance"
                 violet
-                title={fill(t.profile.group, { name: view.group.name })}
-                note={fill(t.profile.mentor, { name: view.group.mentor })}
+                title={group ? fill(t.profile.group, { name: group.name }) : t.profile.noGroup}
+                note={group ? fill(t.profile.mentor, { name: group.mentor }) : t.profile.noGroupNote}
               />
               <QuickLink
                 href={`${base}/settings`}
                 icon="settings"
                 title={t.profile.settings}
-                note={fill(t.profile.linkedAccount, { username: view.telegram.username, id: view.telegram.id })}
+                note={
+                  telegram ? fill(t.profile.linkedAccount, { username: telegram.username ?? "—", id: telegram.id }) : t.profile.notLinked
+                }
               />
             </div>
           </section>
@@ -225,17 +246,15 @@ function QuickLink({
   note,
   violet = false,
 }: {
-  href: string;
+  href?: string;
   icon: QuickLinkIcon;
   title: string;
   note: string;
   violet?: boolean;
 }) {
-  return (
-    <Link
-      href={href}
-      className="p-space-md bg-surface hover:bg-surface-container-high group flex items-center justify-between rounded-xl border border-[#6E5A3A]/20 shadow-md transition-all active:scale-[0.99]"
-    >
+  const hover = violet ? "group-hover:text-secondary" : "group-hover:text-primary";
+  const body = (
+    <>
       <div className="gap-space-md flex min-w-0 items-center">
         <div
           className={
@@ -247,18 +266,24 @@ function QuickLink({
           <Icon name={icon} className="text-[22px]" />
         </div>
         <div className="flex min-w-0 flex-col">
-          <span
-            className={`font-label-md text-label-md text-text-ivory truncate transition-colors ${violet ? "group-hover:text-secondary" : "group-hover:text-primary"}`}
-          >
-            {title}
-          </span>
+          <span className={`font-label-md text-label-md text-text-ivory truncate transition-colors ${href ? hover : ""}`}>{title}</span>
           <span className="font-caption text-caption text-text-muted truncate">{note}</span>
         </div>
       </div>
-      <Icon
-        name="chevron_right"
-        className={`text-text-muted ml-2 flex-shrink-0 text-[20px] transition-all group-hover:translate-x-0.5 ${violet ? "group-hover:text-secondary" : "group-hover:text-primary"}`}
-      />
+      {href ? (
+        <Icon
+          name="chevron_right"
+          className={`text-text-muted ml-2 flex-shrink-0 text-[20px] transition-all group-hover:translate-x-0.5 ${hover}`}
+        />
+      ) : null}
+    </>
+  );
+  const frame = "p-space-md bg-surface group flex items-center justify-between rounded-xl border border-[#6E5A3A]/20 shadow-md";
+  return href ? (
+    <Link href={href} className={`${frame} hover:bg-surface-container-high transition-all active:scale-[0.99]`}>
+      {body}
     </Link>
+  ) : (
+    <div className={frame}>{body}</div>
   );
 }

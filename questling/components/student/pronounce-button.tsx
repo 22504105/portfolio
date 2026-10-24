@@ -1,30 +1,17 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
+import { speak, useSpeechSupported } from "@/lib/client/sound";
 
 // Says the word aloud with the device's own English voice (Web Speech API).
 // No audio file and no outside service. Where the browser has no speech
 // synthesis the button is shown disabled rather than pretending to work.
 
-const subscribe = () => () => {};
-const hasSpeech = () => typeof window !== "undefined" && "speechSynthesis" in window;
-
 export function PronounceButton({ word, label }: { word: string; label: string }) {
-  const supported = useSyncExternalStore(subscribe, hasSpeech, () => true);
-
-  function speak() {
-    if (!hasSpeech()) return;
-    const utterance = new SpeechSynthesisUtterance(word);
-    utterance.lang = "en-US";
-    utterance.rate = 0.9;
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(utterance);
-  }
-
+  const supported = useSpeechSupported();
   return (
     <button
       type="button"
-      onClick={speak}
+      onClick={() => speak(word)}
       disabled={!supported}
       aria-label={label}
       className="border-magicViolet/40 text-magicViolet flex h-6 w-6 items-center justify-center rounded-full border bg-[#272338] transition-colors hover:text-white disabled:opacity-40"

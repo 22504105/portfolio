@@ -9,24 +9,33 @@ deltas (see `docs/visual-qa/README.md`), `ok` accepted.
 
 ## Student app (mobile, 390×844 baseline)
 
-| Source folder | Route / component | Purpose (checked against screen.png) | Impl | Visual QA | Gate |
+Every screen exists twice, on the same component: under `/{ru,en}/demo/…` (the demo student, kept in
+the browser) and under `/{ru,en}/app/…` (the signed-in Telegram student, kept on the server). Status
+`live` means the screen's actions go through the server for a signed-in student; "story" screens are
+`live` for Gate 2's clue-by-clue progress and get versioned story runs in Gate 3.
+
+| Source folder | Route | Purpose (checked against screen.png) | Impl | Visual QA | Gate |
 |---|---|---|---|---|---|
-| `01_welcome` | `/` (first run) → `app/(student)/welcome` | Onboarding: logo, three feature rows, "Начать путешествие" | — | — | 2 |
-| `02_home_2` | `/home` | Hero panel (character, level, streak, coins, XP), featured story card, daily quests, word of the day, bottom nav | ui | diff 0.00% | 1 |
-| `03_story_map` | `/map` | Vertical quest path with locked/complete locations | — | — | 3 |
-| `04_quest_details` | `/quests/[questId]` | Quest intro, learning goals, rewards, start/resume | — | — | 2 |
-| `05_story_player_2` | `/play/[runId]` — `StoryPlayer` | Question node: clue parchment, three options, one selected, "Проверить ответ" | ui | diff 1.68% | 1 |
-| `06_interactive_puzzle` | `StoryPlayer` puzzle node (`PuzzleNode`) | Word-order cipher: slots + word bank, hint, check | — | — | 3 |
-| `07_evidence_journal_2` | `/journal` | Collected clues list, clue detail, progress | — | — | 3 |
-| `08_quick_quests` | `/quests` | Daily/assigned short activities with progress and rewards | — | — | 2 |
-| `09_daily_discovery` | `/discovery` | Word of the day (IPA, translation, example), fact, mini quiz | — | — | 2 |
-| `10_rewards` | `/rewards` | Chests, achievements with progress, economy feedback | — | — | 2 |
-| `11_profile_2` | `/profile` | Character preview, level, stats, quick links | ui (demo) | diff 1.90% | 1 (demo), 2 |
-| — (no screen) | `/settings` | Interface language (ru/en), linked Telegram account. Built only from parts of approved screens; reached from the profile row "Настройки и Telegram ID" | ui (demo) | — | 1 (demo), 2 |
-| `12_character_select` | `/onboarding/character` | Six free starting characters, confirm | — | — | 2 |
-| `13_wardrobe_2` | `/wardrobe` | Full-body preview, slot tabs, item grid, equip/save | — | — | 4 |
-| `14_arcane_shop_2` | `/shop` | Featured item with preview, categories, catalogue, buy | — | — | 4 |
-| `15_inventory` | `/inventory` | Owned items/companions with filters, equip | — | — | 4 |
+| `01_welcome` | `/welcome` (and `/app` itself) | Onboarding: logo, three feature rows, sound and language, "Начать путешествие" | live | 0.09% | 2 |
+| `02_home_2` | `/home` | Hero panel (character, level, streak, coins, XP), current chapter, today's quests, word of the day, bottom nav | live | 2.79% | 1–2 |
+| `03_story_map` | `/map` | Campaign path: done / current (hero) / locked / not yet written chapters; map and list views | live | 11.66% | 2 (UI), 3 |
+| `04_quest_details` | `/quest/[chapter]` | Chapter intro, progress (opens the journal), goals, words read aloud, diary entry, rewards | live | 1.32% | 2 (UI), 3 |
+| `05_story_player_2` | `/play` — `StoryPlayer` | Question node of the chapter being played; graded by the store | live | 1.68% | 1–2 |
+| `06_interactive_puzzle` | `/play` — `PuzzleScreen` | Word-order cipher: attempts, slots + tiles, free hint, feedback, reset | live | 1.01% | 2 (UI), 3 |
+| `07_evidence_journal_2` | `/journal` | Clues found in the chapter, the newest open, deduction, clue files | live | 23.14% | 2 (UI), 3 |
+| `08_quick_quests` | `/quests`, `/quests/[quest]` | Today's three quests and the mentor's, filters, progress, day's bonus, countdown; playing a quest | live | 31.07% | 2 |
+| `09_daily_discovery` | `/discovery` | Day's word (IPA, read aloud, example), quiz, fact (save, other language), claim | live | 9.98% | 2 |
+| `10_rewards` | `/rewards` | Balances, level, weekly chest (opens), four achievements with real progress | live | 5.41% | 2 |
+| `11_profile_2` | `/profile` | Hero (pencil = change hero), level, rank, worn items, learning progress, quick links | live | 7.76% | 2 |
+| — (no screen) | `/settings` | Interface language, linked Telegram account. Built only from parts of approved screens | live | — | 1–2 |
+| `12_character_select` | `/character` | Six free starting characters; first choice hands out the starting kit | live | 12.57% | 2 |
+| `13_wardrobe_2` | `/wardrobe` | Base figure, slot markers, worn chips, slot tabs, owned/locked items, take all off, save look | live (no layers) | 14.32% | 2, art in 4 |
+| `14_arcane_shop_2` | `/shop` | Fitting-room list, categories, deal of the day, catalogue, buying | live (no layers) | 10.04% | 2, art in 4 |
+| `15_inventory` | `/inventory` | Worn items (take off), bag of items and found clues, filters, put on | live | 46.48% | 2 |
+| — (no screen) | `/quests/[quest]` | Playing a quick quest: built from the player's option rows, the puzzle's tiles and banners | live | — | 2 |
+
+Visual QA figures: share of differing pixels against the export at 390×844; what makes up each one
+is in `docs/visual-qa/README.md`.
 
 ## Story player states (`02_STORY_STATES/`)
 
@@ -44,7 +53,8 @@ One runtime engine (`lib/story/engine.ts`), one component (`StoryPlayer`). The f
 Transitions: `answering → (check) → correct | incorrect`; `incorrect → (retry) → answering`;
 `incorrect` on the last attempt → `exhausted`; `exhausted → grimoire → (mini quiz passed) → answering`
 with one attempt restored; `correct → (next) → next node`. Grading and the attempt counter live on the
-server (Gate 3); the client only renders the state it is given.
+server; the client only renders the state it is given. Gate 2 renders `exhausted` with the
+wrong-answer view and a way back to the map; its own screens arrive in Gate 3.
 
 ## Teacher Studio (desktop, 1440×900 baseline)
 
@@ -110,3 +120,24 @@ where marked.
   (settings) is put together from pieces of approved screens, nothing else.
 - **Two interface languages, Russian and English.** The language is the first part of the address
   (`/ru/…`, `/en/…`); the switch is on the settings screen. Story content (clues, answers) stays English.
+
+## Conflicts found in Gate 2 (resolved by the brief, which overrides decorative sample content)
+
+7. **Cosmetics with learning bonuses.** The shop ("Повышает получение опыта +15%") and inventory
+   ("+10 Концентрация", "+25% Опыт чтения", "Бонус сета: +5% Маны") promise advantages; the brief and
+   the screens' own footers say cosmetics give none. Implemented without any bonus; the lines show
+   the item's description, the set badge counts filled slots.
+8. **A random chest prize.** "Случайный предмет: Редкий плащ или очки" would be a loot box, which the
+   brief forbids. The weekly chest names its prize (`CHEST_ITEMS`), then gives coins once it is owned.
+9. **"3D ВИД".** There is no 3D model, and the brief forbids claiming one: the badge is left out.
+10. **Portraits cut from a labelled reference sheet** (character select) and a dressed cat used as
+    the hero everywhere. The six standalone base models are used instead, the same on every screen.
+    Worn items appear on the figure only once alpha layers exist (Gate 4, `NEEDS_ART_ASSET`).
+11. **Emoji as item pictures** (wardrobe, shop). Each item's own standalone picture is used.
+12. **Inconsistent sample data across screens** (the cat is "Мяулин Чародей", "Барсик-Архивариус" and
+    "Мяу-маг"; level 7 and 12; rank "Ученик Мага", "Странник", "Искатель тайн"). One student record
+    feeds every screen: the chosen character's name, the level from XP, the rank from the level.
+13. **"Вместимость 8 / 20".** There is no bag limit to show; the badge counts the collection
+    (owned of all items).
+14. **Controls with no target screen.** The bell opens the rewards screen; "Моя группа" shows the
+    group but opens nothing until Teacher Studio (Gate 4); the coin balances open the shop.

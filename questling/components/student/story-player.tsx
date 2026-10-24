@@ -25,14 +25,16 @@ type Props = {
   t: Dictionary;
   node: QuestionNode;
   grade: Grader;
-  hint: { topic: string; text: string };
-  clueTranslation: string;
   backHref: string;
   profileHref: string;
+  /** "К следующей улике": a link, or (for a player that stays on its page) a callback. */
   nextHref: string;
+  onNext?: () => void;
+  /** Where a student goes once every attempt at this node is used up. */
+  exitHref: string;
 };
 
-export function StoryPlayer({ t, node, grade, hint, clueTranslation, backHref, profileHref, nextHref }: Props) {
+export function StoryPlayer({ t, node, grade, backHref, profileHref, nextHref, onNext, exitHref }: Props) {
   const [state, dispatch] = useReducer((s: QuestionState, a: Parameters<typeof reduce>[2]) => reduce(node, s, a), node, initialState);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -54,13 +56,14 @@ export function StoryPlayer({ t, node, grade, hint, clueTranslation, backHref, p
     <div className="bg-background font-body-md text-body-md text-on-surface flex min-h-dvh flex-col antialiased" data-phase={state.phase}>
       {/* The approved screens say "Quest Details" here; the owner chose real screen names (conflict 1). */}
       <BackHeader title={t.player.title} backHref={backHref} profileHref={profileHref} t={t} />
-      {state.phase === "incorrect" ? (
+      {/* "exhausted" and "grimoire" get their own screens (05_story_player_4, _never_2) in Gate 3;
+          until then a node with no attempts left shows the wrong-answer view, leading back to the map. */}
+      {state.phase === "incorrect" || state.phase === "exhausted" || state.phase === "grimoire" ? (
         <IncorrectView
           t={t}
           node={node}
           state={state}
-          hint={hint}
-          clueTranslation={clueTranslation}
+          exitHref={state.phase === "incorrect" ? null : exitHref}
           onSelect={(optionId) => dispatch({ type: "select", optionId })}
           onRetry={() => dispatch({ type: "retry" })}
         />
@@ -124,13 +127,25 @@ export function StoryPlayer({ t, node, grade, hint, clueTranslation, backHref, p
             {state.phase === "correct" ? <RewardCard t={t} node={node} xp={state.xpGranted} /> : null}
             <div className="px-margin pb-space-lg flex flex-col items-center">
               {state.phase === "correct" ? (
-                <Link
-                  href={nextHref}
-                  className="font-label-md text-label-md flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-b from-[#e4c285] to-[#b99a61] font-semibold tracking-wider text-[#271900] uppercase shadow-[0_6px_24px_rgba(185,154,97,0.45)] transition-all hover:brightness-105 active:scale-[0.98] motion-safe:animate-pulse"
-                >
-                  <span>{t.player.nextClue}</span>
-                  <Icon name="arrow_forward" className="text-[20px]" />
-                </Link>
+                onNext ? (
+                  <button
+                    type="button"
+                    data-action="next"
+                    onClick={onNext}
+                    className="font-label-md text-label-md flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-b from-[#e4c285] to-[#b99a61] font-semibold tracking-wider text-[#271900] uppercase shadow-[0_6px_24px_rgba(185,154,97,0.45)] transition-all hover:brightness-105 active:scale-[0.98] motion-safe:animate-pulse"
+                  >
+                    <span>{t.player.nextClue}</span>
+                    <Icon name="arrow_forward" className="text-[20px]" />
+                  </button>
+                ) : (
+                  <Link
+                    href={nextHref}
+                    className="font-label-md text-label-md flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-b from-[#e4c285] to-[#b99a61] font-semibold tracking-wider text-[#271900] uppercase shadow-[0_6px_24px_rgba(185,154,97,0.45)] transition-all hover:brightness-105 active:scale-[0.98] motion-safe:animate-pulse"
+                  >
+                    <span>{t.player.nextClue}</span>
+                    <Icon name="arrow_forward" className="text-[20px]" />
+                  </Link>
+                )
               ) : (
                 <>
                   <button
@@ -392,16 +407,15 @@ function IncorrectView({
   t,
   node,
   state,
-  hint,
-  clueTranslation,
+  exitHref,
   onSelect,
   onRetry,
 }: {
   t: Dictionary;
   node: QuestionNode;
   state: QuestionState;
-  hint: { topic: string; text: string };
-  clueTranslation: string;
+  /** Set once the node's attempts are used up: the retry button becomes a way back. */
+  exitHref: string | null;
   onSelect: (optionId: string) => void;
   onRetry: () => void;
 }) {
@@ -491,7 +505,7 @@ function IncorrectView({
             <blockquote className="font-georgia text-headline-md max-w-[90%] leading-snug tracking-wide text-[#1E1710] italic">
               “{node.clue.text}”
             </blockquote>
-            {showTranslation ? <p className="mt-space-sm font-body-md text-body-md text-[#483B2A]">{clueTranslation}</p> : null}
+            {showTranslation ? <p className="mt-space-sm font-body-md text-body-md text-[#483B2A]">{node.translation}</p> : null}
           </div>
           <div className="flex items-center justify-between pt-1 text-[12px] opacity-60">
             <span>✦</span>
@@ -552,23 +566,33 @@ function IncorrectView({
               <span className="font-label-sm text-label-sm font-semibold tracking-wider uppercase">{t.player.archivistHint}</span>
             </div>
             <span className="bg-surface font-caption text-caption text-secondary-fixed-dim rounded-full px-2 py-0.5 font-medium">
-              {hint.topic}
+              {node.hint.topic}
             </span>
           </div>
           <p className="font-body-md text-body-md text-on-surface leading-relaxed">
-            <HintText text={hint.text} />
+            <HintText text={node.hint.text} />
           </p>
         </div>
 
         <div className="gap-space-sm flex flex-col pt-2">
-          <button
-            type="button"
-            onClick={onRetry}
-            className="from-primary-fixed-dim to-primary-container font-label-md text-label-md text-surface-container-lowest flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-b font-bold tracking-wider uppercase shadow-[0_4px_16px_rgba(185,154,97,0.35)] transition-transform active:scale-[0.98]"
-          >
-            <span>{t.player.retry}</span>
-            <Icon name="cached" className="text-[18px]" />
-          </button>
+          {exitHref ? (
+            <Link
+              href={exitHref}
+              className="from-primary-fixed-dim to-primary-container font-label-md text-label-md text-surface-container-lowest flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-b font-bold tracking-wider uppercase shadow-[0_4px_16px_rgba(185,154,97,0.35)] transition-transform active:scale-[0.98]"
+            >
+              <span>{t.player.backToMap}</span>
+              <Icon name="map" className="text-[18px]" />
+            </Link>
+          ) : (
+            <button
+              type="button"
+              onClick={onRetry}
+              className="from-primary-fixed-dim to-primary-container font-label-md text-label-md text-surface-container-lowest flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-b font-bold tracking-wider uppercase shadow-[0_4px_16px_rgba(185,154,97,0.35)] transition-transform active:scale-[0.98]"
+            >
+              <span>{t.player.retry}</span>
+              <Icon name="cached" className="text-[18px]" />
+            </button>
+          )}
           <button
             type="button"
             aria-expanded={showTranslation}

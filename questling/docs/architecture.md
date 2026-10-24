@@ -1,6 +1,6 @@
 # Questling — architecture (Gate 1 proposal)
 
-Status: proposal for owner review. Parts marked *decided* are already in the code.
+Status: Gate 2. Parts marked *decided* are in the code; the rest is the plan for Gates 3–5.
 
 ## 1. Stack and versions (*decided*)
 
@@ -78,7 +78,37 @@ database role used by the app has no rights outside the `questling` schema. RLS 
 table with no policies for `anon`/`authenticated` (the Supabase client is never used for data), so a
 leaked anon key reads nothing.
 
-## 5. Data model (draft — migrations in Gate 2–4)
+## 5. Student record (*decided*, Gate 2)
+
+One rule engine for the demo and the server. A student's record is a set of plain **facts**
+(`lib/game/facts.ts`): ledger entries (XP and coins), graded answers, completions (a quest on a day, a
+story clue, a chapter, an achievement, a weekly chest, the day's claim), saved words and facts, owned
+and worn items, the chosen hero. Balances, level, streak, today's quests, story progress and
+achievement progress are never stored; they are worked out from the facts (`lib/game/stats.ts`).
+
+Every action is a pure function (`lib/game/ops.ts`): facts + input → **effects** (new facts) or a
+refusal. Achievements whose goal is reached are added in the same step.
+
+- **Demo** (`/demo`): `DemoProvider` runs the actions in the browser and keeps the facts in
+  `localStorage`. The made-up history is played through the same actions (`lib/demo/seed.ts`).
+- **Signed-in student** (`/app`): `LiveProvider` gets a session from Telegram's signed sign-in data
+  and sends actions to `POST /api/v1/actions`. The server (`lib/server/service.ts`) locks the
+  student's row, loads the facts, runs the same action, stores the effects in the same transaction
+  (`lib/server/store.ts`) and answers with the new facts. Answer keys (`lib/content/*-keys.ts`) are
+  imported by the server and the demo only, never by a signed-in student's page.
+
+Schema `questling` (`supabase/migrations/20261024000100_students.sql`): `users`, `auth_identities`,
+`ledger` (unique key per student and currency, append-only, coins never below zero at commit),
+`answers`, `completions`, `saved`, `inventory`, `equipped` (only owned items), `rate_limits`. Row level
+security on, no grants to Supabase's API roles. Tested on a real PostgreSQL (`tests/db`).
+
+Content (quests, words and facts, items, achievements, the campaign) is code in `lib/content`, in
+both interface languages, until Teacher Studio stores teacher-authored content (Gate 4).
+
+The academy's calendar is Moscow time for everyone (`lib/game/time.ts`): daily quests, the word of
+the day, streaks and the weekly chest turn over at midnight there.
+
+## 6. Data model still to come (Gates 3–4)
 
 All tables in schema `questling`. Ids are UUIDs; money-like values are integers.
 
@@ -104,21 +134,20 @@ Integrity rules carried into SQL, not left to the client:
 - Story: the server holds answer keys; the client gets nodes without them. A run stays bound to the
   version it started on.
 
-## 6. Hosting and free-tier limits
+## 7. Hosting and free-tier limits
 
 - **App:** Vercel Hobby (free, non-commercial — fits a portfolio). Same route as Splitly and CUT&CO:
   subfolder project, CLI deploy. *Deploy only with owner approval.*
-- **Database:** PostgreSQL. Supabase Free (figures as last known, to re-check on the pricing page
-  before the project is created): 500 MB database, 1 GB file storage, 5 GB egress, 50 000 monthly
-  active auth users, **2 active projects per account**, idle projects paused after a week. CUT&CO was
-  paused on 2026-10-12 to free a slot for Splitly; Splitly also has a trial stand with its own
-  database, so both slots are probably taken (not checked against the account yet). **Owner decision needed:** pause another project, create a second account, or put Questling
-  in its own schema inside an existing project (cheapest; isolation by schema and role).
+- **Database:** PostgreSQL on Supabase Free: project `Questling` (`xqkhmbvstcjvfttkdvxg`, eu-west-1),
+  created 2026-10-24 on the owner's word; the other projects are paused. Limits: 500 MB database,
+  5 GB egress, idle projects paused after a week. The migration is not applied yet: that writes to
+  the owner's database and waits for the database password and the owner's go-ahead
+  (`npm run db:migrate` with `DATABASE_URL` in `.env.local`).
 - **Local and tests:** embedded PostgreSQL in `.tmp/` (no Docker on this machine).
 - **Staging proof (Gate 1 deliverable):** a production `next build` and `next start` run locally and
   are smoke-tested by Playwright. A real Vercel preview deploy waits for the owner's approval.
 
-## 7. Telegram specifics
+## 8. Telegram specifics
 
 - Script `https://telegram.org/js/telegram-web-app.js` only when opened inside Telegram.
 - Safe areas: `env(safe-area-inset-*)` plus Telegram's `contentSafeAreaInset` CSS variables; the bottom

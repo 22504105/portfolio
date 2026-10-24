@@ -38,7 +38,7 @@ the package. Fonts: EB Garamond, Cormorant Garamond, Cinzel, Inter, MedievalShar
 ## Standalone assets (`stitch-assets/`)
 
 Identified by eye from the contact sheet. All: no alpha, flat dark background, front view.
-Character and outfit images are 896×1200; the rest 1024×1024.
+The individual character renders and the outfits are 896×1200; the base models and the rest 1024×1024.
 
 | Source folder suffix | Content | Intended slot | Ship as equip layer? |
 |---|---|---|---|
@@ -49,7 +49,7 @@ Character and outfit images are 896×1200; the rest 1024×1024.
 | `base_character_model_…_5` | Owl, plain tunic | base: owl | after alpha extraction |
 | `base_character_model_…_6` | Green forest creature with horns | base: forest creature | after alpha extraction |
 | `base_character_model_…_7` | Ghost | not one of the six species; spare | — |
-| `individual_character_asset_…_1…6` | Same six species, slightly different renders (cat wears a black hat and glasses) | previews / profile art | as pictures, not bases |
+| `individual_character_asset_…_1…6` | Same six species in another order (1 boy, 2 cat with a black hat and glasses, 3 girl, 4 fox, 5 owl, 6 forest creature), slightly different renders | previews | as pictures, not bases |
 | `companion_pet_…_1` / `_7` | Raven (black / violet tint) | companion: raven | after alpha extraction |
 | `companion_pet_…_2` / `_8` | Moon cat (black / blue) | companion: moon cat — dark fur on dark background, hardest matte | after careful extraction |
 | `companion_pet_…_3` / `_10` | Glowing sprite | companion: spirit | glow halo needs soft alpha |
@@ -138,3 +138,10 @@ screen's visual QA notes.
 3. Split the ceremonial cape into `cape_back` / `cape_front`, or mark it `NEEDS_ART_ASSET` and ask for a
    redraw.
 4. Per-species anchors and offsets; the 8-combination cat test with screenshots.
+
+## Used by the app (Gate 2)
+
+`scripts/import-images.mjs` is the full list, with the source of each file. Characters: the six base
+models (`characters/*.webp`). Items: all 12 accessories, 6 outfits and 6 companions (`items/*.webp`),
+as card pictures only. Screen illustrations: the clean remote images marked "yes" above. Nothing with
+interface or lettering painted in is shipped.

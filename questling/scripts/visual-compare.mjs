@@ -6,7 +6,7 @@
 // of pixels that differ. The app must be running (npm run dev or start).
 //
 // Usage: node scripts/visual-compare.mjs <screen> [<screen> …] [--base http://localhost:3100] [--width 390] [--height 844]
-//   screens: home, player, player-correct, player-incorrect, profile (see SCREENS below)
+//   screens: see SCREENS below (all 15 student screens and the player states)
 import { readFile, mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
@@ -19,8 +19,10 @@ const remoteDir = path.join(root, "design-source", "remote-assets");
 
 // screen -> reference html, app route, and how to bring the app into the same state
 const SCREENS = {
+  welcome: { html: "01_APPROVED_SCREENS/01_welcome/code.html", route: "/ru/demo/welcome" },
   home: { html: "01_APPROVED_SCREENS/02_home_2/code.html", route: "/ru/demo/home" },
-  profile: { html: "01_APPROVED_SCREENS/11_profile_2/code.html", route: "/ru/demo/profile" },
+  map: { html: "01_APPROVED_SCREENS/03_story_map/code.html", route: "/ru/demo/map" },
+  details: { html: "01_APPROVED_SCREENS/04_quest_details/code.html", route: "/ru/demo/quest/tower" },
   player: { html: "01_APPROVED_SCREENS/05_story_player_2/code.html", route: "/ru/demo/play", steps: [["click", "[data-option=cellar]"]] },
   "player-correct": {
     html: "02_STORY_STATES/05_story_player_50_xp/code.html",
@@ -32,6 +34,20 @@ const SCREENS = {
     route: "/ru/demo/play",
     steps: [["click", "[data-option=garden]"], ["click", "[data-action=check]"], ["wait", "[data-phase=incorrect]"]],
   },
+  puzzle: {
+    html: "01_APPROVED_SCREENS/06_interactive_puzzle/code.html",
+    route: "/ru/demo/play",
+    steps: [["click", "[data-option=cellar]"], ["click", "[data-action=check]"], ["wait", "[data-phase=correct]"], ["click", "[data-action=next]"], ["wait", "[data-tile]"]],
+  },
+  journal: { html: "01_APPROVED_SCREENS/07_evidence_journal_2/code.html", route: "/ru/demo/journal" },
+  quests: { html: "01_APPROVED_SCREENS/08_quick_quests/code.html", route: "/ru/demo/quests" },
+  discovery: { html: "01_APPROVED_SCREENS/09_daily_discovery/code.html", route: "/ru/demo/discovery" },
+  rewards: { html: "01_APPROVED_SCREENS/10_rewards/code.html", route: "/ru/demo/rewards" },
+  profile: { html: "01_APPROVED_SCREENS/11_profile_2/code.html", route: "/ru/demo/profile" },
+  character: { html: "01_APPROVED_SCREENS/12_character_select/code.html", route: "/ru/demo/character" },
+  wardrobe: { html: "01_APPROVED_SCREENS/13_wardrobe_2/code.html", route: "/ru/demo/wardrobe" },
+  shop: { html: "01_APPROVED_SCREENS/14_arcane_shop_2/code.html", route: "/ru/demo/shop" },
+  inventory: { html: "01_APPROVED_SCREENS/15_inventory/code.html", route: "/ru/demo/inventory" },
 };
 
 const args = process.argv.slice(2);
@@ -58,6 +74,8 @@ async function shoot(url, steps = [], route) {
   // The app keeps prefetching links, so "network idle" may never come; wait for load and give it a moment.
   await page.goto(url, { waitUntil: "load" });
   await page.waitForLoadState("networkidle", { timeout: 5000 }).catch(() => {});
+  // The student screens render once the student's record is loaded.
+  if (!url.startsWith("file:")) await page.waitForSelector("[data-student-ready]", { timeout: 15000 });
   await page.addStyleTag({ content: freeze });
   for (const [action, selector] of steps) {
     if (action === "click") await page.click(selector);

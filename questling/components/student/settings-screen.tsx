@@ -1,6 +1,10 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Icon } from "@/components/ui/icon";
-import { fill, getDictionary, LOCALES, switchLocalePath, type Locale } from "@/lib/i18n";
+import { useStudent } from "@/lib/client/student";
+import { fill, LOCALES, switchLocalePath, type Locale } from "@/lib/i18n";
 import { BackHeader } from "./back-header";
 import { BottomNav } from "./bottom-nav";
 
@@ -11,16 +15,10 @@ import { BottomNav } from "./bottom-nav";
 
 const nativeNames: Record<Locale, string> = { ru: "Русский", en: "English" };
 
-type Props = {
-  locale: Locale;
-  base: string;
-  /** This screen's address without the language, e.g. "/demo/settings". */
-  path: string;
-  telegram: { username: string; id: number };
-};
-
-export function SettingsScreen({ locale, base, path, telegram }: Props) {
-  const t = getDictionary(locale);
+export function SettingsScreen() {
+  const { t, locale, base, account } = useStudent();
+  const path = usePathname();
+  const telegram = account.telegram;
   return (
     <div data-scope="profile" className="bg-background text-text-ivory flex min-h-dvh flex-col">
       <BackHeader title={t.settings.title} backHref={`${base}/profile`} profileHref={`${base}/profile`} t={t} />
@@ -91,7 +89,7 @@ export function SettingsScreen({ locale, base, path, telegram }: Props) {
                 <div className="flex min-w-0 flex-col">
                   <span className="font-label-md text-label-md text-text-ivory truncate">{t.settings.linkedAccount}</span>
                   <span className="font-caption text-caption text-text-muted truncate">
-                    {fill(t.settings.account, { username: telegram.username, id: telegram.id })}
+                    {telegram ? fill(t.settings.account, { username: telegram.username ?? "—", id: telegram.id }) : t.profile.notLinked}
                   </span>
                 </div>
               </div>

@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 
-// Until onboarding (01_welcome) lands in Gate 2, the site opens on the demo.
+// The site opens on the demo's welcome screen. Telegram opens the Mini App at /{locale}/app.
 export default async function LocalePage({ params }: PageProps<"/[locale]">) {
   const { locale } = await params;
-  redirect(`/${locale}/demo/home`);
+  redirect(`/${locale}/demo/welcome`);
 }

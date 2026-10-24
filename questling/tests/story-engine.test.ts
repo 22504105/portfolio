@@ -1,8 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { demoStory } from "@/lib/demo/story";
-import { attemptsLeft, canCheck, grade, initialState, reduce, type QuestionAction, type QuestionState } from "@/lib/story/engine";
+import { storyNode } from "@/lib/content/campaign";
+import { gradeStoryAnswer } from "@/lib/content/campaign-keys";
+import { attemptsLeft, canCheck, initialState, reduce, type QuestionAction, type QuestionState } from "@/lib/story/engine";
+import type { QuestionNode } from "@/lib/story/types";
 
-const { question: node, key } = demoStory("ru");
+const node = storyNode("tower-2", "ru") as QuestionNode;
+const grade = (_key: unknown, optionId: string) => gradeStoryAnswer(node.id, optionId, "ru")!;
+const key = null;
 
 const run = (...actions: QuestionAction[]) => actions.reduce<QuestionState>((s, a) => reduce(node, s, a), initialState(node));
 const answer = (optionId: string): QuestionAction[] => [
@@ -76,18 +80,19 @@ describe("question node", () => {
   });
 });
 
-describe("demo story in both languages", () => {
+describe("the story in both languages", () => {
   it("is the same question: only the interface-language texts differ", () => {
-    const ru = demoStory("ru");
-    const en = demoStory("en");
-    const shape = (s: typeof ru) => ({
-      clue: s.question.clue.text,
-      options: s.question.options.map((o) => [o.id, o.label, o.icon]),
-      correct: s.key.correctOptionId,
-      explained: Object.keys(s.key.explanations).sort(),
-      attempts: s.question.maxAttempts,
-      xp: s.question.reward.xp,
+    const ru = storyNode("tower-2", "ru") as QuestionNode;
+    const en = storyNode("tower-2", "en") as QuestionNode;
+    const shape = (n: QuestionNode) => ({
+      clue: n.clue.text,
+      options: n.options.map((o) => [o.id, o.label, o.icon]),
+      attempts: n.maxAttempts,
+      xp: n.reward.xp,
     });
     expect(shape(en)).toEqual(shape(ru));
+    expect(en.prompt.lead).not.toEqual(ru.prompt.lead);
+    expect(gradeStoryAnswer("tower-2", "cellar", "en")?.correct).toBe(true);
+    expect(gradeStoryAnswer("tower-2", "garden", "en")?.correct).toBe(false);
   });
 });

@@ -1,4 +1,4 @@
-import { Cinzel, Cormorant_Garamond, EB_Garamond, Gelasio, Inter } from "next/font/google";
+import { Cinzel, Cormorant_Garamond, EB_Garamond, Gelasio, Inter, Plus_Jakarta_Sans } from "next/font/google";
 
 // The faces the approved screens were rendered with. next/font downloads them at
 // build time and serves them from the site: the client never calls Google.
@@ -39,4 +39,12 @@ export const gelasio = Gelasio({
   display: "swap",
 });
 
-export const fontVariables = [inter, ebGaramond, cormorantGaramond, cinzel, gelasio].map((font) => font.variable).join(" ");
+// The shop (14_arcane_shop_2) sets its interface text in Plus Jakarta Sans.
+export const plusJakarta = Plus_Jakarta_Sans({
+  subsets: ["latin", "cyrillic-ext"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-plus-jakarta-face",
+  display: "swap",
+});
+
+export const fontVariables = [inter, ebGaramond, cormorantGaramond, cinzel, gelasio, plusJakarta].map((font) => font.variable).join(" ");

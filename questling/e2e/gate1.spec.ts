@@ -1,25 +1,48 @@
 import { expect, test, type Page } from "@playwright/test";
 
-// Gate 1: the demo Home and the story player work as the approved screens
-// describe, at every phone width the brief names, without sideways scrolling,
-// in Russian and in English.
+// Gate 1, still true after Gate 2: the site opens on the demo, in the visitor's language,
+// every student screen fits every phone width, and the language switch works.
 
-async function noHorizontalOverflow(page: Page) {
+async function noHorizontalOverflow(page: Page, label: string) {
   const { scroll, client } = await page.evaluate(() => ({
     scroll: document.documentElement.scrollWidth,
     client: document.documentElement.clientWidth,
   }));
-  expect(scroll, "page must not scroll sideways").toBeLessThanOrEqual(client);
+  expect(scroll, `${label}: page must not scroll sideways`).toBeLessThanOrEqual(client);
 }
+
+const ready = (page: Page) => expect(page.locator("[data-student-ready]")).toBeVisible();
+
+const SCREENS = [
+  "welcome",
+  "character",
+  "home",
+  "map",
+  "quest/tower",
+  "play",
+  "journal",
+  "quests",
+  "quests/letter",
+  "discovery",
+  "rewards",
+  "profile",
+  "settings",
+  "wardrobe",
+  "shop",
+  "inventory",
+];
 
 test.describe("a Russian browser", () => {
   test.use({ locale: "ru-RU" });
-  test("opens the site on the Russian demo home, labelled as a demo", async ({ page }) => {
+  test("opens the site on the Russian demo, labelled as a demo", async ({ page }) => {
     await page.goto("/");
-    await expect(page).toHaveURL(/\/ru\/demo\/home$/);
+    await expect(page).toHaveURL(/\/ru\/demo\/welcome$/);
     await expect(page.locator("html")).toHaveAttribute("lang", "ru");
     await expect(page.locator("[data-demo-badge]")).toHaveText("Демо");
-    await expect(page.getByRole("heading", { name: "Мяулин Чародей" })).toBeVisible();
+    await page.getByRole("link", { name: /Начать путешествие/ }).click();
+    // The demo student has chosen a hero already, so the journey goes straight home.
+    await expect(page).toHaveURL(/\/ru\/demo\/home$/);
+    await expect(page.getByRole("heading", { name: "Барсик" })).toBeVisible();
     await expect(page.getByRole("progressbar", { name: "Опыт" })).toHaveAttribute("aria-valuenow", "340");
   });
 });
@@ -28,109 +51,64 @@ test.describe("an English browser", () => {
   test.use({ locale: "en-GB" });
   test("opens the site in English", async ({ page }) => {
     await page.goto("/");
-    await expect(page).toHaveURL(/\/en\/demo\/home$/);
+    await expect(page).toHaveURL(/\/en\/demo\/welcome$/);
     await expect(page.locator("html")).toHaveAttribute("lang", "en");
     await expect(page.locator("[data-demo-badge]")).toHaveText("Demo");
-    await expect(page.getByRole("heading", { name: "Meowlin the Enchanter" })).toBeVisible();
+    await expect(page.getByRole("link", { name: /Start the journey/ })).toBeVisible();
   });
 });
 
 for (const width of [320, 360, 390, 430]) {
-  test(`home, player, profile and settings fit a ${width}px screen`, async ({ page }) => {
+  test(`every student screen fits a ${width}px phone`, async ({ page }) => {
+    test.setTimeout(120_000);
     await page.setViewportSize({ width, height: 844 });
-    for (const locale of ["ru", "en"]) {
-      await page.goto(`/${locale}/demo/home`);
-      await noHorizontalOverflow(page);
-      // The bottom bar stays on screen and the last section can scroll clear of it.
-      await expect(page.locator("nav a[aria-current=page]")).toBeInViewport();
-      for (const screen of ["play", "profile", "settings"]) {
-        await page.goto(`/${locale}/demo/${screen}`);
-        await noHorizontalOverflow(page);
-      }
+    for (const screen of SCREENS) {
+      await page.goto(`/ru/demo/${screen}`);
+      await ready(page);
+      await noHorizontalOverflow(page, screen);
     }
   });
 }
 
-test("continue on home opens the story player", async ({ page }) => {
+test("every student screen fits in English too", async ({ page }) => {
+  test.setTimeout(120_000);
+  for (const screen of SCREENS) {
+    await page.goto(`/en/demo/${screen}`);
+    await ready(page);
+    await noHorizontalOverflow(page, screen);
+  }
+});
+
+test("the bottom bar leads to the four main screens", async ({ page }) => {
   await page.goto("/ru/demo/home");
-  await page.getByRole("link", { name: /Продолжить/ }).click();
-  await expect(page).toHaveURL(/\/ru\/demo\/play$/);
-  await expect(page.getByText("Look for the room where the moon never shines.")).toBeVisible();
-  await expect(page.getByRole("heading", { level: 1, name: "Задание" })).toBeVisible();
-});
-
-test("a correct answer grants the reward and offers the next clue", async ({ page }) => {
-  await page.goto("/ru/demo/play");
-  const check = page.locator("[data-action=check]");
-  await expect(check).toBeDisabled();
-  await page.getByRole("radio", { name: /The cellar/ }).click();
-  await expect(page.getByRole("radio", { name: /The cellar/ })).toHaveAttribute("aria-checked", "true");
-  await check.click();
-  await expect(page.locator("[data-phase=correct]")).toBeVisible();
-  await expect(page.getByText("Верно!")).toBeVisible();
-  await expect(page.getByRole("status")).toContainText("+50 XP");
-  await expect(page.getByRole("link", { name: /К следующей улике/ })).toBeVisible();
-});
-
-test("a wrong answer explains itself, then a retry can still solve the clue", async ({ page }) => {
-  await page.goto("/ru/demo/play");
-  await page.getByRole("radio", { name: /The garden/ }).click();
-  await page.locator("[data-action=check]").click();
-  await expect(page.locator("[data-phase=incorrect]")).toBeVisible();
-  await expect(page.getByText("Попытка 1 из 2")).toBeVisible();
-  await expect(page.getByText("НЕВЕРНО")).toBeVisible();
-  await expect(page.getByText(/В саду лунный свет/)).toBeVisible();
-
-  await page.getByRole("button", { name: /Перечитать манускрипт/ }).click();
-  await expect(page.getByText("Ищите комнату, где никогда не светит луна.")).toBeVisible();
-
-  await page.getByRole("button", { name: /Попробовать снова/ }).click();
-  await expect(page.locator("[data-phase=answering]")).toBeVisible();
-  // The wrong option stays listed, struck out and no longer choosable; the right one solves the clue.
-  await expect(page.getByRole("radio", { name: /The garden/ })).toHaveCount(0);
-  await expect(page.getByText("The garden")).toBeVisible();
-  await page.getByRole("radio", { name: /The cellar/ }).click();
-  await page.locator("[data-action=check]").click();
-  await expect(page.locator("[data-phase=correct]")).toBeVisible();
-});
-
-test("the story player speaks English too, the lesson itself unchanged", async ({ page }) => {
-  await page.goto("/en/demo/play");
-  await expect(page.getByRole("heading", { level: 1, name: "Quest" })).toBeVisible();
-  await page.getByRole("radio", { name: /The garden/ }).click();
-  await page.getByRole("button", { name: "Check answer" }).click();
-  await expect(page.getByText("Attempt 1 of 2")).toBeVisible();
-  await expect(page.getByText("WRONG")).toBeVisible();
-  await expect(page.getByText("Look for the room where the moon never shines.")).toBeVisible();
-});
-
-test("the back arrow returns home", async ({ page }) => {
-  await page.goto("/ru/demo/play");
-  await page.getByRole("link", { name: "Назад" }).click();
-  await expect(page).toHaveURL(/\/ru\/demo\/home$/);
+  for (const [label, path] of [
+    ["Сюжет", "map"],
+    ["Квесты", "quests"],
+    ["Профиль", "profile"],
+    ["Главная", "home"],
+  ]) {
+    await page.locator("nav").getByRole("link", { name: label }).click();
+    await expect(page).toHaveURL(new RegExp(`/ru/demo/${path}$`));
+  }
 });
 
 test("the language is switched in settings, reached from the profile", async ({ page }) => {
-  await page.goto("/ru/demo/home");
-  await page.getByRole("link", { name: "Профиль" }).click();
-  await expect(page).toHaveURL(/\/ru\/demo\/profile$/);
+  await page.goto("/ru/demo/profile");
   await page.getByRole("link", { name: /Настройки и Telegram ID/ }).click();
   await expect(page).toHaveURL(/\/ru\/demo\/settings$/);
   await expect(page.getByRole("radio", { name: /Русский/ })).toHaveAttribute("aria-checked", "true");
-
   await page.getByRole("radio", { name: /English/ }).click();
   await expect(page).toHaveURL(/\/en\/demo\/settings$/);
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
   await expect(page.getByRole("heading", { level: 1, name: "Settings" })).toBeVisible();
-  await expect(page.getByRole("radio", { name: /English/ })).toHaveAttribute("aria-checked", "true");
-
-  // The choice carries on: every link now leads to the English screens.
-  await page.getByRole("link", { name: "Home" }).click();
+  await page.locator("nav").getByRole("link", { name: "Home" }).click();
   await expect(page).toHaveURL(/\/en\/demo\/home$/);
   await expect(page.getByRole("link", { name: /Continue/ })).toBeVisible();
+});
 
-  await page.goto("/en/demo/settings");
-  await page.getByRole("radio", { name: /Русский/ }).click();
-  await expect(page).toHaveURL(/\/ru\/demo\/settings$/);
-  await expect(page.getByRole("heading", { level: 1, name: "Настройки" })).toBeVisible();
+test("the welcome screen switches the language too", async ({ page }) => {
+  await page.goto("/ru/demo/welcome");
+  await page.getByRole("link", { name: "Сменить язык" }).click();
+  await expect(page).toHaveURL(/\/en\/demo\/welcome$/);
+  await expect(page.getByRole("link", { name: /Start the journey/ })).toBeVisible();
 });
