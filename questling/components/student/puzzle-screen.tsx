@@ -5,27 +5,44 @@ import Link from "next/link";
 import { useState, useTransition } from "react";
 import { Icon } from "@/components/ui/icon";
 import { useStudent } from "@/lib/client/student";
-import { fill } from "@/lib/i18n";
+import { fill, type Dictionary } from "@/lib/i18n";
 import type { PuzzleNode } from "@/lib/story/types";
+import { ExhaustedView, GrimoireSheet } from "./story-help";
+import type { Help } from "./story-player";
 import { TileBoard } from "./tile-board";
 
 // A story cipher, ported from design-source/questling-v2/01_APPROVED_SCREENS/06_interactive_puzzle/code.html:
 // the attempts crystals, the chest picture, the slots and tiles, the free hint, the feedback
 // banner and the two buttons, with the export's own messages. Graded by the store (the server
-// for a signed-in student). Owner's decision 2026-10-24: the header names the screen.
+// for a signed-in student). With no attempts left it pauses like a question does: the exhausted
+// screen and the grimoire (story-help.tsx). Owner's decision 2026-10-24: the header names the screen.
 // Tailwind v3 → v4: shadow → shadow-sm.
 
 type Feedback = { tone: "success" | "error"; icon: "check_circle" | "warning" | "lock" | "lock_clock"; title: string; text: string };
 
-export function PuzzleScreen({ node }: { node: PuzzleNode }) {
-  const { t, base, act } = useStudent();
+type Props = {
+  node: PuzzleNode;
+  /** Attempts the run has already used on this cipher. */
+  attemptsUsed: number;
+  /** Sends the order to the rules. */
+  grade: (tiles: string[]) => Promise<{ correct: boolean; explanation: string }>;
+  /** "Забрать сокровища": the story moves on. */
+  onNext: () => void;
+  help: Help;
+};
+
+export function PuzzleScreen({ node, attemptsUsed, grade, onNext, help }: Props) {
+  const { t, base } = useStudent();
   const [slots, setSlots] = useState<(string | null)[]>(() => node.tiles.map(() => null));
-  const [attempts, setAttempts] = useState(0);
+  const [attempts, setAttempts] = useState(attemptsUsed);
+  // Attempts allowed: the cipher's own, plus one for each grimoire studied while on screen.
+  const [allowed, setAllowed] = useState(node.maxAttempts);
+  const [grimoire, setGrimoire] = useState(false);
   const [hintOpen, setHintOpen] = useState(false);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
   const [solved, setSolved] = useState(false);
   const [pending, startTransition] = useTransition();
-  const left = node.maxAttempts - attempts;
+  const left = allowed - attempts;
   const locked = left <= 0 && !solved;
 
   function change(next: (string | null)[]) {
@@ -39,64 +56,70 @@ export function PuzzleScreen({ node }: { node: PuzzleNode }) {
       return;
     }
     startTransition(async () => {
-      const result = await act({ type: "answerStory", nodeId: node.id, answer: slots as string[] });
-      if (!result.ok) {
+      let result: { correct: boolean; explanation: string };
+      try {
+        result = await grade(slots as string[]);
+      } catch {
         setFeedback({ tone: "error", icon: "warning", title: t.common.actionFailed, text: "" });
         return;
       }
-      if (result.outcome.kind !== "story") return;
-      if (result.outcome.solved) {
+      if (result.correct) {
         setSolved(true);
         setFeedback({
           tone: "success",
           icon: "check_circle",
           title: t.puzzle.solvedTitle,
-          text: `${result.outcome.result.explanation} (+${node.reward.xp} XP)`,
+          text: `${result.explanation} (+${node.reward.xp} XP)`,
         });
         return;
       }
       const used = attempts + 1;
       setAttempts(used);
       setFeedback(
-        used >= node.maxAttempts
+        used >= allowed
           ? { tone: "error", icon: "lock_clock", title: t.puzzle.lockedTitle, text: t.puzzle.lockedText }
-          : { tone: "error", icon: "lock", title: t.puzzle.wrongTitle, text: fill(t.puzzle.wrongText, { n: node.maxAttempts - used }) },
+          : { tone: "error", icon: "lock", title: t.puzzle.wrongTitle, text: fill(t.puzzle.wrongText, { n: allowed - used }) },
       );
     });
   }
 
+  const header = <PuzzleHeader t={t} base={base} />;
+
+  if (locked)
+    return (
+      <div className="bg-background text-text-ivory flex min-h-dvh flex-col" data-phase={grimoire ? "grimoire" : "exhausted"}>
+        {header}
+        <ExhaustedView
+          t={t}
+          node={node}
+          attemptsUsed={attempts}
+          tried={[]}
+          group={help.group}
+          asked={help.asked}
+          onAsk={help.onAsk}
+          onOpenGrimoire={() => setGrimoire(true)}
+          mapHref={`${base}/map`}
+        />
+        {grimoire ? (
+          <GrimoireSheet
+            t={t}
+            node={{ ...node, maxAttempts: allowed }}
+            onStudy={help.onStudy}
+            onClose={() => setGrimoire(false)}
+            onApply={() => {
+              setGrimoire(false);
+              setAllowed(attempts + 1);
+              setFeedback(null);
+              setSlots(node.tiles.map(() => null));
+            }}
+          />
+        ) : null}
+      </div>
+    );
+
   return (
-    <div
-      className="bg-background text-text-ivory flex min-h-dvh flex-col"
-      data-phase={solved ? "correct" : locked ? "exhausted" : "answering"}
-    >
-      <header className="bg-surface/90 pt-safe fixed inset-x-0 top-0 z-50 shadow-[0_1px_8px_rgba(0,0,0,0.4)] backdrop-blur-xl">
-        <div className="px-gutter mx-auto flex h-16 w-full max-w-md items-center justify-between">
-          <div className="gap-space-xs flex items-center">
-            <Link
-              href={`${base}/map`}
-              aria-label={t.common.back}
-              className="text-primary flex h-11 w-11 items-center justify-center transition-transform active:scale-95"
-            >
-              <Icon name="arrow_back" className="text-[24px]" />
-            </Link>
-            <h1 className="font-headline-md text-headline-md text-text-ivory line-clamp-1 tracking-tight">{t.puzzle.title}</h1>
-          </div>
-          <div className="gap-space-sm flex items-center">
-            <div className="gap-space-xs bg-surface-container-high px-space-sm flex items-center rounded-full py-1">
-              <Icon name="magic_button" className="text-secondary text-[16px]" />
-              <span className="font-label-sm text-label-sm text-secondary">{t.puzzle.quest}</span>
-            </div>
-            <Link
-              href={`${base}/profile`}
-              aria-label={t.common.profile}
-              className="bg-primary flex h-8 w-8 items-center justify-center rounded-full shadow-[0_0_8px_rgba(228,194,133,0.3)]"
-            >
-              <Icon name="person" className="text-on-primary text-[18px]" />
-            </Link>
-          </div>
-        </div>
-      </header>
+    <div className="bg-background text-text-ivory flex min-h-dvh flex-col" data-phase={solved ? "correct" : "answering"}>
+      {header}
 
       <main className="pb-safe px-gutter bg-background relative mx-auto flex w-full max-w-md flex-1 flex-col pt-16">
         <div className="flex w-full flex-col pb-8 select-none">
@@ -110,9 +133,9 @@ export function PuzzleScreen({ node }: { node: PuzzleNode }) {
               </div>
               <div className="gap-space-xs bg-surface-container-highest/80 px-space-sm flex items-center rounded-full py-1 shadow-inner">
                 <span className="font-caption text-caption text-text-ivory mr-1">
-                  {fill(t.player.attempt, { used: Math.min(attempts + 1, node.maxAttempts), max: node.maxAttempts })}
+                  {fill(t.player.attempt, { used: Math.min(attempts + 1, allowed), max: allowed })}
                 </span>
-                {Array.from({ length: node.maxAttempts }, (_, i) => (
+                {Array.from({ length: allowed }, (_, i) => (
                   <div
                     key={i}
                     className={`h-2.5 w-2.5 rotate-45 rounded-[1px] transition-all duration-300 ${
@@ -196,13 +219,15 @@ export function PuzzleScreen({ node }: { node: PuzzleNode }) {
 
           <div className="gap-space-sm mt-auto flex w-full flex-col">
             {solved ? (
-              <Link
-                href={`${base}/journal`}
+              <button
+                type="button"
+                data-action="next"
+                onClick={onNext}
                 className="font-headline-md text-surface-container-lowest flex h-[50px] w-full items-center justify-center gap-2 rounded-[10px] bg-gradient-to-b from-[#63BA9E] to-[#458e77] text-[18px] font-semibold tracking-wider uppercase shadow-[0_0_16px_rgba(185,154,97,0.25)] transition-all active:scale-[0.98]"
               >
                 <span>{t.puzzle.collect}</span>
                 <Icon name="arrow_forward" className="text-[20px]" />
-              </Link>
+              </button>
             ) : (
               <button
                 type="button"
@@ -229,5 +254,37 @@ export function PuzzleScreen({ node }: { node: PuzzleNode }) {
         </div>
       </main>
     </div>
+  );
+}
+
+function PuzzleHeader({ t, base }: { t: Dictionary; base: string }) {
+  return (
+    <header className="bg-surface/90 pt-safe fixed inset-x-0 top-0 z-50 shadow-[0_1px_8px_rgba(0,0,0,0.4)] backdrop-blur-xl">
+      <div className="px-gutter mx-auto flex h-16 w-full max-w-md items-center justify-between">
+        <div className="gap-space-xs flex items-center">
+          <Link
+            href={`${base}/map`}
+            aria-label={t.common.back}
+            className="text-primary flex h-11 w-11 items-center justify-center transition-transform active:scale-95"
+          >
+            <Icon name="arrow_back" className="text-[24px]" />
+          </Link>
+          <h1 className="font-headline-md text-headline-md text-text-ivory line-clamp-1 tracking-tight">{t.puzzle.title}</h1>
+        </div>
+        <div className="gap-space-sm flex items-center">
+          <div className="gap-space-xs bg-surface-container-high px-space-sm flex items-center rounded-full py-1">
+            <Icon name="magic_button" className="text-secondary text-[16px]" />
+            <span className="font-label-sm text-label-sm text-secondary">{t.puzzle.quest}</span>
+          </div>
+          <Link
+            href={`${base}/profile`}
+            aria-label={t.common.profile}
+            className="bg-primary flex h-8 w-8 items-center justify-center rounded-full shadow-[0_0_8px_rgba(228,194,133,0.3)]"
+          >
+            <Icon name="person" className="text-on-primary text-[18px]" />
+          </Link>
+        </div>
+      </div>
+    </header>
   );
 }

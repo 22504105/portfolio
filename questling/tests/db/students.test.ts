@@ -7,6 +7,11 @@ import { handle } from "@/lib/server/api";
 import { resetPool } from "@/lib/server/db";
 import { act, ServiceError, signInWithTelegram } from "@/lib/server/service";
 import { loadFacts } from "@/lib/server/store";
+import { campaignById } from "@/lib/content/campaigns";
+import { keysOf } from "@/lib/content/campaigns/keys";
+import { runOf } from "@/lib/game/stats";
+import { rightMove } from "@/lib/story/autoplay";
+import { startRun } from "@/lib/story/run";
 import { sign, TOKEN } from "../telegram-fixture";
 import { codeOf, startTestDatabase, type TestDatabase } from "./harness";
 
@@ -98,7 +103,8 @@ describe("the schema", () => {
   it("gives Supabase's public API roles nothing", async () => {
     await newStudent();
     for (const role of ["anon", "authenticated"] as const) {
-      expect(await codeOf(() => pg.asApiRole(role, (db) => db.query("select * from questling.users")))).toBe("42501");
+      for (const table of ["users", "story_runs"])
+        expect(await codeOf(() => pg.asApiRole(role, (db) => db.query(`select * from questling.${table}`)))).toBe("42501");
     }
   });
 });
@@ -180,6 +186,102 @@ describe("the service", () => {
     for (const table of ["auth_identities", "ledger", "answers", "completions", "saved", "inventory", "equipped"]) {
       expect((await pg.db.query(`select count(*)::int as n from questling.${table} where user_id = $1`, [userId])).rows[0].n).toBe(0);
     }
+  });
+});
+
+describe("story runs", () => {
+  const academy = campaignById.get("forgotten-academy")!;
+  /** Plays right moves on the server until `until` or an ending; returns the facts the last move left. */
+  async function playUntil(userId: string, until: string | null, choices: Record<string, string> = {}): Promise<Facts> {
+    let facts = (await loadFacts(pg.db, userId))!;
+    for (let step = 0; step < 100; step++) {
+      const current = runOf(facts, academy.id) ?? startRun(academy);
+      if (current.ending || current.scene === until) return facts;
+      const move = rightMove(academy, keysOf(academy), current, choices)!;
+      facts = (await tx((db) => act(db, userId, { action: { type: "story", campaign: academy.id, move } }))).facts;
+    }
+    throw new Error("story never ended");
+  }
+
+  it("keeps the run between sessions: the scene, the attempts used, the clues", async () => {
+    const userId = await newStudent();
+    await playUntil(userId, "tower-2");
+    await tx((db) =>
+      act(db, userId, { action: { type: "story", campaign: academy.id, move: { type: "answer", scene: "tower-2", answer: "garden" } } }),
+    );
+    const stored = (await loadFacts(pg.db, userId))!;
+    const run = runOf(stored, academy.id)!;
+    expect(run).toMatchObject({
+      campaign: "forgotten-academy",
+      version: 1,
+      scene: "tower-2",
+      chapters: ["prologue"],
+      clues: ["prologue-tome", "seal"],
+    });
+    expect(run.progress["tower-2"]).toEqual({ used: 1, restored: 0, eliminated: ["garden"], solved: false });
+    const row = await pg.db.query("select campaign, version from questling.story_runs where user_id = $1", [userId]);
+    expect(row.rows).toEqual([{ campaign: "forgotten-academy", version: 1 }]);
+  });
+
+  it("stores the grimoire's attempt, the help request, and the ending's reward once", async () => {
+    const userId = await newStudent();
+    await playUntil(userId, "prologue-1");
+    const move = (m: object) => tx((db) => act(db, userId, { action: { type: "story", campaign: academy.id, move: m } }));
+    await move({ type: "answer", scene: "prologue-1", answer: "eat" });
+    await move({ type: "answer", scene: "prologue-1", answer: "sleep" });
+    await expect(move({ type: "answer", scene: "prologue-1", answer: "whisper" })).rejects.toMatchObject({
+      code: "exhausted",
+      status: 409,
+    });
+    await tx((db) => act(db, userId, { action: { type: "askMentor", campaign: academy.id, scene: "prologue-1" } }));
+    const studied = await move({ type: "grimoire", scene: "prologue-1", word: "must" });
+    expect(studied.outcome).toMatchObject({ kind: "story", grimoire: { correct: true } });
+    await move({ type: "answer", scene: "prologue-1", answer: "whisper" });
+
+    const facts = await playUntil(userId, null, { "t-choice": "reread", "f-choice": "give" });
+    expect(runOf(facts, academy.id)?.ending).toBe("end-true");
+    const rows = await pg.db.query(
+      "select kind, ref from questling.completions where user_id = $1 and kind in ('help_request', 'ending') order by kind",
+      [userId],
+    );
+    expect(rows.rows).toEqual([
+      { kind: "ending", ref: "forgotten-academy" },
+      { kind: "help_request", ref: "forgotten-academy/prologue-1" },
+    ]);
+    const ending = await pg.db.query(
+      "select currency, amount from questling.ledger where user_id = $1 and reason = 'ending' order by currency",
+      [userId],
+    );
+    expect(ending.rows).toEqual([
+      { currency: "coins", amount: 70 },
+      { currency: "xp", amount: 250 },
+    ]);
+    // The story is over: no move is taken, and the reward cannot be granted again.
+    await expect(move({ type: "advance", scene: "end-true" })).rejects.toMatchObject({ code: "not_available" });
+    expect(
+      await codeOf(() =>
+        pg.db.query(
+          "insert into questling.ledger (user_id, currency, amount, key, reason) values ($1, 'xp', 1, 'story:forgotten-academy:ending', 'ending')",
+          [userId],
+        ),
+      ),
+    ).toBe("23505");
+  });
+
+  it("refuses a move that is not shaped like one", async () => {
+    const userId = await newStudent();
+    for (const move of [
+      { type: "teleport", scene: "end-true" },
+      { type: "answer", scene: "prologue-1" },
+      { type: "grimoire", scene: "x", word: "" },
+    ])
+      await expect(tx((db) => act(db, userId, { action: { type: "story", campaign: academy.id, move } }))).rejects.toMatchObject({
+        code: "invalid",
+        status: 422,
+      });
+    await expect(
+      tx((db) => act(db, userId, { action: { type: "story", campaign: "echo-tower", move: { type: "advance", scene: "e-bell" } } })),
+    ).rejects.toMatchObject({ code: "not_available" });
   });
 });
 

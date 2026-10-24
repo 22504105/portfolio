@@ -120,8 +120,10 @@ function moveTo(campaign: Campaign, run: RunState, to: string | null, grants: Gr
     if (next.chapters.includes(chapter.id)) return;
     next.chapters = [...next.chapters, chapter.id];
     chapterDone = chapter.id;
-    if (chapter.reward.xp) grants.push({ currency: "xp", amount: chapter.reward.xp, key: grantKey(run, `chapter:${chapter.id}`), reason: "chapter" });
-    if (chapter.reward.coins) grants.push({ currency: "coins", amount: chapter.reward.coins, key: grantKey(run, `chapter:${chapter.id}`), reason: "chapter" });
+    if (chapter.reward.xp)
+      grants.push({ currency: "xp", amount: chapter.reward.xp, key: grantKey(run, `chapter:${chapter.id}`), reason: "chapter" });
+    if (chapter.reward.coins)
+      grants.push({ currency: "coins", amount: chapter.reward.coins, key: grantKey(run, `chapter:${chapter.id}`), reason: "chapter" });
   };
   if (target.chapterIndex !== from.chapterIndex) finishChapter(from.chapter);
   if (target.scene.kind === "ending") {
@@ -134,7 +136,8 @@ function moveTo(campaign: Campaign, run: RunState, to: string | null, grants: Gr
   return { run: next, chapterDone };
 }
 
-const withClue = (run: RunState, clue: string | undefined): RunState => (clue && !run.clues.includes(clue) ? { ...run, clues: [...run.clues, clue] } : run);
+const withClue = (run: RunState, clue: string | undefined): RunState =>
+  clue && !run.clues.includes(clue) ? { ...run, clues: [...run.clues, clue] } : run;
 
 export type Move =
   | { type: "advance"; scene: string }
@@ -190,7 +193,8 @@ export function move(campaign: Campaign, keys: CampaignKeys, run: RunState, acti
         if (typeof option !== "string" || progress.eliminated.includes(option)) return { ok: false, refusal: "invalid" };
         if (scene.kind === "question" && !scene.options.some((o) => o.id === option)) return { ok: false, refusal: "invalid" };
         // Evidence: only a clue offered by the scene, and found by the student, can be shown.
-        if (scene.kind === "evidence" && (!scene.clues.includes(option) || !run.clues.includes(option))) return { ok: false, refusal: "invalid" };
+        if (scene.kind === "evidence" && (!scene.clues.includes(option) || !run.clues.includes(option)))
+          return { ok: false, refusal: "invalid" };
         correct = key.kind === "question" ? option === key.correct : key.correct.includes(option);
         explanation = key.explanations[option] ?? { ru: "", en: "" };
         if (!correct) eliminated = option;
@@ -222,7 +226,9 @@ export function move(campaign: Campaign, keys: CampaignKeys, run: RunState, acti
       if (!scene.grimoire.quiz.options.includes(action.word)) return { ok: false, refusal: "invalid" };
       const correct = keys[scene.id]?.grimoire === action.word;
       // Studying the rule wins back exactly one attempt; a wrong word costs nothing.
-      const next: RunState = correct ? { ...run, progress: { ...run.progress, [scene.id]: { ...progress, restored: progress.restored + 1 } } } : run;
+      const next: RunState = correct
+        ? { ...run, progress: { ...run.progress, [scene.id]: { ...progress, restored: progress.restored + 1 } } }
+        : run;
       return { ok: true, run: next, grants, grimoire: { correct }, chapterDone: null };
     }
   }

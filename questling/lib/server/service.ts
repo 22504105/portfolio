@@ -33,6 +33,8 @@ const REFUSAL_STATUS: Record<Refusal, number> = {
   not_enough_coins: 409,
   level_too_low: 409,
   not_ready: 409,
+  exhausted: 409,
+  not_exhausted: 409,
 };
 
 /** Finds or creates the student a Telegram account belongs to. */
@@ -81,7 +83,17 @@ const actionSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("answerDailyQuiz"), option: id }),
   z.object({ type: z.literal("claimDaily") }),
   z.object({ type: z.literal("toggleSavedFact") }),
-  z.object({ type: z.literal("answerStory"), nodeId: id, answer: z.union([id, z.array(z.string().max(40)).max(12)]) }),
+  z.object({
+    type: z.literal("story"),
+    campaign: id,
+    move: z.discriminatedUnion("type", [
+      z.object({ type: z.literal("advance"), scene: id }),
+      z.object({ type: z.literal("choose"), scene: id, option: id }),
+      z.object({ type: z.literal("answer"), scene: id, answer: z.union([id, z.array(z.string().max(40)).max(12)]) }),
+      z.object({ type: z.literal("grimoire"), scene: id, word: z.string().min(1).max(40) }),
+    ]),
+  }),
+  z.object({ type: z.literal("askMentor"), campaign: id, scene: id }),
   z.object({ type: z.literal("buy"), itemId: id }),
   z.object({ type: z.literal("saveLook"), equipped: z.partialRecord(slot, id.nullable()) }),
   z.object({ type: z.literal("openChest") }),

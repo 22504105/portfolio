@@ -13,30 +13,32 @@ The script needs a running production build (`npm run build && npx next start -p
 it elsewhere). Every app shot starts from a fresh demo student (a new browser context, so a new
 `localStorage`). The images are regenerated, not hand-edited, and are not committed.
 
-## Results (Gate 2, Next 16.4.2, Chrome, 2026-10-24)
+## Results (Gate 3, Next 16.4.2, Chrome, 2026-10-24)
 
 The Russian routes are compared, since the exports are in Russian. `e2e/gate1.spec.ts` checks that
 every screen, in both languages, fits 320/360/390/430-px phones without sideways scrolling.
 
-| Screen | Export | App route | Size (ref → app) | Differing pixels | What differs |
-|---|---|---|---|---|---|
-| welcome | `01_welcome` | `/ru/demo/welcome` | 390×925 → same | 0.09% | — |
-| home | `02_home_2` | `/ru/demo/home` | 390×844 → same | 2.79% | hero art, name, rank (A, B) |
-| map | `03_story_map` | `/ru/demo/map` | 390×2094 → 2100 | 11.66% | header, nav (C); hero avatar (A); progress figures (B) |
-| details | `04_quest_details` | `/ru/demo/quest/tower` | 390×1268 → same | 1.32% | header (C); progress figures (B) |
-| player | `05_story_player_2` | `/ru/demo/play` | 390×902 → same | 1.68% | header (C); Gelasio for Georgia (D) |
-| player, correct | `05_story_player_50_xp` | `/ru/demo/play` after a right answer | 390×1045 → same | 2.72% | as player; glosses of `_2` |
-| player, wrong | `05_story_player_3` | `/ru/demo/play` after a wrong answer | 390×1304 → same | 4.94% | as player; clean library picture (E) |
-| puzzle | `06_interactive_puzzle` | `/ru/demo/play` at the cipher | 390×844 → same | 1.01% | header (C); tiles of the story's sentence |
-| journal | `07_evidence_journal_2` | `/ru/demo/journal` | 390×1430 → 1420 | 23.14% | the demo has found clue 1, the export shows clue 2 (B); clean pictures (E) |
-| quests | `08_quick_quests` | `/ru/demo/quests` | 390×1184 → 1348 | 31.07% | the finished daily quest is listed too, at the end (B); header, nav (C) |
-| discovery | `09_daily_discovery` | `/ru/demo/discovery` | 390×1144 → 1166 | 9.98% | the day's word comes from the calendar (B); header (C) |
-| rewards | `10_rewards` | `/ru/demo/rewards` | 390×980 → same | 5.41% | header, nav (C); real progress figures (B) |
-| profile | `11_profile_2` | `/ru/demo/profile` | 390×1435 → same | 7.76% | hero art (A); real progress figures (B); header, nav (C) |
-| character | `12_character_select` | `/ru/demo/character` | 390×1119 → same | 12.57% | standalone character art (A) |
-| wardrobe | `13_wardrobe_2` | `/ru/demo/wardrobe` | 390×844 → same | 14.32% | hero art (A); item pictures for emoji (G); more tabs; no "3D ВИД" (F) |
-| shop | `14_arcane_shop_2` | `/ru/demo/shop` | 390×844 → same | 10.04% | hero art (A); item pictures for emoji (G); deal of the day from the rotation (B); nav (C) |
-| inventory | `15_inventory` | `/ru/demo/inventory` | 390×1204 → 1468 | 46.48% | the bag holds the demo student's real items and clues (B); item pictures (G); no bonus lines (F) |
+| Screen                   | Export                    | App route                                  | Size (ref → app)               | Differing pixels | What differs                                                                                     |
+| ------------------------ | ------------------------- | ------------------------------------------ | ------------------------------ | ---------------- | ------------------------------------------------------------------------------------------------ |
+| welcome                  | `01_welcome`              | `/ru/demo/welcome`                         | 390×925 → same                 | 0.09%            | —                                                                                                |
+| home                     | `02_home_2`               | `/ru/demo/home`                            | 390×844 → same                 | 2.79%            | hero art, name, rank (A, B)                                                                      |
+| map                      | `03_story_map`            | `/ru/demo/map`                             | 390×2094 → 2100                | 11.66%           | header, nav (C); hero avatar (A); progress figures (B)                                           |
+| details                  | `04_quest_details`        | `/ru/demo/quest/tower`                     | 390×1268 → same                | 1.32%            | header (C); progress figures (B)                                                                 |
+| player                   | `05_story_player_2`       | `/ru/demo/play`                            | 390×902 → same                 | 1.68%            | header (C); Gelasio for Georgia (D)                                                              |
+| player, correct          | `05_story_player_50_xp`   | `/ru/demo/play` after a right answer       | 390×1045 → same                | 2.72%            | as player; glosses of `_2`                                                                       |
+| player, wrong            | `05_story_player_3`       | `/ru/demo/play` after a wrong answer       | 390×1304 → same                | 4.94%            | as player; clean library picture (E)                                                             |
+| puzzle                   | `06_interactive_puzzle`   | `/ru/demo/play` at the cipher              | 390×844 → same                 | 0.76%            | header (C); tiles of the story's sentence                                                        |
+| player, no attempts left | `05_story_player_4`       | `/ru/demo/play` after two wrong answers    | 390×1484 → 1417                | 21.05%           | header (C); clean library picture (E); honest mentor card and button (H)                         |
+| player, grimoire         | `05_story_player_never_2` | the same, grimoire open, right word chosen | 390×844 → same (one screenful) | 16.98%           | the riddle card shows its quote (I); the paused screen behind the sheet                          |
+| journal                  | `07_evidence_journal_2`   | `/ru/demo/journal`                         | 390×1430 → 1660                | 34.63%           | the case is the whole campaign: 8 clues listed, 2 found (B); clean pictures (E)                  |
+| quests                   | `08_quick_quests`         | `/ru/demo/quests`                          | 390×1184 → 1348                | 31.07%           | the finished daily quest is listed too, at the end (B); header, nav (C)                          |
+| discovery                | `09_daily_discovery`      | `/ru/demo/discovery`                       | 390×1144 → 1166                | 9.98%            | the day's word comes from the calendar (B); header (C)                                           |
+| rewards                  | `10_rewards`              | `/ru/demo/rewards`                         | 390×980 → same                 | 5.41%            | header, nav (C); real progress figures (B)                                                       |
+| profile                  | `11_profile_2`            | `/ru/demo/profile`                         | 390×1435 → same                | 7.76%            | hero art (A); real progress figures (B); header, nav (C)                                         |
+| character                | `12_character_select`     | `/ru/demo/character`                       | 390×1119 → same                | 12.57%           | standalone character art (A)                                                                     |
+| wardrobe                 | `13_wardrobe_2`           | `/ru/demo/wardrobe`                        | 390×844 → same                 | 14.32%           | hero art (A); item pictures for emoji (G); more tabs; no "3D ВИД" (F)                            |
+| shop                     | `14_arcane_shop_2`        | `/ru/demo/shop`                            | 390×844 → same                 | 10.04%           | hero art (A); item pictures for emoji (G); deal of the day from the rotation (B); nav (C)        |
+| inventory                | `15_inventory`            | `/ru/demo/inventory`                       | 390×1204 → 1468                | 46.48%           | the bag holds the demo student's real items and clues (B); item pictures (G); no bonus lines (F) |
 
 Where a page is taller, it is because it lists more of the student's own things (quests, items),
 not because a block grew: every block keeps the export's size and spacing, which the side-by-side
@@ -65,6 +67,16 @@ images show row for row.
 - **F. The brief over the export.** No learning advantage from cosmetics (no "+15% опыта", "Бонус
   сета", "+10 Концентрация"), no claim of a 3D model. (The weekly chest's random prize stays as the
   export has it: the owner's decision of 2026-10-24.)
+- **H. Honest help (Gate 3).** The export's mentor card promises a notification in Teacher Studio
+  and a reply in Telegram, with the mentor "В сети". Teacher Studio is Gate 4, so the card says the
+  request is kept and the mentor will see it there, shows the student's group (or "Группа не
+  подключена") instead of an online status, and the toast says "Свиток сохранён!", not "доставлен".
+  The way back leads to the story map ("Вернуться к карте"), the hub of the stories; there is no
+  separate story library screen. The card is titled "Спросить наставника": the mentor's name in the
+  accusative is not known for every group.
+- **I. The grimoire's riddle card.** In the export the scrolling column squashes the riddle card to
+  its heading; the app keeps every card at its height, so the riddle's quote shows, with the rule's
+  key word marked as the export marks «never».
 - **G. Item pictures.** The exports show emoji for items; the app shows each item's own standalone
   picture from the archive.
 
@@ -72,7 +84,13 @@ images show row for row.
 
 - After a wrong answer and "Попробовать снова", the eliminated option stays in the list struck out
   and faded (`RuledOutOption`) and is no longer a radio.
-- A story node with no attempts left shows the wrong-answer view with a way back to the map; the
-  dedicated "attempts used up" and grimoire screens (`05_story_player_4`, `_never_2`) are Gate 3.
+- A scene with no attempts left (a question, a piece of evidence or a cipher) pauses on
+  `05_story_player_4`; the grimoire (`_never_2`) asks its one-word quiz, and the right word wins back
+  exactly one attempt (checked by the rules, kept in the run). A wrong word costs nothing.
+- Narration, dialogue, a choice, a chapter's end and the campaign's ending have no export: they are
+  built only from the approved player's parts (heading, scene picture, parchment, option cards,
+  reward card, gold button), listed in `components/student/story-scenes.tsx`.
+- Evidence uses the question screens, its options being the clues the student found, each with its
+  own picture, as in the journal.
 - Playing a quick quest and the settings screen have no export: both are built only from parts of
   approved screens (owner's rule), listed in the components' headers.

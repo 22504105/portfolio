@@ -6,7 +6,7 @@
 // of pixels that differ. The app must be running (npm run dev or start).
 //
 // Usage: node scripts/visual-compare.mjs <screen> [<screen> …] [--base http://localhost:3100] [--width 390] [--height 844]
-//   screens: see SCREENS below (all 15 student screens and the player states)
+//   screens: see SCREENS below (all 15 student screens and the five player states)
 import { readFile, mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
@@ -27,17 +27,62 @@ const SCREENS = {
   "player-correct": {
     html: "02_STORY_STATES/05_story_player_50_xp/code.html",
     route: "/ru/demo/play",
-    steps: [["click", "[data-option=cellar]"], ["click", "[data-action=check]"], ["wait", "[data-phase=correct]"]],
+    steps: [
+      ["click", "[data-option=cellar]"],
+      ["click", "[data-action=check]"],
+      ["wait", "[data-phase=correct]"],
+    ],
   },
   "player-incorrect": {
     html: "02_STORY_STATES/05_story_player_3/code.html",
     route: "/ru/demo/play",
-    steps: [["click", "[data-option=garden]"], ["click", "[data-action=check]"], ["wait", "[data-phase=incorrect]"]],
+    steps: [
+      ["click", "[data-option=garden]"],
+      ["click", "[data-action=check]"],
+      ["wait", "[data-phase=incorrect]"],
+    ],
   },
   puzzle: {
     html: "01_APPROVED_SCREENS/06_interactive_puzzle/code.html",
     route: "/ru/demo/play",
-    steps: [["click", "[data-option=cellar]"], ["click", "[data-action=check]"], ["wait", "[data-phase=correct]"], ["click", "[data-action=next]"], ["wait", "[data-tile]"]],
+    steps: [
+      ["click", "[data-option=cellar]"],
+      ["click", "[data-action=check]"],
+      ["wait", "[data-phase=correct]"],
+      ["click", "[data-action=next]"],
+      // Gate 3: a choice comes between the letter and the chest.
+      ["click", "[data-option=now]"],
+      ["click", "[data-action=choose]"],
+      ["wait", "[data-tile]"],
+    ],
+  },
+  "player-exhausted": {
+    html: "02_STORY_STATES/05_story_player_4/code.html",
+    route: "/ru/demo/play",
+    steps: [
+      ["click", "[data-option=garden]"],
+      ["click", "[data-action=check]"],
+      ["wait", "[data-phase=incorrect]"],
+      ["click", "[data-option=tower]"],
+      ["click", "[data-action=check]"],
+      ["wait", "[data-phase=exhausted]"],
+    ],
+  },
+  "player-grimoire": {
+    html: "02_STORY_STATES/05_story_player_never_2/code.html",
+    route: "/ru/demo/play",
+    // A sheet over the screen: compared as the phone shows it, one screenful.
+    viewportOnly: true,
+    steps: [
+      ["click", "[data-option=garden]"],
+      ["click", "[data-action=check]"],
+      ["wait", "[data-phase=incorrect]"],
+      ["click", "[data-option=tower]"],
+      ["click", "[data-action=check]"],
+      ["click", "[data-action=open-grimoire]"],
+      ["click", "[data-word=never]"],
+      ["wait", "[data-action=apply-grimoire]:not([disabled])"],
+    ],
   },
   journal: { html: "01_APPROVED_SCREENS/07_evidence_journal_2/code.html", route: "/ru/demo/journal" },
   quests: { html: "01_APPROVED_SCREENS/08_quick_quests/code.html", route: "/ru/demo/quests" },
@@ -65,9 +110,10 @@ const localFor = new Map(index.map((e) => [e.url, path.join(remoteDir, e.file)])
 
 const browser = await chromium.launch({ channel: process.env.CI ? undefined : "chrome" });
 // Animations would make every run differ; both sides are frozen the same way.
-const freeze = "*,*::before,*::after{animation:none!important;transition:none!important;caret-color:transparent!important}[data-demo-badge]{display:none!important}";
+const freeze =
+  "*,*::before,*::after{animation:none!important;transition:none!important;caret-color:transparent!important}[data-demo-badge]{display:none!important}";
 
-async function shoot(url, steps = [], route) {
+async function shoot(url, steps = [], route, viewportOnly = false) {
   const context = await browser.newContext({ viewport: { width, height }, deviceScaleFactor: 1, reducedMotion: "reduce" });
   const page = await context.newPage();
   if (route) await page.route(/lh3\.googleusercontent\.com/, route);
@@ -82,14 +128,19 @@ async function shoot(url, steps = [], route) {
     if (action === "wait") await page.waitForSelector(selector);
   }
   await page.evaluate(() => document.fonts.ready);
+  // Both sides from the top: a full-page shot of a scrolled page moves its fixed header.
+  await page.evaluate(() => window.scrollTo(0, 0));
   await page.waitForTimeout(300);
-  const png = await page.screenshot({ fullPage: true });
+  const png = await page.screenshot({ fullPage: !viewportOnly });
   await context.close();
   return png;
 }
 
 const serveLocal = async (r) => {
-  const url = r.request().url().replace(/=s\d+.*$/, "");
+  const url = r
+    .request()
+    .url()
+    .replace(/=s\d+.*$/, "");
   const file = localFor.get(url);
   if (!file) return r.abort();
   await r.fulfill({ body: await readFile(file), contentType: file.endsWith(".png") ? "image/png" : "image/jpeg" });
@@ -102,14 +153,22 @@ for (const name of names) {
   await mkdir(out, { recursive: true });
 
   // The reference runs the exported page's own script; its first option starts selected, as on the screenshot.
-  const reference = await shoot(pathToFileURL(path.join(design, screen.html)).href, [], serveLocal);
-  const app = await shoot(`${base}${screen.route}`, screen.steps);
+  const reference = await shoot(pathToFileURL(path.join(design, screen.html)).href, [], serveLocal, screen.viewportOnly);
+  const app = await shoot(`${base}${screen.route}`, screen.steps, undefined, screen.viewportOnly);
 
   const [ma, mb] = await Promise.all([sharp(reference).metadata(), sharp(app).metadata()]);
   const w = Math.max(ma.width, mb.width);
   const h = Math.max(ma.height, mb.height);
-  const ra = await sharp(reference).extend({ right: w - ma.width, bottom: h - ma.height, background: "#ff00ff" }).ensureAlpha().raw().toBuffer();
-  const rb = await sharp(app).extend({ right: w - mb.width, bottom: h - mb.height, background: "#ff00ff" }).ensureAlpha().raw().toBuffer();
+  const ra = await sharp(reference)
+    .extend({ right: w - ma.width, bottom: h - ma.height, background: "#ff00ff" })
+    .ensureAlpha()
+    .raw()
+    .toBuffer();
+  const rb = await sharp(app)
+    .extend({ right: w - mb.width, bottom: h - mb.height, background: "#ff00ff" })
+    .ensureAlpha()
+    .raw()
+    .toBuffer();
 
   const diff = Buffer.alloc(w * h * 4);
   let changed = 0;
@@ -123,7 +182,9 @@ for (const name of names) {
   }
   await writeFile(path.join(out, "reference.png"), reference);
   await writeFile(path.join(out, "app.png"), app);
-  await sharp(diff, { raw: { width: w, height: h, channels: 4 } }).png().toFile(path.join(out, "diff.png"));
+  await sharp(diff, { raw: { width: w, height: h, channels: 4 } })
+    .png()
+    .toFile(path.join(out, "diff.png"));
   // Reference | app | diff, side by side, for reading the result at a glance.
   await sharp({ create: { width: w * 3 + 16, height: h, channels: 3, background: "#ff00ff" } })
     .composite([

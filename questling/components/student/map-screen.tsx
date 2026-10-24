@@ -4,29 +4,55 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Icon } from "@/components/ui/icon";
-import { CAMPAIGN, chapters, type Chapter } from "@/lib/content/campaign";
+import { campaigns } from "@/lib/content/campaigns";
 import { characters } from "@/lib/content/characters";
 import { tr } from "@/lib/content/text";
 import { useStudent } from "@/lib/client/student";
-import { balance, chapterProgress, chapterStatus, currentChapter, nextNode, solvedNodes, type ChapterStatus } from "@/lib/game/stats";
+import {
+  balance,
+  campaignFinished,
+  campaignOpen,
+  chapterProgress,
+  chapterStatus,
+  currentCampaign,
+  currentChapter,
+  playedCampaign,
+  runOf,
+} from "@/lib/game/stats";
+import { isGraded, type Campaign, type Chapter } from "@/lib/story/graph";
+import type { ChapterState } from "@/lib/story/run";
 import { fill } from "@/lib/i18n";
+import { sceneLine } from "@/lib/student/story";
 import { BottomNav } from "./bottom-nav";
 
 // Ported from design-source/questling-v2/01_APPROVED_SCREENS/03_story_map/code.html.
-// Every node is a chapter of the campaign with its real state: done, current (the student's
-// hero stands at it), locked until the chapter before is finished, or not written yet (Gate 3).
+// The path runs through every chapter of both campaigns, in order (the approved screen's five
+// nodes: Prologue, Chapters II–IV and the Finale). Each node has its real state from the
+// student's runs: done, current (the hero stands at it), open (the first chapter of a campaign
+// not begun), or locked until the chapter before is finished; the first chapter of a campaign
+// that is not open yet shows the campaign's gate ("Уровень B1 • Сложные загадки").
+// The summary above the path is about the campaign being played.
 // Owner's decisions 2026-10-24: Home's bottom bar, header named in the interface language.
 // Tailwind v3 → v4: shadow-sm → shadow-xs.
+
+type Stop = { campaign: Campaign; chapter: Chapter; status: ChapterState };
 
 export function MapScreen() {
   const { t, locale, base, facts } = useStudent();
   const [view, setView] = useState<"map" | "list">("map");
+  const campaign = playedCampaign(facts, currentCampaign(facts));
   const current = currentChapter(facts);
-  const written = chapters.filter((chapter) => chapter.nodes.length > 0);
-  const solved = solvedNodes(facts).size;
-  const total = written.reduce((sum, chapter) => sum + chapter.nodes.length, 0);
-  const percent = total ? Math.round((solved / total) * 100) : 0;
-  const progress = current ? chapterProgress(facts, current) : null;
+  const path: Stop[] = campaigns.flatMap((c) => {
+    const played = playedCampaign(facts, c);
+    return played.chapters.map((chapter) => ({ campaign: played, chapter, status: chapterStatus(facts, played, chapter) }));
+  });
+  const graded = campaign.chapters.flatMap((chapter) => chapter.scenes.filter(isGraded));
+  const run = runOf(facts, campaign.id);
+  const solved = graded.filter((scene) => run?.progress[scene.id]?.solved).length;
+  // A story's branches skip some scenes: a finished campaign is complete whichever way it went.
+  const percent = campaignFinished(facts, campaign.id) ? 100 : graded.length ? Math.round((solved / graded.length) * 100) : 0;
+  const shown = current?.chapter ?? campaign.chapters.at(-1)!;
+  const progress = chapterProgress(facts, campaign, shown);
   const hero = facts.profile.characterId ? characters[facts.profile.characterId] : null;
 
   return (
@@ -65,7 +91,7 @@ export function MapScreen() {
               <div className="flex flex-col">
                 <span className="font-caption text-caption text-primary flex items-center gap-1.5 tracking-wider uppercase">
                   <span className="bg-primary inline-block h-1.5 w-1.5 rounded-full motion-safe:animate-pulse"></span>
-                  {fill(t.map.campaign, { name: tr(CAMPAIGN.title, locale) })}
+                  {fill(t.map.campaign, { name: tr(campaign.title, locale) })}
                 </span>
                 <h2 className="font-headline-lg text-headline-lg text-text-ivory mt-0.5 leading-tight">{t.map.heading}</h2>
               </div>
@@ -89,17 +115,15 @@ export function MapScreen() {
                 </div>
                 <div className="flex flex-col">
                   <div className="flex items-center gap-2">
-                    <span className="font-title-sm text-title-sm text-text-ivory">
-                      {fill(t.map.level, { cefr: (current ?? written[0]).cefr })}
-                    </span>
+                    <span className="font-title-sm text-title-sm text-text-ivory">{fill(t.map.level, { cefr: shown.cefr })}</span>
                     {current ? (
                       <span className="bg-primary/20 text-primary font-caption text-caption rounded-full px-2 py-0.5 font-semibold uppercase">
-                        {tr(current.label, locale)}
+                        {tr(current.chapter.label, locale)}
                       </span>
                     ) : null}
                   </div>
                   <span className="font-caption text-caption text-text-muted">
-                    {fill(t.map.solvedLine, { solved: progress?.solved ?? 0, total: progress?.total ?? 0, percent })}
+                    {fill(t.map.solvedLine, { solved: progress.solved, total: progress.total, percent })}
                   </span>
                 </div>
               </div>
@@ -186,12 +210,19 @@ export function MapScreen() {
                 <circle cx="230" cy="740" fill="#e4c285" opacity="0.4" r="2.5"></circle>
               </svg>
             ) : null}
-            {chapters.map((chapter, index) => {
-              const status = chapterStatus(facts, chapter);
-              const last = index === chapters.length - 1;
-              if (status === "current" && view === "map")
-                return <CurrentNode key={chapter.id} chapter={chapter} heroImage={hero?.image ?? null} />;
-              return <ChapterNode key={chapter.id} chapter={chapter} status={status} boss={last} compact={view === "list"} />;
+            {path.map((stop, index) => {
+              const last = index === path.length - 1;
+              const here = current?.chapter.id === stop.chapter.id;
+              if (here && view === "map") return <CurrentNode key={stop.chapter.id} stop={stop} heroImage={hero?.image ?? null} />;
+              return (
+                <ChapterNode
+                  key={stop.chapter.id}
+                  stop={stop}
+                  previous={index > 0 ? path[index - 1].chapter : null}
+                  boss={last}
+                  compact={view === "list"}
+                />
+              );
             })}
 
             <div className="mt-4 flex w-full flex-col items-center overflow-hidden rounded-xl bg-[#D9C49B] p-4 text-center text-[#231D15] shadow-[0_8px_24px_rgba(0,0,0,0.7)]">
@@ -200,8 +231,8 @@ export function MapScreen() {
                 <span className="font-label-sm text-label-sm font-bold tracking-widest uppercase">{t.map.note}</span>
                 <span>✦</span>
               </div>
-              <p className="font-headline-md text-headline-md leading-tight italic">{tr(CAMPAIGN.quote.text, locale)}</p>
-              <span className="font-caption text-caption mt-2 opacity-75">{tr(CAMPAIGN.quote.source, locale)}</span>
+              <p className="font-headline-md text-headline-md leading-tight italic">{tr(campaign.quote.text, locale)}</p>
+              <span className="font-caption text-caption mt-2 opacity-75">{tr(campaign.quote.source, locale)}</span>
             </div>
           </div>
         </div>
@@ -211,13 +242,16 @@ export function MapScreen() {
   );
 }
 
-function CurrentNode({ chapter, heroImage }: { chapter: Chapter; heroImage: string | null }) {
+function CurrentNode({ stop, heroImage }: { stop: Stop; heroImage: string | null }) {
   const { t, locale, base, facts } = useStudent();
-  const { solved, total } = chapterProgress(facts, chapter);
-  const node = nextNode(facts, chapter);
-  const position = node ? chapter.nodes.indexOf(node) + 1 : total;
+  const { campaign, chapter, status } = stop;
+  const { solved, total } = chapterProgress(facts, campaign, chapter);
+  const position = Math.min(solved + 1, total);
+  const run = runOf(facts, campaign.id);
+  const scene = chapter.scenes.find((s) => s.id === run?.scene) ?? chapter.scenes[0];
+  const nextGraded = chapter.scenes.filter(isGraded).find((s) => !run?.progress[s.id]?.solved);
   return (
-    <div className="relative z-20 mb-16 flex w-full flex-col items-center" data-chapter={chapter.id} data-status="current">
+    <div className="relative z-20 mb-16 flex w-full flex-col items-center" data-chapter={chapter.id} data-status={status}>
       <div className="relative z-30 -mb-3 flex flex-col items-center motion-safe:animate-bounce" style={{ animationDuration: "2.4s" }}>
         <div className="bg-surface-container-highest mb-1 flex items-center gap-1.5 rounded-full px-3 py-1.5 shadow-xl">
           <span className="text-xs">🐾</span>
@@ -247,8 +281,8 @@ function CurrentNode({ chapter, heroImage }: { chapter: Chapter; heroImage: stri
             </span>
             <h3 className="font-headline-md text-headline-md text-text-ivory mt-0.5 leading-tight">{tr(chapter.title, locale)}</h3>
           </div>
-          <span className="bg-surface-container-highest text-primary font-label-sm text-label-sm rounded-md px-2.5 py-1 font-semibold">
-            +50 XP
+          <span className="bg-surface-container-highest text-primary font-label-sm text-label-sm shrink-0 rounded-md px-2.5 py-1 font-semibold">
+            +{nextGraded?.xp ?? chapter.reward.xp} XP
           </span>
         </div>
         <div className="flex flex-col gap-1.5 pt-1">
@@ -257,17 +291,17 @@ function CurrentNode({ chapter, heroImage }: { chapter: Chapter; heroImage: stri
             <span className="text-text-ivory font-medium">{fill(t.map.of, { n: solved, total })}</span>
           </div>
           <div className="bg-surface-container-lowest flex h-2 w-full gap-1 overflow-hidden rounded-full p-0.5">
-            {chapter.nodes.map((n, i) => (
+            {chapter.scenes.filter(isGraded).map((n, i) => (
               <div key={n.id} className={`h-full flex-1 rounded-full ${i < solved ? "bg-primary" : "bg-surface-container-high"}`}></div>
             ))}
           </div>
         </div>
-        {node ? <p className="font-body-md text-body-md text-on-surface-variant leading-snug italic">«{node.parchment}»</p> : null}
+        <p className="font-body-md text-body-md text-on-surface-variant line-clamp-3 leading-snug italic">«{sceneLine(scene)}»</p>
         <Link
           href={`${base}/quest/${chapter.id}`}
           className="font-label-md text-label-md mt-1 flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-b from-[#D5B87E] to-[#B99A61] font-bold tracking-wider text-[#101016] uppercase shadow-[0_0_18px_rgba(185,154,97,0.35)] transition-transform active:scale-[0.98]"
         >
-          <span>{t.map.continue}</span>
+          <span>{status === "open" ? t.map.start : t.map.continue}</span>
           <Icon name="arrow_forward" className="text-[20px]" />
         </Link>
       </div>
@@ -275,11 +309,13 @@ function CurrentNode({ chapter, heroImage }: { chapter: Chapter; heroImage: stri
   );
 }
 
-function ChapterNode({ chapter, status, boss, compact }: { chapter: Chapter; status: ChapterStatus; boss: boolean; compact: boolean }) {
-  const { t, locale, base } = useStudent();
-  const required = chapter.requires ? chapters.find((c) => c.id === chapter.requires) : null;
+function ChapterNode({ stop, previous, boss, compact }: { stop: Stop; previous: Chapter | null; boss: boolean; compact: boolean }) {
+  const { t, locale, base, facts } = useStudent();
+  const { campaign, chapter, status } = stop;
+  // The gate of a campaign not open yet is shown on its first chapter; a chapter may have a banner of its own.
+  const gate = (!campaignOpen(facts, campaign) && campaign.chapters[0] === chapter ? campaign.gate : undefined) ?? chapter.gate;
 
-  if (status === "done" || (status === "current" && compact)) {
+  if (status === "done" || ((status === "current" || status === "open") && compact)) {
     return (
       <div
         className={`relative z-10 flex w-full flex-col items-center ${compact ? "mb-6" : "mb-14"}`}
@@ -315,22 +351,19 @@ function ChapterNode({ chapter, status, boss, compact }: { chapter: Chapter; sta
     );
   }
 
-  // Locked, or open but not written yet.
-  const banner =
-    status === "unwritten"
-      ? { icon: "hourglass_top" as const, tone: "text-text-muted", text: t.map.unwritten }
-      : chapter.gate
-        ? {
-            icon: boss ? ("military_tech" as const) : ("auto_awesome" as const),
-            tone: boss ? "text-primary font-semibold" : "text-secondary",
-            text: tr(chapter.gate, locale),
-          }
-        : {
-            icon: "lock" as const,
-            tone: "text-text-muted",
-            text: fill(t.map.requires, { chapter: required ? tr(required.labelAccusative, locale) : "" }),
-          };
-  const fade = boss ? "opacity-65" : chapter.gate ? "opacity-75" : "opacity-85";
+  // Locked: behind the chapter before it, or behind the campaign's gate.
+  const banner = gate
+    ? {
+        icon: boss ? ("military_tech" as const) : ("auto_awesome" as const),
+        tone: boss ? "text-primary font-semibold" : "text-secondary",
+        text: tr(gate, locale),
+      }
+    : {
+        icon: "lock" as const,
+        tone: "text-text-muted",
+        text: fill(t.map.requires, { chapter: previous ? tr(previous.labelAccusative, locale) : "" }),
+      };
+  const fade = boss ? "opacity-65" : gate ? "opacity-75" : "opacity-85";
 
   return (
     <div

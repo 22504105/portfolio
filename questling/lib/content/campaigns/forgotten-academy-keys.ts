@@ -1,20 +1,8 @@
-import type { Locale } from "@/lib/i18n";
-import type { GradeResult } from "@/lib/story/types";
-import type { Text } from "./text";
-import { tr } from "./text";
+import type { CampaignKeys } from "@/lib/story/graph";
 
-// Answer keys of the campaign's nodes: server and demo only, like quick-quest-keys.ts.
+// Answer keys of "Забытая академия": server and demo only, never a signed-in student's page.
 
-type QuestionKeyContent = {
-  kind: "question";
-  correct: string;
-  explanations: Record<string, Text>;
-};
-type PuzzleKeyContent = { kind: "puzzle"; order: string[]; explanation: Text };
-
-const notHere: Text = { ru: "Это не то место.", en: "This is not the place." };
-
-export const campaignKeys: Record<string, QuestionKeyContent | PuzzleKeyContent> = {
+export const forgottenAcademyKeys: CampaignKeys = {
   "prologue-1": {
     kind: "question",
     correct: "whisper",
@@ -26,6 +14,7 @@ export const campaignKeys: Record<string, QuestionKeyContent | PuzzleKeyContent>
       eat: { ru: "В правиле нет ни слова о еде.", en: "The rule says nothing about food." },
       sleep: { ru: "Quiet — не значит «спать»: это про тишину.", en: "Quiet does not mean asleep: it is about noise." },
     },
+    grimoire: "must",
   },
   "tower-1": {
     kind: "question",
@@ -35,6 +24,7 @@ export const campaignKeys: Record<string, QuestionKeyContent | PuzzleKeyContent>
       cook: { ru: "«Печать повара — ложка, а не сова.»", en: "“The cook's seal is a spoon, not an owl.”" },
       guard: { ru: "«У стражника нет своей печати.»", en: "“The guard has no seal of his own.”" },
     },
+    grimoire: "archivist's",
   },
   "tower-2": {
     kind: "question",
@@ -53,11 +43,13 @@ export const campaignKeys: Record<string, QuestionKeyContent | PuzzleKeyContent>
         en: "“The spire is open to the sky: the moon looks through its windows every night. This is not the place.”",
       },
     },
+    grimoire: "never",
   },
   "tower-3": {
     kind: "puzzle",
     order: ["We", "found", "the", "key"],
     explanation: { ru: "We found the key — «Мы нашли ключ». Сундук открыт!", en: "“We found the key.” The chest is open!" },
+    grimoire: "found",
   },
   "tower-4": {
     kind: "question",
@@ -70,27 +62,59 @@ export const campaignKeys: Record<string, QuestionKeyContent | PuzzleKeyContent>
       },
       always: { ru: "«Only» — значит «только»: не в любое время.", en: "“Only” means at that one time, not at any time." },
     },
+    grimoire: "only",
   },
   "tower-5": {
     kind: "question",
     correct: "water",
     explanations: {
       water: { ru: "«Follow the sound of water» — иди на звук воды.", en: "“Follow the sound of water”: go where you hear water." },
-      crypt: notHere,
+      crypt: { ru: "Это не то место: карта ведёт к воде.", en: "This is not the place: the map leads to water." },
       stairs: { ru: "«Карта ведёт вперёд, на север, а не назад.»", en: "“The map leads on, to the north, not back.”" },
     },
+    grimoire: "follow",
+  },
+  "f-riddle": {
+    kind: "question",
+    correct: "tree",
+    explanations: {
+      tree: {
+        ru: "Старое мудрое дерево спит зимой и просыпается весной.",
+        en: "An old wise tree sleeps in winter and wakes up in spring.",
+      },
+      river: { ru: "Река не спит зимой — она течёт подо льдом.", en: "A river does not sleep in winter: it runs under the ice." },
+      stone: { ru: "Камень не просыпается весной — он спит всегда.", en: "A stone does not wake up in spring: it is always still." },
+    },
+    grimoire: "wise",
+  },
+  "f-proof": {
+    kind: "evidence",
+    correct: ["seal"],
+    explanations: {
+      seal: {
+        ru: "Печать с совой — знак архивариуса: письмо написала она.",
+        en: "The owl seal is the archivist's sign: she wrote the letter.",
+      },
+      "bronze-key": {
+        ru: "Ключ открывает подвал, но не говорит, кто писал письмо.",
+        en: "The key opens the cellar, but does not say who wrote the letter.",
+      },
+      manuscript: {
+        ru: "Манускрипт говорит, когда открыть дверь, а не кто писал письмо.",
+        en: "The manuscript says when to open the door, not who wrote the letter.",
+      },
+      "moon-amulet": { ru: "Амулет — то, что искали, а не подпись автора.", en: "The amulet is what was hidden, not the writer's name." },
+    },
+    grimoire: "proves",
+  },
+  "f-thanks": {
+    kind: "question",
+    correct: "welcome",
+    explanations: {
+      welcome: { ru: "«You're welcome» — вежливый ответ на благодарность.", en: "“You're welcome” is the polite answer to thanks." },
+      giveback: { ru: "Это приказ, а не ответ на благодарность.", en: "That is an order, not an answer to thanks." },
+      dontcare: { ru: "Так ответить грубо.", en: "That is a rude answer." },
+    },
+    grimoire: "welcome",
   },
 };
-
-/** Grades an answer to any campaign node: an option id, or the tiles in order. */
-export function gradeStoryAnswer(nodeId: string, answer: string | string[], locale: Locale): GradeResult | null {
-  const key = campaignKeys[nodeId];
-  if (!key) return null;
-  if (key.kind === "question") {
-    if (typeof answer !== "string" || !(answer in key.explanations)) return null;
-    return { optionId: answer, correct: answer === key.correct, explanation: tr(key.explanations[answer], locale) };
-  }
-  if (!Array.isArray(answer)) return null;
-  const correct = answer.join(" ") === key.order.join(" ");
-  return { optionId: answer.join(" "), correct, explanation: correct ? tr(key.explanation, locale) : "" };
-}

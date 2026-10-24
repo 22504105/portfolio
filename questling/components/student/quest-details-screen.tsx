@@ -3,33 +3,43 @@
 /* eslint-disable @next/next/no-img-element -- illustrations are pre-sized WebP in public/images (scripts/import-images.mjs) */
 import Link from "next/link";
 import { Icon } from "@/components/ui/icon";
-import { chapterById, clueById } from "@/lib/content/campaign";
+import { findChapter } from "@/lib/content/campaigns";
 import { tr } from "@/lib/content/text";
 import { speak, useSpeechSupported } from "@/lib/client/sound";
 import { useStudent } from "@/lib/client/student";
-import { chapterProgress, chapterStatus, nextNode, solvedNodes } from "@/lib/game/stats";
+import { chapterProgress, chapterStatus, playedCampaign, runOf } from "@/lib/game/stats";
+import { isGraded } from "@/lib/story/graph";
 import { fill } from "@/lib/i18n";
+import { sceneLine } from "@/lib/student/story";
 import { BackHeader } from "./back-header";
 
 // Ported from design-source/questling-v2/01_APPROVED_SCREENS/04_quest_details/code.html.
 // The speaker reads the current diary entry aloud (the export toggled an ambient track that
-// does not exist). The progress card opens the evidence journal.
+// does not exist). The progress card opens the evidence journal. Gate 3: the chapter is part of a
+// campaign's story graph; its progress is its graded scenes solved in the student's run, and the
+// diary quotes the scene the run is at (or the last one solved).
 // Tailwind v3 → v4: drop-shadow-sm → drop-shadow-xs.
 
 export function QuestDetailsScreen({ chapterId }: { chapterId: string }) {
-  const chapter = chapterById.get(chapterId)!;
   const { t, locale, base, facts } = useStudent();
   const speech = useSpeechSupported();
-  const status = chapterStatus(facts, chapter);
-  const { solved, total } = chapterProgress(facts, chapter);
-  const node = nextNode(facts, chapter);
-  const solvedSet = solvedNodes(facts);
-  const lastSolved = [...chapter.nodes].reverse().find((n) => solvedSet.has(n.id));
-  const lastClue = lastSolved ? clueById.get(lastSolved.clue) : null;
-  const entry = node ?? lastSolved ?? chapter.nodes[0];
-  const entryIndex = entry ? chapter.nodes.indexOf(entry) + 1 : 0;
-  const percent = total ? Math.round((solved / total) * 100) : 0;
-  const playable = status === "current" && node;
+  const found = findChapter(chapterId)!;
+  const campaign = playedCampaign(facts, found.campaign);
+  const chapter = campaign.chapters.find((c) => c.id === chapterId) ?? found.chapter;
+  const run = runOf(facts, campaign.id);
+  const status = chapterStatus(facts, campaign, chapter);
+  const { solved, total } = chapterProgress(facts, campaign, chapter);
+  const graded = chapter.scenes.filter(isGraded);
+  // The newest clue of this chapter the student holds.
+  const chapterClues = new Set(chapter.scenes.flatMap((scene) => ("clue" in scene && scene.clue ? [scene.clue] : [])));
+  const lastClueId = [...(run?.clues ?? [])].reverse().find((id) => chapterClues.has(id));
+  const lastClue = lastClueId ? campaign.clues.find((c) => c.id === lastClueId) : null;
+  const atScene = status === "current" && run ? chapter.scenes.find((scene) => scene.id === run.scene) : null;
+  const lastSolved = [...graded].reverse().find((scene) => run?.progress[scene.id]?.solved);
+  const entry = atScene ?? lastSolved ?? graded[0] ?? chapter.scenes[0];
+  const entryIndex = status === "done" ? total : Math.min(solved + 1, total);
+  const percent = status === "done" ? 100 : total ? Math.round((solved / total) * 100) : 0;
+  const playable = status === "current" || status === "open";
 
   return (
     <div className="bg-background font-body-md text-body-md text-on-surface flex min-h-dvh flex-col antialiased">
@@ -62,7 +72,7 @@ export function QuestDetailsScreen({ chapterId }: { chapterId: string }) {
                     type="button"
                     aria-label={t.details.listen}
                     disabled={!speech}
-                    onClick={() => speak(entry.parchment)}
+                    onClick={() => speak(sceneLine(entry))}
                     className="bg-surface-container-high/90 text-primary flex h-10 w-10 items-center justify-center rounded-full shadow-lg backdrop-blur-md transition-transform active:scale-95 disabled:opacity-50"
                   >
                     <Icon name="volume_up" className="text-[20px]" />
@@ -86,7 +96,7 @@ export function QuestDetailsScreen({ chapterId }: { chapterId: string }) {
 
           <div className="px-margin mt-space-lg">
             <Link
-              href={`${base}/journal`}
+              href={`${base}/journal/${campaign.id}`}
               className="bg-surface relative block overflow-hidden rounded-xl p-4 shadow-xl"
               aria-label={t.journal.title}
             >
@@ -99,7 +109,7 @@ export function QuestDetailsScreen({ chapterId }: { chapterId: string }) {
                 <span className="font-label-sm text-primary font-medium tracking-wide">{fill(t.details.clues, { n: solved, total })}</span>
               </div>
               <div className="bg-surface-container-lowest mt-2 flex h-2.5 w-full gap-1 rounded-full p-0.5">
-                {chapter.nodes.map((n, i) => (
+                {graded.map((n, i) => (
                   <div
                     key={n.id}
                     className={`h-full flex-1 rounded-full ${i < solved ? "bg-primary shadow-[0_0_8px_rgba(228,194,133,0.6)]" : "bg-surface-container-highest/60"}`}
@@ -168,7 +178,7 @@ export function QuestDetailsScreen({ chapterId }: { chapterId: string }) {
                   ✦ {t.details.diary} ✦
                 </div>
                 <p className="font-headline-md text-surface-container-lowest mt-2 text-center text-[19px] leading-snug italic">
-                  “{entry.parchment}”
+                  “{sceneLine(entry)}”
                 </p>
                 <div className="text-caption font-label-sm text-on-tertiary-container mt-2 text-center">
                   {fill(t.details.hintFor, { n: entryIndex, place: tr(entry.location, locale) })}
@@ -202,7 +212,7 @@ export function QuestDetailsScreen({ chapterId }: { chapterId: string }) {
           <div className="bg-surface/90 fixed right-0 bottom-0 left-0 z-40 shadow-[0_-8px_24px_rgba(0,0,0,0.6)] backdrop-blur-xl">
             <div className="px-margin pt-space-sm pb-safe mx-auto flex max-w-[420px] flex-col items-center">
               <Link
-                href={playable ? `${base}/play` : `${base}/journal`}
+                href={playable ? `${base}/play/${campaign.id}` : `${base}/journal/${campaign.id}`}
                 className="from-primary-fixed to-primary-container text-surface-container-lowest font-label-md flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-b font-bold tracking-wider uppercase shadow-[0_4px_16px_rgba(228,194,133,0.3)] transition-transform active:scale-[0.98]"
               >
                 <span>{playable ? t.details.continue : t.details.openJournal}</span>

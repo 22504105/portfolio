@@ -1,23 +1,23 @@
 # Questling — architecture (Gate 1 proposal)
 
-Status: Gate 2. Parts marked *decided* are in the code; the rest is the plan for Gates 3–5.
+Status: Gate 2. Parts marked _decided_ are in the code; the rest is the plan for Gates 3–5.
 
-## 1. Stack and versions (*decided*)
+## 1. Stack and versions (_decided_)
 
 Same versions as Splitly, which already builds and runs on Vercel from this repo (checked 2026-10-23):
 
-| Package | Version | Why |
-|---|---|---|
-| next | 16.3.8 | App Router, Route Handlers, `next/font` self-hosting |
-| react / react-dom | 19.2.8 | required by Next 16 |
-| typescript | 5.9.3, `strict` | |
-| tailwindcss + @tailwindcss/postcss | 4.3.3 | built in, no CDN; tokens as CSS variables |
-| pg | 8.23.1 | server talks to PostgreSQL directly (same approach as CUT&CO and Splitly) |
-| zod | 4.6.6 | request and content schema validation (story graphs, quiz definitions) |
-| vitest | 5.0.3 (+ @types/node 22) | unit and domain tests |
-| @playwright/test | 1.64.0 | E2E and visual QA screenshots |
-| embedded-postgres | 18.4.0-beta.17 | real PostgreSQL for tests and local dev without Docker |
-| sharp | 0.35.5 | asset audit and offline image processing |
+| Package                            | Version                  | Why                                                                       |
+| ---------------------------------- | ------------------------ | ------------------------------------------------------------------------- |
+| next                               | 16.3.8                   | App Router, Route Handlers, `next/font` self-hosting                      |
+| react / react-dom                  | 19.2.8                   | required by Next 16                                                       |
+| typescript                         | 5.9.3, `strict`          |                                                                           |
+| tailwindcss + @tailwindcss/postcss | 4.3.3                    | built in, no CDN; tokens as CSS variables                                 |
+| pg                                 | 8.23.1                   | server talks to PostgreSQL directly (same approach as CUT&CO and Splitly) |
+| zod                                | 4.6.6                    | request and content schema validation (story graphs, quiz definitions)    |
+| vitest                             | 5.0.3 (+ @types/node 22) | unit and domain tests                                                     |
+| @playwright/test                   | 1.64.0                   | E2E and visual QA screenshots                                             |
+| embedded-postgres                  | 18.4.0-beta.17           | real PostgreSQL for tests and local dev without Docker                    |
+| sharp                              | 0.35.5                   | asset audit and offline image processing                                  |
 
 Node ≥ 22.12 (machine has 24.18). No paid dependency anywhere. Graph editor (`@xyflow/react`) is
 decided in Gate 4 after the builder screen is ported, not before.
@@ -43,7 +43,7 @@ questling/
   docs/               this file, screen map, asset audit, visual QA
 ```
 
-## 3. Design system reconstruction (*decided*)
+## 3. Design system reconstruction (_decided_)
 
 - Tailwind v4 `@theme` holds the union of the Stitch configs (`scripts/extract-tokens.mjs` shows one
   shared Gothic Arcana set for 16 screens). Class names are kept as in the export, so markup ports almost
@@ -67,7 +67,7 @@ frame). `initDataUnsafe` is never used for identity. Code and tests can be carri
 (`lib/server/telegram.ts`, `session.ts`).
 
 **Teachers — browser.** Supabase Auth (email + password, as in CUT&CO), only for identity. A row in
-`teachers` grants the role; every Studio handler checks the role *and* ownership of the group or quest
+`teachers` grants the role; every Studio handler checks the role _and_ ownership of the group or quest
 it touches. No admin key in the client.
 
 **Demo.** `/demo` runs the student app on an in-memory demo store with a visible "Демо" label. No fake
@@ -78,7 +78,7 @@ database role used by the app has no rights outside the `questling` schema. RLS 
 table with no policies for `anon`/`authenticated` (the Supabase client is never used for data), so a
 leaked anon key reads nothing.
 
-## 5. Student record (*decided*, Gate 2)
+## 5. Student record (_decided_, Gate 2)
 
 One rule engine for the demo and the server. A student's record is a set of plain **facts**
 (`lib/game/facts.ts`): ledger entries (XP and coins), graded answers, completions (a quest on a day, a
@@ -108,24 +108,50 @@ both interface languages, until Teacher Studio stores teacher-authored content (
 The academy's calendar is Moscow time for everyone (`lib/game/time.ts`): daily quests, the word of
 the day, streaks and the weekly chest turn over at midnight there.
 
+## 5a. Story campaigns (_decided_, Gate 3)
+
+A campaign is a **versioned story graph** (`lib/story/graph.ts`): chapters of scenes of seven kinds —
+narration, dialogue, choice, question, cipher (word order), evidence (show a found clue) and
+ending — joined by transitions, some conditional on the flags a choice set or the clues found.
+Graded scenes have attempts, XP, a hint and a grimoire (a short rule with a one-word quiz). Answer
+keys live apart (`lib/content/campaigns/*-keys.ts`, `keys.ts`), read by the rules only.
+
+- Content: `lib/content/campaigns` — "Забытая академия" (A1–A2: prologue, tower, forest; endings
+  guardian / keeper / the secret apprentice ending) and "Башня Эха" (B1–B2, opens once the first is
+  finished: echo tower, archives; endings justice / mercy / redemption). Every published version stays
+  in the registry (`index.ts`) while a run may use it.
+- `lib/story/validate.ts` walks every path of a campaign: targets exist, every scene is reachable,
+  every path ends, every evidence scene can be proved with a clue found on that path. Tested for
+  both campaigns (`tests/story-graph.test.ts`).
+- A **run** (`lib/story/run.ts`, pure) is the student's place in one campaign: scene, flags, clues,
+  choices, per-scene attempts (used, won back by the grimoire, options ruled out), chapters done,
+  ending. Moves: advance, choose, answer, grimoire; only the scene the run is at can be played. A run
+  is bound to the campaign version it started on.
+- Actions `story {campaign, move}` and `askMentor {campaign, scene}` (`lib/game/ops.ts`). Rewards are
+  ledger rows keyed once per campaign: `story:<campaign>:scene:<id>`, `…:chapter:<id>`, `…:ending`.
+  Completions record solved scenes, chapters, the ending and help requests (kept for Teacher Studio).
+- Stored in `questling.story_runs` (one row per student and campaign, `state jsonb`, version column;
+  migration `20261024000300_story_runs.sql`), loaded with the rest of the facts.
+
 ## 6. Data model still to come (Gates 3–4)
 
 All tables in schema `questling`. Ids are UUIDs; money-like values are integers.
 
-| Area | Tables |
-|---|---|
-| People | `users` (one per person; ui_language, character_id), `auth_identities` (provider `telegram` / `supabase`, subject, unique), `teachers` (user_id) |
-| Groups | `groups` (teacher_id, name, cefr_level A1–C1, archived_at), `group_members` (group_id, user_id, role student, joined_at), `group_invites` (code hash, expires_at, max_uses) |
-| Content | `quests` (owner teacher, kind story/quick, title), `quest_versions` (quest_id, number, status draft/published/archived, graph jsonb validated by zod, published_at; published rows immutable — trigger), `quest_nodes` / `quest_edges` materialised from the published graph for analytics, `clues` |
-| Assignment | `assignments` (group_id, quest_version_id, starts_at, due_at) |
-| Play | `story_runs` (user, quest_version, current_node, flags jsonb, status; unique per user+version+mode), `attempts` (run, node, answer jsonb, correct, attempt_no), `run_evidence` (run, clue) |
-| Daily | `daily_entries` (date, kind word/fact, cefr, group_id nullable, content jsonb, source), `vocabulary_saves` |
-| Economy | `xp_ledger`, `coin_ledger` (user, amount, reason, idempotency_key **unique**), balances are sums (cached in `users` and checked by a constraint trigger) |
-| Cosmetics | `items` (slot, species, rarity, price_coins, layers jsonb, anchors jsonb), `inventory` (user, item, unique), `equipped` (user, slot, item; unique per slot) |
-| Achievements | `achievements`, `user_achievements` (unique) |
-| Media, audit | `media_assets` (owner, mime, size, storage path), `audit_log` |
+| Area         | Tables                                                                                                                                                                                                                                                                                              |
+| ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| People       | `users` (one per person; ui_language, character_id), `auth_identities` (provider `telegram` / `supabase`, subject, unique), `teachers` (user_id)                                                                                                                                                    |
+| Groups       | `groups` (teacher_id, name, cefr_level A1–C1, archived_at), `group_members` (group_id, user_id, role student, joined_at), `group_invites` (code hash, expires_at, max_uses)                                                                                                                         |
+| Content      | `quests` (owner teacher, kind story/quick, title), `quest_versions` (quest_id, number, status draft/published/archived, graph jsonb validated by zod, published_at; published rows immutable — trigger), `quest_nodes` / `quest_edges` materialised from the published graph for analytics, `clues` |
+| Assignment   | `assignments` (group_id, quest_version_id, starts_at, due_at)                                                                                                                                                                                                                                       |
+| Play         | built in Gate 3 as `story_runs` (section 5a); Gate 4 adds runs of teacher-authored versions and assignments                                                                                                                                                                                         |
+| Daily        | `daily_entries` (date, kind word/fact, cefr, group_id nullable, content jsonb, source), `vocabulary_saves`                                                                                                                                                                                          |
+| Economy      | `xp_ledger`, `coin_ledger` (user, amount, reason, idempotency_key **unique**), balances are sums (cached in `users` and checked by a constraint trigger)                                                                                                                                            |
+| Cosmetics    | `items` (slot, species, rarity, price_coins, layers jsonb, anchors jsonb), `inventory` (user, item, unique), `equipped` (user, slot, item; unique per slot)                                                                                                                                         |
+| Achievements | `achievements`, `user_achievements` (unique)                                                                                                                                                                                                                                                        |
+| Media, audit | `media_assets` (owner, mime, size, storage path), `audit_log`                                                                                                                                                                                                                                       |
 
 Integrity rules carried into SQL, not left to the client:
+
 - Rewards: one ledger row per `(user, reason, source id)` via the unique idempotency key; replays and
   refreshes insert nothing.
 - Purchases: one transaction locks the user row, checks balance ≥ price, ownership absent, species
@@ -137,7 +163,7 @@ Integrity rules carried into SQL, not left to the client:
 ## 7. Hosting and free-tier limits
 
 - **App:** Vercel Hobby (free, non-commercial — fits a portfolio). Same route as Splitly and CUT&CO:
-  subfolder project, CLI deploy. *Deploy only with owner approval.*
+  subfolder project, CLI deploy. _Deploy only with owner approval._
 - **Database:** PostgreSQL on Supabase Free: project `Questling` (`xqkhmbvstcjvfttkdvxg`, eu-west-1),
   created 2026-10-24 on the owner's word; the other projects are paused. Limits: 500 MB database,
   5 GB egress, idle projects paused after a week. Migrations applied 2026-10-24 on the owner's

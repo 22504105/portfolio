@@ -4,12 +4,12 @@
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { Icon } from "@/components/ui/icon";
-import { chapters, clueById } from "@/lib/content/campaign";
 import { characters } from "@/lib/content/characters";
 import { itemById, items, RARITY_LABEL, SLOT_LABEL, type Item, type Rarity, type Slot } from "@/lib/content/items";
 import { tr } from "@/lib/content/text";
 import { useStudent } from "@/lib/client/student";
-import { balance, levelOf, owns, solvedNodes } from "@/lib/game/stats";
+import { balance, foundClues, levelOf, owns } from "@/lib/game/stats";
+import { clueChapter } from "@/lib/student/story";
 import { fill } from "@/lib/i18n";
 
 // Ported from design-source/questling-v2/01_APPROVED_SCREENS/15_inventory/code.html.
@@ -43,10 +43,7 @@ export function InventoryScreen() {
   const order: Record<Rarity, number> = { epic: 0, rare: 1, common: 2 };
   const owned = items.filter((item) => owns(facts, item.id)).sort((a, b) => order[a.rarity] - order[b.rarity]);
   const locked = items.filter((item) => !owns(facts, item.id) && item.level > level).slice(0, 1);
-  const solved = solvedNodes(facts);
-  const clues = chapters.flatMap((chapter) =>
-    chapter.nodes.filter((node) => solved.has(node.id)).map((node) => ({ chapter, clue: clueById.get(node.clue)! })),
-  );
+  const clues = foundClues(facts).map(({ campaign, clue }) => ({ chapter: clueChapter(campaign, clue.id), clue }));
   const equippedSlots = SHOWN_SLOTS.filter((slot) => facts.equipped[slot]);
   const emptySlot = SHOWN_SLOTS.find((slot) => !facts.equipped[slot]);
 

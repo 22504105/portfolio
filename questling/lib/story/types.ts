@@ -1,9 +1,10 @@
-// A story node as the player sees it, and the part of it only the grader
-// may see. The split is the point: a client never receives the key, so the
-// answer cannot be read out of the page. (In the demo both live in the browser,
-// which is why the demo is labelled and never writes anything to the server.)
+// A graded scene as the player shows it, in the interface language, and the grade it gets back.
+// Built from the campaign graph (lib/student/story.ts) and never carries an answer key: a client
+// cannot read the answer out of the page. (In the demo the keys live in the browser too, which is
+// why the demo is labelled and never writes anything to the server.)
 
-export type OptionIcon = "stairs" | "park" | "fort" | "local_library" | "restaurant" | "nightlight" | "skull" | "water_drop" | "door_front";
+export type OptionIcon =
+  "stairs" | "park" | "fort" | "castle" | "local_library" | "restaurant" | "nightlight" | "skull" | "water_drop" | "door_front";
 
 export type QuestionOption = {
   id: string;
@@ -12,30 +13,48 @@ export type QuestionOption = {
   /** Its gloss in the UI language, e.g. "Подземелье без окон". */
   gloss: string;
   icon: OptionIcon;
+  /** A clue's own picture, when the options are clues from the journal (evidence). */
+  image?: string;
 };
 
-/** What every node shows about where it is in the story. */
+/** The study sheet of a scene (05_story_player_never_2), in the interface language. */
+export type GrimoireView = {
+  title: string;
+  minutes: number;
+  heading: string;
+  formula: string;
+  text: string;
+  deduction: string;
+  quiz: { sentence: string; options: string[] };
+};
+
+/** What every graded scene shows about where it is in the story. */
 type NodeFrame = {
   id: string;
   chapter: string;
   cefr: string;
   storyTitle: string;
+  subtitle: string;
   location: string;
   image: string;
-  /** Position of this clue in the chapter, 1-based, and how many clues the chapter has. */
-  clue: { index: number; total: number; text: string; title: string };
+  /** Position among the chapter's graded scenes (1-based), the English line, and the clue it reveals, if any. */
+  clue: { index: number; total: number; text: string; title: string | null };
+  /** The English line in the interface language. */
+  translation: string;
+  /** Attempts allowed now: the scene's own plus any won back with the grimoire. */
   maxAttempts: number;
   reward: { xp: number };
+  grimoire: GrimoireView;
 };
 
 export type QuestionNode = NodeFrame & {
   kind: "question";
   prompt: { lead: string; task: string };
   options: QuestionOption[];
-  /** The parchment's line in the interface language, offered after a wrong answer. */
-  translation: string;
   /** Shown after a wrong answer: points the way without giving the answer. */
   hint: { topic: string; text: string };
+  /** Evidence: the options are clues the student found. */
+  evidence: boolean;
 };
 
 /** A word-order cipher (06_interactive_puzzle). */

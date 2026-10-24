@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { campaignKeys } from "@/lib/content/campaign-keys";
 import { quickQuestKeys } from "@/lib/content/quick-quest-keys";
 import { dailyQuizKeys } from "@/lib/content/daily-keys";
 import { demoFacts, DEMO_COINS } from "@/lib/demo/seed";
@@ -8,7 +7,7 @@ import { run, type Action } from "@/lib/game/ops";
 import {
   balance,
   bestStreak,
-  chapterStatus,
+  runOf,
   chestReady,
   completed,
   currentStreak,
@@ -23,7 +22,6 @@ import {
   weeklyQuestCount,
 } from "@/lib/game/stats";
 import { dayOf } from "@/lib/game/time";
-import { chapterById } from "@/lib/content/campaign";
 import { itemById } from "@/lib/content/items";
 import type { Answer, QuestionKey } from "@/lib/learning/questions";
 
@@ -190,43 +188,7 @@ describe("daily discovery", () => {
   });
 });
 
-describe("the story", () => {
-  const answer = (nodeId: string) => {
-    const k = campaignKeys[nodeId];
-    return k.kind === "question" ? k.correct : k.order;
-  };
-
-  it("opens the next node only, rewards each once, and finishes the chapter with its reward", () => {
-    let facts = newcomer();
-    expect(refusal(facts, { type: "answerStory", nodeId: "tower-1", answer: answer("tower-1") })).toBe("not_available");
-    facts = play(facts, [{ type: "answerStory", nodeId: "prologue-1", answer: answer("prologue-1") }]);
-    const prologue = chapterById.get("prologue")!;
-    expect(chapterStatus(facts, prologue)).toBe("done");
-    expect(balance(facts, "xp")).toBe(50 + prologue.reward.xp);
-    expect(refusal(facts, { type: "answerStory", nodeId: "prologue-1", answer: answer("prologue-1") })).toBe("not_available");
-
-    for (const id of ["tower-1", "tower-2", "tower-3", "tower-4"])
-      facts = play(facts, [{ type: "answerStory", nodeId: id, answer: answer(id) }]);
-    expect(refusal(facts, { type: "answerStory", nodeId: "tower-4", answer: answer("tower-4") })).toBe("not_available");
-    facts = play(facts, [{ type: "answerStory", nodeId: "tower-5", answer: answer("tower-5") }]);
-    expect(chapterStatus(facts, chapterById.get("tower")!)).toBe("done");
-    // The next chapter is open but not written yet (Gate 3).
-    expect(chapterStatus(facts, chapterById.get("forest")!)).toBe("unwritten");
-  });
-
-  it("records a wrong answer without a reward, and refuses a puzzle answer with other tiles", () => {
-    let facts = play(newcomer(), [
-      { type: "answerStory", nodeId: "prologue-1", answer: answer("prologue-1") },
-      { type: "answerStory", nodeId: "tower-1", answer: "cook" },
-    ]);
-    expect(completed(facts, "story_node", "tower-1")).toBe(false);
-    facts = play(facts, [
-      { type: "answerStory", nodeId: "tower-1", answer: "archivist" },
-      { type: "answerStory", nodeId: "tower-2", answer: "cellar" },
-    ]);
-    expect(refusal(facts, { type: "answerStory", nodeId: "tower-3", answer: ["We", "found", "a", "key"] })).toBe("invalid");
-  });
-});
+// The story's rules (runs, branches, attempts, the grimoire, rewards) are tested in story-run.test.ts.
 
 describe("coins and items", () => {
   const rich = (facts: Facts, coins: number) =>
@@ -298,6 +260,8 @@ describe("the demo student", () => {
     expect(balance(facts, "coins")).toBe(DEMO_COINS);
     expect(currentStreak(facts, TODAY)).toBe(6);
     expect(completed(facts, "achievement", "first-clue")).toBe(true);
+    // The prologue done, chapter II begun: the run waits at the sealed letter of the approved player screen.
+    expect(runOf(facts, "forgotten-academy")).toMatchObject({ scene: "tower-2", chapters: ["prologue"], ending: null });
     expect(facts.equipped).toMatchObject({ headwear: "wizard-hat", outerwear: "sunset-cloak", handheld: "crystal-staff" });
   });
 });

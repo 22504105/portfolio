@@ -68,6 +68,11 @@
 - **Проверка**: `npm run typecheck`, `npm run lint`, `npm test`, `npm run build` из
   `barbershop-demo/`. `npm test` поднимает настоящий PostgreSQL (`embedded-postgres`) в
   `.tmp/`, применяет миграции и сиды.
+- **Сюжет (гейт 3)** — `docs/architecture.md`, раздел 5a: кампании в `lib/content/campaigns`
+  (ключи отдельно, `*-keys.ts`), граф проверяет `lib/story/validate.ts` (все пути, концовки,
+  доказуемость улик), прохождение — `lib/story/run.ts`, таблица `questling.story_runs`. Новую
+  кампанию или версию — добавить в реестр `campaigns/index.ts` и ключи в `keys.ts`; старую версию не
+  удалять, пока на ней есть прохождения. Экран `/play[/<кампания>]` — `components/student/play-screen.tsx`.
 - **Грабли**:
   - Миграции должны идти и на Supabase, и на чистом PostgreSQL с `tests/db/supabase-shim.sql`.
   - Vitest 5 требует `@types/node` 22+.
@@ -183,6 +188,11 @@
   (`lib/money.ts`). **Дни** — в часовом поясе рабочего пространства (`lib/time.ts`).
 - **Проверка**: из `flowly/` — `npm run typecheck`, `npm run lint`, `npm run format:check`,
   `npm test`, `npm run test:e2e` (Playwright, порт 3200, установленный Chrome, сам собирает).
+- **Сюжет (гейт 3)** — `docs/architecture.md`, раздел 5a: кампании в `lib/content/campaigns`
+  (ключи отдельно, `*-keys.ts`), граф проверяет `lib/story/validate.ts` (все пути, концовки,
+  доказуемость улик), прохождение — `lib/story/run.ts`, таблица `questling.story_runs`. Новую
+  кампанию или версию — добавить в реестр `campaigns/index.ts` и ключи в `keys.ts`; старую версию не
+  удалять, пока на ней есть прохождения. Экран `/play[/<кампания>]` — `components/student/play-screen.tsx`.
 - **Грабли**:
   - `shadcn init` прописал в компонентах `import { cn } from "cn"` и поставил посторонний пакет
     `cn`; после `shadcn add` проверять импорт — должен быть `@/lib/utils`.
@@ -347,6 +357,11 @@
   README — `node scripts/screenshots.mjs` после сборки. `npm audit` без `--omit=dev` показывает 5
   «high» в зависимостях линтера (`braces`): в сборку не попадает, «исправление» — откат линтера на
   две мажорные версии, не делать.
+- **Сюжет (гейт 3)** — `docs/architecture.md`, раздел 5a: кампании в `lib/content/campaigns`
+  (ключи отдельно, `*-keys.ts`), граф проверяет `lib/story/validate.ts` (все пути, концовки,
+  доказуемость улик), прохождение — `lib/story/run.ts`, таблица `questling.story_runs`. Новую
+  кампанию или версию — добавить в реестр `campaigns/index.ts` и ключи в `keys.ts`; старую версию не
+  удалять, пока на ней есть прохождения. Экран `/play[/<кампания>]` — `components/student/play-screen.tsx`.
 - **Грабли**:
   - pdf-lib с `subset: true` на шрифте Inter теряет большую часть букв на странице, при этом файл формально
     верный и тесты зелёные: шрифт встраивать целиком, PDF после правок открывать и смотреть
@@ -395,12 +410,14 @@
 - **Гейты**: только по явной команде владельца, после гейта отчёт и остановка. Ветки
   `questling/gate-NN`. Гейт 1 (каркас, Home, плеер истории; 2026-10-24 добавлены два языка, профиль и настройки) сделан 2026-10-23 в
   `questling/gate-01`. Гейт 2 (все 15 экранов ученика, движок фактов, сервер с входом через Telegram)
-  сделан 2026-10-24 в `questling/gate-02` (ответвлена от `gate-01`), ждёт ревью; ничего не влито и не задеплоено.
+  сделан 2026-10-24 в `questling/gate-02`, влит в main и выложен. Гейт 3 (кампании как графы сюжета,
+  прохождения в базе, две демо-кампании A1–A2 и B1–B2 с развилками, уликами-доказательствами и тремя
+  концовками каждая, экраны «попытки исчерпаны» и гримуар) сделан 2026-10-24 в `questling/gate-03`.
 - **Живая часть (2026-10-24, владелец: «разрешаю все»)**: миграции применены к Supabase `Questling`
   (`npm run db:migrate`); бот — @QuestlingEnglish_bot; секреты — только в `questling/.env.local`
   (`DATABASE_URL` через пулер `aws-0-eu-west-1.pooler.supabase.com:6543`, `TELEGRAM_BOT_TOKEN`,
   `SESSION_SECRET`) и в Vercel (проект `questling`, команда `riddle6`, Production; `node scripts/vercel-env.mjs`).
-  Проверка на живой базе — `node scripts/live-check.mjs [адрес]` (13 пунктов, удаляет своего ученика).
+  Проверка на живой базе — `node scripts/live-check.mjs [адрес]` (18 пунктов с гейта 3, удаляет своего ученика).
   **Сайт: https://questling-dusky.vercel.app** (выложен владельцем 2026-10-24 командой
   `npx vercel deploy --prod --yes --scope riddle6` из `questling/`; авто-режим Claude Code выкладку
   сам не пропускает — владелец запускает через `!`). Кнопка меню бота «Играть» ведёт на
@@ -438,6 +455,11 @@
 - **Решения при переносе (гейт 2)** — конфликты 7–14 в `docs/design-screen-map.md`: косметика без
   бонусов, без «3D ВИД», чистые картинки персонажей и предметов вместо вырезок
   и эмодзи, одни данные ученика на всех экранах.
+- **Сюжет (гейт 3)** — `docs/architecture.md`, раздел 5a: кампании в `lib/content/campaigns`
+  (ключи отдельно, `*-keys.ts`), граф проверяет `lib/story/validate.ts` (все пути, концовки,
+  доказуемость улик), прохождение — `lib/story/run.ts`, таблица `questling.story_runs`. Новую
+  кампанию или версию — добавить в реестр `campaigns/index.ts` и ключи в `keys.ts`; старую версию не
+  удалять, пока на ней есть прохождения. Экран `/play[/<кампания>]` — `components/student/play-screen.tsx`.
 - **Грабли**:
   - next/font добавляет к шрифту запасной Times New Roman, растянутый на 137 %: у шрифтов без
     кириллицы (Cinzel, Gelasio) русский текст выходил на треть крупнее. Их в CSS называть по имени,
@@ -458,6 +480,11 @@
   - Страница с `redirect()` под провайдером, который не рисует детей (вход вне Telegram), не
     перенаправляет: редирект в RSC срабатывает при отрисовке. Поэтому `/app` сам показывает приветствие.
   - Декоративный путь карты шире 320 px: контейнер `overflow-x-clip`, иначе страница едет вбок.
+  - Что на экране плеера, выводить из прохождения, а не из порядка ответа сервера: `setState` внутри
+    `startTransition` откладывается, а демо-хранилище (`useSyncExternalStore`) обновляется сразу —
+    решённая сцена успевала смениться и плеер монтировался заново «без попыток».
+  - `git stash` при `core.autocrlf=true` переписывает рабочую копию в CRLF, и `prettier --check`
+    видит сотню «неотформатированных» файлов: `npx prettier --write .`, дифф в git от этого пуст.
   - Python в heredoc превращает обратные слэши в строках (`\b`, `\n`) в управляющие символы:
     такие строки писать через Write/Edit.
   - Быстрые квесты дня: ротация по номеру дня из пула `audience: "daily"` (`dailyQuests`), половины
@@ -486,6 +513,11 @@
   `nova-images-inbox/` вне git; `npm run images -- ../nova-images-inbox` пересобирает
   `nova-residence/public/images` с единой цветокоррекцией.
 - **Проверка**: `npm run typecheck`, `npm run lint`, `npm run build` из `nova-residence/`.
+- **Сюжет (гейт 3)** — `docs/architecture.md`, раздел 5a: кампании в `lib/content/campaigns`
+  (ключи отдельно, `*-keys.ts`), граф проверяет `lib/story/validate.ts` (все пути, концовки,
+  доказуемость улик), прохождение — `lib/story/run.ts`, таблица `questling.story_runs`. Новую
+  кампанию или версию — добавить в реестр `campaigns/index.ts` и ключи в `keys.ts`; старую версию не
+  удалять, пока на ней есть прохождения. Экран `/play[/<кампания>]` — `components/student/play-screen.tsx`.
 - **Грабли**: Next.js 16 отличается от прежних версий — перед использованием API сверяться с
   `nova-residence/node_modules/next/dist/docs/`. Headless Chrome в Windows не делает окно
   уже ~500px: для мобильных скриншотов оборачивать страницу в iframe нужной ширины.
@@ -502,5 +534,10 @@
   production: https://nova-residence-five.vercel.app. Framework Preset — Next.js.
 - Деплой через CLI из `nova-residence/` (`npx vercel deploy --prod --yes --scope riddle6`),
   к GitHub проект не подключён. Запускает владелец или по его явному апруву.
+- **Сюжет (гейт 3)** — `docs/architecture.md`, раздел 5a: кампании в `lib/content/campaigns`
+  (ключи отдельно, `*-keys.ts`), граф проверяет `lib/story/validate.ts` (все пути, концовки,
+  доказуемость улик), прохождение — `lib/story/run.ts`, таблица `questling.story_runs`. Новую
+  кампанию или версию — добавить в реестр `campaigns/index.ts` и ключи в `keys.ts`; старую версию не
+  удалять, пока на ней есть прохождения. Экран `/play[/<кампания>]` — `components/student/play-screen.tsx`.
 - **Грабли**: на плане Hobby Vercel блокирует деплой (статус Blocked, без сборки), если email
   автора последнего коммита не привязан к аккаунту Vercel.

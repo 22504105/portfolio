@@ -8,12 +8,7 @@ import type { OptionIcon } from "./types";
 // Answer keys of graded scenes live apart (lib/content/campaigns/*-keys.ts), never on the page.
 
 /** What a transition or an option may depend on. */
-export type Condition =
-  | { flag: string }
-  | { clue: string }
-  | { not: Condition }
-  | { all: Condition[] }
-  | { any: Condition[] };
+export type Condition = { flag: string } | { clue: string } | { not: Condition } | { all: Condition[] } | { any: Condition[] };
 
 /** Where a scene leads: one scene, or the first branch whose condition holds (the last should always hold). */
 export type Next = string | { when: Condition; to: string }[];
@@ -82,6 +77,7 @@ export type PuzzleScene = SceneBase &
   Graded & {
     kind: "puzzle";
     parchment: string;
+    translation: Text;
     title: Text;
     task: Text;
     scroll: Text;
@@ -112,7 +108,8 @@ export type EndingScene = SceneBase & {
 export type Scene = NarrationScene | DialogueScene | ChoiceScene | QuestionScene | PuzzleScene | EvidenceScene | EndingScene;
 export type GradedScene = QuestionScene | PuzzleScene | EvidenceScene;
 
-export const isGraded = (scene: Scene): scene is GradedScene => scene.kind === "question" || scene.kind === "puzzle" || scene.kind === "evidence";
+export const isGraded = (scene: Scene): scene is GradedScene =>
+  scene.kind === "question" || scene.kind === "puzzle" || scene.kind === "evidence";
 
 export type ChapterIcon = "menu_book" | "castle" | "forest" | "radar" | "nightlight";
 
@@ -131,6 +128,8 @@ export type Chapter = {
   skills: Text;
   mission: Text;
   words: string[];
+  /** The map's banner over this chapter while it is locked, instead of "finish the chapter before". */
+  gate?: Text;
   /** Granted once, when the chapter's last scene is passed. */
   reward: { xp: number; coins: number };
   /** In play order; the first is where the chapter starts. Transitions may skip some. */

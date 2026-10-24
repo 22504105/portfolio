@@ -1,5 +1,5 @@
 import { characters } from "@/lib/content/characters";
-import { chapters } from "@/lib/content/campaign";
+import { campaigns } from "@/lib/content/campaigns";
 import { tr } from "@/lib/content/text";
 import type { Facts } from "@/lib/game/facts";
 import { balance, chestReady, completed, currentChapter, currentStreak, dailyEntry, dailyQuests, levelOf, rankOf } from "@/lib/game/stats";
@@ -36,7 +36,8 @@ export type HomeView = {
 export function homeView(facts: Facts, locale: Locale, base: string, today: string): HomeView {
   const character = characters[facts.profile.characterId ?? "cat"];
   const { level, into, next } = levelOf(balance(facts, "xp"));
-  const chapter = currentChapter(facts) ?? chapters.at(-1)!;
+  // Once every campaign is finished, the last chapter played stays featured.
+  const chapter = currentChapter(facts)?.chapter ?? campaigns.at(-1)!.chapters.at(-1)!;
   const entry = dailyEntry(today);
   return {
     hero: {

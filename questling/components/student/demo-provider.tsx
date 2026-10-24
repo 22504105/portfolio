@@ -12,7 +12,8 @@ import type { Account } from "@/lib/student/profile";
 // run here with the same rules as on the server, progress kept in localStorage so the demo
 // remembers what the visitor did. Nothing reaches the server; the screens say "Демо".
 
-const STORAGE_KEY = "questling-demo-v1";
+// v2: Gate 3 keeps the story as runs; a v1 record (Gate 2) is left behind and the demo starts afresh.
+const STORAGE_KEY = "questling-demo-v2";
 
 // The demo student's made-up Telegram account and group, as on the approved profile screen.
 const demoAccount = (locale: Locale): Account => ({

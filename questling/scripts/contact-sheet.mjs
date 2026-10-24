@@ -28,10 +28,16 @@ for (const [i, file] of files.entries()) {
   const x = (i % cols) * tile;
   const y = Math.floor(i / cols) * cell;
   composites.push({ input: await sharp(file).resize(tile, tile, { fit: "contain", background: "#ff00ff" }).toBuffer(), left: x, top: y });
-  const name = path.relative(dir, file).replace(/\\/g, "/").replace(/\/screen\.png$/, "").replace(/^.*_(\w+)$/, "$1");
+  const name = path
+    .relative(dir, file)
+    .replace(/\\/g, "/")
+    .replace(/\/screen\.png$/, "")
+    .replace(/^.*_(\w+)$/, "$1");
   const text = `${i + 1}: ${name}`.slice(0, 28).replace(/&/g, "&amp;").replace(/</g, "&lt;");
   composites.push({
-    input: Buffer.from(`<svg width="${tile}" height="${label}"><text x="4" y="13" font-family="Arial" font-size="12" fill="#fff">${text}</text></svg>`),
+    input: Buffer.from(
+      `<svg width="${tile}" height="${label}"><text x="4" y="13" font-family="Arial" font-size="12" fill="#fff">${text}</text></svg>`,
+    ),
     left: x,
     top: y + tile,
   });

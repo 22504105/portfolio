@@ -23,7 +23,10 @@ function initData() {
     auth_date: String(Math.floor(Date.now() / 1000)),
     user: JSON.stringify({ id: telegramId, first_name: "Live check", username: "questling_live_check", language_code: "ru" }),
   });
-  const check = [...params].map(([k, v]) => `${k}=${v}`).sort().join("\n");
+  const check = [...params]
+    .map(([k, v]) => `${k}=${v}`)
+    .sort()
+    .join("\n");
   const secret = createHmac("sha256", "WebAppData").update(env.TELEGRAM_BOT_TOKEN).digest();
   params.set("hash", createHmac("sha256", secret).update(check).digest("hex"));
   return params.toString();
@@ -76,6 +79,23 @@ try {
   const poor = await call("POST", "actions", { action: { type: "buy", itemId: "ghost" } }, token);
   check(poor.status === 409, "an item out of reach is not sold");
 
+  // Gate 3: the story is a run kept on the server; a wrong answer uses an attempt there.
+  const story = (move) => call("POST", "actions", { action: { type: "story", campaign: "forgotten-academy", move }, locale: "ru" }, token);
+  const read = await story({ type: "advance", scene: "p-arrive" });
+  check(read.status === 200 && read.data.facts?.runs?.[0]?.scene === "p-greet", "the story starts a run and moves on");
+  const skipped = await story({ type: "answer", scene: "prologue-1", answer: "whisper" });
+  check(skipped.status === 409 && skipped.data.error === "not_available", "a scene ahead of the run is refused");
+  await story({ type: "advance", scene: "p-greet" });
+  const wrong = await story({ type: "answer", scene: "prologue-1", answer: "eat" });
+  check(wrong.status === 200 && wrong.data.outcome?.answer?.correct === false, "a wrong story answer is graded on the server");
+  const locked = await call(
+    "POST",
+    "actions",
+    { action: { type: "story", campaign: "echo-tower", move: { type: "advance", scene: "e-bell" } } },
+    token,
+  );
+  check(locked.status === 409, "the second campaign is locked");
+
   const state = await call("GET", "state", undefined, token);
   const xp = state.data.facts?.ledger?.filter((e) => e.currency === "xp").reduce((s, e) => s + e.amount, 0);
   check(state.status === 200 && xp >= 25, `the record is read back from the database (XP ${xp})`);
@@ -85,6 +105,11 @@ try {
     [String(telegramId)],
   );
   check(rows.rows[0].n >= 1, "the ledger rows are in Supabase");
+  const runs = await db.query(
+    "select r.scene, r.used from (select state->>'scene' as scene, (state->'progress'->'prologue-1'->>'used')::int as used, user_id from questling.story_runs) r join questling.auth_identities a on a.user_id = r.user_id where a.subject = $1",
+    [String(telegramId)],
+  );
+  check(runs.rows[0]?.scene === "prologue-1" && runs.rows[0]?.used === 1, "the story run is kept in Supabase, attempt and all");
 } finally {
   // Remove the test student and everything of theirs.
   const removed = await db.query(

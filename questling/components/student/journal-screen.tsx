@@ -4,39 +4,51 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Icon } from "@/components/ui/icon";
-import { chapters, clueById, STORY_NODE_XP, type Chapter } from "@/lib/content/campaign";
+import { campaignById, campaigns } from "@/lib/content/campaigns";
 import { tr } from "@/lib/content/text";
 import { useStudent } from "@/lib/client/student";
-import { chapterStatus, currentChapter, solvedNodes } from "@/lib/game/stats";
+import type { Facts } from "@/lib/game/facts";
+import { campaignOpen, currentChapter, playedCampaign, runOf } from "@/lib/game/stats";
+import { isGraded, type Campaign } from "@/lib/story/graph";
+import { locate } from "@/lib/story/run";
 import { fill } from "@/lib/i18n";
 import { BackHeader } from "./back-header";
 
 // Ported from design-source/questling-v2/01_APPROVED_SCREENS/07_evidence_journal_2/code.html.
-// The case is the chapter being played (or the last one finished). Found clues come from the
-// student's solved nodes; the newest is opened, any other found one opens on a tap. The
-// export's pictures with interface painted in are replaced by each clue's own illustration.
+// The case is a campaign: the one named, else the one being played (or the last one played).
+// Its clues are listed in story order; the ones the student's run found are open, the newest
+// first in view, any other found one opens on a tap. A clue only one branch of the story reveals
+// stays sealed for a student who went the other way. The export's pictures with interface painted
+// in are replaced by each clue's own illustration.
 // `font-headline-lg-mobile` is undefined in the export too, so the clue title renders as body text.
 
-function caseChapter(facts: Parameters<typeof currentChapter>[0]): Chapter {
-  const current = currentChapter(facts);
-  if (current) return current;
-  const done = chapters.filter((chapter) => chapterStatus(facts, chapter) === "done");
-  return done.at(-1) ?? chapters[0];
+function caseCampaign(facts: Facts, named?: string): Campaign {
+  const latest =
+    (named ? campaignById.get(named) : null) ??
+    currentChapter(facts)?.campaign ??
+    [...campaigns].reverse().find((c) => runOf(facts, c.id)) ??
+    campaigns[0];
+  return playedCampaign(facts, latest);
 }
 
-export function JournalScreen() {
+export function JournalScreen({ campaignId }: { campaignId?: string }) {
   const { t, locale, base, facts } = useStudent();
-  const chapter = caseChapter(facts);
-  const solved = solvedNodes(facts);
-  const found = chapter.nodes.filter((node) => solved.has(node.id));
-  const latest = found.at(-1) ?? null;
+  const campaign = caseCampaign(facts, campaignId);
+  const run = runOf(facts, campaign.id);
+  const chapter = (run && locate(campaign, run.ending ?? run.scene)?.chapter) ?? campaign.chapters[0];
+  const foundIds = run?.clues ?? [];
+  const latestId = foundIds.at(-1) ?? null;
   const [openId, setOpenId] = useState<string | null>(null);
-  const open = chapter.nodes.find((node) => node.id === openId && solved.has(node.id)) ?? latest;
-  const clue = open ? clueById.get(open.clue) : null;
-  const latestClue = latest ? clueById.get(latest.clue) : null;
-  const status = chapterStatus(facts, chapter);
-  const percent = chapter.nodes.length ? (found.length / chapter.nodes.length) * 100 : 0;
-  const caseNumber = chapters.indexOf(chapter) + 11;
+  const shownId = openId && foundIds.includes(openId) ? openId : latestId;
+  const clue = shownId ? campaign.clues.find((c) => c.id === shownId)! : null;
+  const latestClue = latestId ? campaign.clues.find((c) => c.id === latestId)! : null;
+  // The XP of the scene that revealed the newest clue, when it was a graded one.
+  const revealedBy = latestId
+    ? campaign.chapters.flatMap((c) => c.scenes).find((scene) => "clue" in scene && scene.clue === latestId)
+    : null;
+  const latestXp = revealedBy && isGraded(revealedBy) ? revealedBy.xp : 0;
+  const playing = campaignOpen(facts, campaign) && !run?.ending;
+  const percent = campaign.clues.length ? (foundIds.length / campaign.clues.length) * 100 : 0;
 
   return (
     <div className="bg-background font-body-md text-body-md text-on-surface flex min-h-dvh flex-col antialiased">
@@ -47,7 +59,7 @@ export function JournalScreen() {
             <div className="gap-space-sm mb-space-xs flex items-center justify-between">
               <div className="flex min-w-0 items-center gap-1.5">
                 <span className="text-primary text-[14px]">✦</span>
-                <span className="font-headline-md text-headline-md text-text-ivory truncate">{tr(chapter.title, locale)}</span>
+                <span className="font-headline-md text-headline-md text-text-ivory truncate">{tr(campaign.title, locale)}</span>
               </div>
               <span className="bg-surface-container-high text-primary font-label-sm text-caption shrink-0 rounded-full px-2 py-0.5">
                 {tr(chapter.label, locale)} • {chapter.cefr}
@@ -58,7 +70,7 @@ export function JournalScreen() {
               <div className="font-label-sm text-caption flex items-center justify-between">
                 <span className="text-text-muted font-semibold tracking-wider uppercase">{t.journal.collected}</span>
                 <span className="text-primary font-semibold">
-                  {fill(t.journal.found, { n: found.length, total: chapter.nodes.length })}
+                  {fill(t.journal.found, { n: foundIds.length, total: campaign.clues.length })}
                 </span>
               </div>
               <div className="bg-surface-container-lowest flex h-2 w-full overflow-hidden rounded-full">
@@ -79,9 +91,11 @@ export function JournalScreen() {
                 <div className="min-w-0 flex-1 space-y-1">
                   <div className="gap-space-xs flex items-center justify-between">
                     <span className="font-label-md text-label-sm text-secondary tracking-widest uppercase">✦ {t.journal.deduction} ✦</span>
-                    <span className="bg-status-success/20 text-status-success font-label-sm text-caption shrink-0 rounded-full px-2 py-[1px] font-medium">
-                      +{STORY_NODE_XP} XP
-                    </span>
+                    {latestXp ? (
+                      <span className="bg-status-success/20 text-status-success font-label-sm text-caption shrink-0 rounded-full px-2 py-[1px] font-medium">
+                        +{latestXp} XP
+                      </span>
+                    ) : null}
                   </div>
                   <p className="font-body-md text-body-md text-on-surface">{tr(latestClue.deduction, locale)}</p>
                 </div>
@@ -89,18 +103,18 @@ export function JournalScreen() {
             </section>
           ) : null}
 
-          {clue && open ? (
+          {clue ? (
             <section className="mx-margin bg-surface overflow-hidden rounded-xl shadow-xl" data-clue={clue.id}>
               <div className="bg-surface-container-high px-space-md flex items-center justify-between py-2">
                 <div className="flex items-center gap-1.5">
                   <span className="text-primary text-[13px]">✦</span>
                   <span className="font-label-md text-label-sm text-primary tracking-wider uppercase">
-                    {open === latest ? t.journal.unlocked : t.journal.studied}
+                    {shownId === latestId ? t.journal.unlocked : t.journal.studied}
                   </span>
                   <span className="text-primary text-[13px]">✦</span>
                 </div>
                 <span className="font-label-sm text-caption text-secondary font-semibold">
-                  {fill(t.journal.clueNo, { n: chapter.nodes.indexOf(open) + 1 })}
+                  {fill(t.journal.clueNo, { n: campaign.clues.indexOf(clue) + 1 })}
                 </span>
               </div>
               <div className="bg-surface-container-lowest relative h-48 w-full overflow-hidden">
@@ -165,20 +179,19 @@ export function JournalScreen() {
           <section className="mx-margin space-y-space-sm">
             <div className="flex items-center justify-between px-1">
               <h3 className="font-headline-md text-headline-md text-text-ivory">{t.journal.archive}</h3>
-              <span className="font-label-sm text-caption text-text-muted">{fill(t.journal.case, { n: caseNumber })}</span>
+              <span className="font-label-sm text-caption text-text-muted">{fill(t.journal.case, { n: campaign.caseNumber })}</span>
             </div>
-            {chapter.nodes.map((node, index) => {
-              const item = clueById.get(node.clue);
-              if (!item) return null;
-              const isFound = solved.has(node.id);
-              const final = index === chapter.nodes.length - 1;
+            {campaign.clues.map((item, index) => {
+              const isFound = foundIds.includes(item.id);
+              const final = index === campaign.clues.length - 1;
               if (isFound) {
                 return (
                   <button
-                    key={node.id}
+                    key={item.id}
                     type="button"
-                    onClick={() => setOpenId(node.id)}
-                    aria-pressed={open === node}
+                    onClick={() => setOpenId(item.id)}
+                    aria-pressed={shownId === item.id}
+                    data-clue-row={item.id}
                     className="bg-surface p-space-sm gap-space-sm flex w-full items-center rounded-xl text-left shadow-xs"
                   >
                     <div className="bg-surface-container-lowest relative h-14 w-14 shrink-0 overflow-hidden rounded-lg">
@@ -198,10 +211,11 @@ export function JournalScreen() {
                   </button>
                 );
               }
-              const fade = final ? "opacity-35" : index - found.length > 0 ? "opacity-50" : "opacity-65";
+              const fade = final ? "opacity-35" : index - foundIds.length > 0 ? "opacity-50" : "opacity-65";
               return (
                 <div
-                  key={node.id}
+                  key={item.id}
+                  data-clue-row={item.id}
                   className={`p-space-sm gap-space-sm flex items-center rounded-xl ${final ? "bg-surface/40" : "bg-surface/50"} ${fade}`}
                 >
                   <div
@@ -227,10 +241,10 @@ export function JournalScreen() {
 
           <section className="mx-margin pt-space-xs space-y-space-xs">
             <Link
-              href={status === "current" ? `${base}/play` : `${base}/map`}
+              href={playing ? `${base}/play/${campaign.id}` : `${base}/map`}
               className="from-primary via-primary-container to-primary text-surface-container-lowest font-label-md text-label-md flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r tracking-wider uppercase shadow-lg transition-transform duration-100 active:scale-[0.98]"
             >
-              <span>{status === "current" ? (latestClue ? tr(latestClue.onward, locale) : t.details.continue) : t.journal.toMap}</span>
+              <span>{playing ? (latestClue ? tr(latestClue.onward, locale) : t.details.continue) : t.journal.toMap}</span>
               <Icon name="arrow_forward" className="text-[18px]" />
             </Link>
             <div className="font-label-sm text-caption text-text-muted flex items-center justify-center gap-1.5 text-center">
