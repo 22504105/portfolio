@@ -214,6 +214,33 @@ describe("the teacher's word of the day", () => {
   });
 });
 
+describe("deleting", () => {
+  it("a published version cannot be changed or deleted alone, but goes with its quest and its teacher", async () => {
+    const alice = await newTeacher(1);
+    const questId = idOf(await studio(alice, { type: "createQuest", title: "Тайна", cefr: "A2" }));
+    await studio(alice, { type: "publish", questId });
+    // The next draft is deletable on its own; the published v1 is not.
+    await studio(alice, {
+      type: "saveDraft",
+      questId,
+      graph: (await tx((db) => studioState(db, alice))).quests[0].versions[0].graph,
+      keys: (await tx((db) => studioState(db, alice))).quests[0].versions[0].keys,
+    });
+    const drafts = await tx((db) => db.query("delete from questling.quest_versions where quest_id = $1 and status = 'draft'", [questId]));
+    expect(drafts.rowCount).toBe(1);
+    await expect(tx((db) => db.query("delete from questling.quest_versions where quest_id = $1", [questId]))).rejects.toMatchObject({
+      code: "55000",
+    });
+    await expect(
+      tx((db) => db.query("update questling.quest_versions set note = 'x' where quest_id = $1", [questId])),
+    ).rejects.toMatchObject({ code: "55000" });
+    // Removing the teacher's account takes their quest and its published version with it.
+    await tx((db) => db.query("delete from questling.users where id = $1", [alice]));
+    const left = await tx((db) => db.query("select count(*)::int as n from questling.quest_versions where quest_id = $1", [questId]));
+    expect(left.rows[0].n).toBe(0);
+  });
+});
+
 describe("assignments and versions", () => {
   it("a student plays the assigned version of a teacher's campaign, and keeps it when a new one is published", async () => {
     const alice = await newTeacher(1);

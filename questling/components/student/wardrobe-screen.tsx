@@ -45,10 +45,9 @@ export function WardrobeScreen() {
   const worn = SLOTS.filter((slot) => slot !== "outfit")
     .map((slot) => (look[slot] ? itemById.get(look[slot]!) : undefined))
     .filter((item): item is Item => !!item);
-  // Worn items the figure cannot draw yet (no fitted art for this hero).
-  const notDrawn = figureOf(hero.id, look)
-    .pending.map((id) => itemById.get(id)!)
-    .filter((item) => item.slot !== "outfit");
+  // Worn items the figure cannot draw (no fitted art: docs/ASSET_AUDIT.md, NEEDS_ART_ASSET), outfits
+  // included: the academy tunic is violet, the hero's drawn base clothes are not.
+  const notDrawn = figureOf(hero.id, look).pending.map((id) => itemById.get(id)!);
   const changed = SLOTS.some((slot) => (look[slot] ?? null) !== (facts.equipped[slot] ?? null));
   const slots = SLOT_GROUPS.find((g) => g.id === group)?.slots ?? [];
   const shown = items.filter((item) => slots.includes(item.slot)).sort((a, b) => Number(owns(facts, b.id)) - Number(owns(facts, a.id)));

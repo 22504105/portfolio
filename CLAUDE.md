@@ -421,7 +421,13 @@
   (`npm run db:migrate`); бот — @QuestlingEnglish_bot; секреты — только в `questling/.env.local`
   (`DATABASE_URL` через пулер `aws-0-eu-west-1.pooler.supabase.com:6543`, `TELEGRAM_BOT_TOKEN`,
   `SESSION_SECRET`) и в Vercel (проект `questling`, команда `riddle6`, Production; `node scripts/vercel-env.mjs`).
-  Проверка на живой базе — `node scripts/live-check.mjs [адрес]` (18 пунктов с гейта 3, удаляет своего ученика).
+  Проверка на живой базе — `node scripts/live-check.mjs [адрес]` (31 пункт с гейта 4: ученик и студия; удаляет
+  своего ученика и своего учителя — учителя пишет прямо в схему `auth`, т. к. Supabase не принимает
+  выдуманные адреса при регистрации). Гейт 4 (2026-10-25): миграции 4–6 применены, в `.env.local` и
+  Vercel добавлены `SUPABASE_URL`, `SUPABASE_ANON_KEY` (публичные). Вход учителя — Supabase Auth, подтверждение
+  почты включено; встроенная почта Supabase шлёт письма только адресам команды проекта — для настоящих
+  учителей нужен свой SMTP или отключённое подтверждение (решение владельца). Site URL в Auth — на
+  владельце (панель Supabase).
   **Сайт: https://questling-dusky.vercel.app** (выложен владельцем 2026-10-24 командой
   `npx vercel deploy --prod --yes --scope riddle6` из `questling/`; авто-режим Claude Code выкладку
   сам не пропускает — владелец запускает через `!`). Кнопка меню бота «Играть» ведёт на

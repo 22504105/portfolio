@@ -18,6 +18,10 @@ const env = Object.fromEntries(
 );
 
 const telegramId = 999_000_000 + Math.floor(Math.random() * 999_999);
+// The studio part's teacher: a throwaway Supabase account, removed at the end.
+const teacherAuthId = crypto.randomUUID();
+const teacherEmail = `live-check-${telegramId}@questling.invalid`;
+const teacherPassword = `Live-${crypto.randomUUID()}`;
 function initData() {
   const params = new URLSearchParams({
     auth_date: String(Math.floor(Date.now() / 1000)),
@@ -110,6 +114,96 @@ try {
     [String(telegramId)],
   );
   check(runs.rows[0]?.scene === "prologue-1" && runs.rows[0]?.used === 1, "the story run is kept in Supabase, attempt and all");
+
+  // ——— Teacher Studio (Gate 4) ———
+  // Supabase refuses made-up addresses at sign-up, so the check's teacher is a confirmed Supabase
+  // account written straight into the auth schema; it signs in through the app's own endpoint.
+  await db.query(
+    `insert into auth.users (instance_id, id, aud, role, email, encrypted_password, email_confirmed_at, raw_app_meta_data,
+       raw_user_meta_data, created_at, updated_at, confirmation_token, recovery_token, email_change_token_new, email_change)
+     values ('00000000-0000-0000-0000-000000000000', $1, 'authenticated', 'authenticated', $2, extensions.crypt($3, extensions.gen_salt('bf')),
+       now(), '{"provider":"email","providers":["email"]}', '{"display_name":"Live check teacher"}', now(), now(), '', '', '', '')`,
+    [teacherAuthId, teacherEmail, teacherPassword],
+  );
+  await db.query(
+    `insert into auth.identities (id, user_id, provider_id, identity_data, provider, last_sign_in_at, created_at, updated_at)
+     values (gen_random_uuid(), $1::uuid, $1::text, jsonb_build_object('sub', $1::text, 'email', $2::text, 'email_verified', true), 'email', now(), now(), now())`,
+    [teacherAuthId, teacherEmail],
+  );
+  const wrongPassword = await call("POST", "studio/signin", { email: teacherEmail, password: "not-the-password" });
+  check(wrongPassword.status === 401, "a teacher's wrong password is refused");
+  const teacher = await call("POST", "studio/signin", { email: teacherEmail, password: teacherPassword });
+  check(teacher.status === 200 && typeof teacher.data.token === "string", "a teacher signs in with email and password");
+  const tt = teacher.data.token;
+  const studentInStudio = await call("GET", "studio/state", undefined, token);
+  check(studentInStudio.status === 403, "a student's session is kept out of the studio");
+  const studio = (action) => call("POST", "studio/actions", { action }, tt);
+
+  const group = await studio({ type: "createGroup", name: "Live check A2", cefr: "A2" });
+  const groupId = group.data.outcome?.id;
+  const code = group.data.facts?.groups?.find((g) => g.id === groupId)?.inviteCode;
+  check(group.status === 200 && /^[A-Z0-9]{8}$/.test(code ?? ""), "a teacher creates a group with an invite code");
+  const joined = await call("POST", "join", { code: code?.toLowerCase() }, token);
+  check(joined.status === 200 && joined.data.account?.group?.name === "Live check A2", "a student joins by the code");
+  const roster = await call("GET", "studio/state", undefined, tt);
+  check(roster.data.facts?.members?.length === 1, "the teacher sees the student in the group");
+
+  const quest = await studio({ type: "createQuest", title: "Live check quest", cefr: "A2" });
+  const questId = quest.data.outcome?.id;
+  const published = await studio({ type: "publish", questId });
+  const own = published.data.facts?.quests?.find((q) => q.id === questId);
+  check(published.status === 200 && own?.versions?.[0]?.status === "published", "a teacher's campaign is published as v1");
+  const frozen = await db.query("update questling.quest_versions set note = 'changed' where quest_id = $1 and version = 1", [questId]).then(
+    () => null,
+    (error) => error.code,
+  );
+  check(frozen === "55000", "a published version cannot be changed in the database");
+  const assigned = await studio({ type: "assign", groupId, campaign: own?.slug, version: 1, dueAt: null });
+  check(assigned.status === 200, "the campaign is assigned to the group");
+  const world = (await call("GET", "state", undefined, token)).data.facts?.world;
+  check(
+    world?.campaigns?.some((c) => c.id === own?.slug) && !JSON.stringify(world).includes('"correct"'),
+    "the student gets the assigned campaign, without its answer keys",
+  );
+
+  const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Moscow" }).format(new Date());
+  const daily = await studio({
+    type: "setDaily",
+    groupId,
+    day: today,
+    content: {
+      word: { text: "lantern", ipa: "ˈlæntən", translation: { ru: "фонарь", en: "lantern" }, example: "The lantern shines." },
+      fact: {
+        title: "Lanterns",
+        text: "Old lanterns burned oil.",
+        explanation: { ru: "Старые фонари жгли масло.", en: "Old lanterns burned oil." },
+        source: "Live check",
+      },
+      quiz: {
+        question: "What did old lanterns burn?",
+        options: [
+          { id: "a", text: "water" },
+          { id: "b", text: "oil" },
+        ],
+        correct: "b",
+      },
+    },
+  });
+  check(daily.status === 200, "a teacher plans the group's word of the day");
+  const planned = (await call("GET", "state", undefined, token)).data.facts?.world?.daily ?? [];
+  check(
+    planned.some((d) => d.day === today && d.entry.word.text === "lantern"),
+    "the student gets the teacher's word of the day",
+  );
+
+  await db.query(
+    "insert into questling.completions (user_id, kind, ref, at) select user_id, 'help_request', 'forgotten-academy/tower-2', now() from questling.auth_identities where provider = 'telegram' and subject = $1",
+    [String(telegramId)],
+  );
+  const studentId = roster.data.facts?.members?.[0]?.userId;
+  const reply = await studio({ type: "replyHelp", userId: studentId, ref: "forgotten-academy/tower-2", body: "Перечитай свиток." });
+  const messages = (await call("GET", "state", undefined, token)).data.facts?.world?.messages ?? [];
+  check(reply.status === 200 && messages.some((m) => m.body === "Перечитай свиток."), "the mentor's reply reaches the student");
 } finally {
   // Remove the test student and everything of theirs.
   const removed = await db.query(
@@ -117,6 +211,13 @@ try {
     [String(telegramId)],
   );
   console.log(`cleaned up ${removed.rowCount} test student`);
+  // And the check's teacher: their groups, quests and replies go with their user; then the auth account.
+  const teacherRemoved = await db.query(
+    "delete from questling.users where id in (select user_id from questling.auth_identities where provider = 'supabase' and subject = $1)",
+    [teacherAuthId],
+  );
+  await db.query("delete from auth.users where id = $1", [teacherAuthId]);
+  console.log(`cleaned up ${teacherRemoved.rowCount} test teacher`);
   await db.end();
 }
 process.exit(failures ? 1 : 0);
