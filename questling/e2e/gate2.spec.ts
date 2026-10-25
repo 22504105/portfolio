@@ -57,13 +57,21 @@ test("a quick quest is played to the end and rewarded once", async ({ page }) =>
 });
 
 test("a wrong answer in a quick quest shows why and allows a second try", async ({ page }) => {
-  const quest = dailyQuests(today()).find((q) => q.questions[0].kind === "choice")!;
-  const [question] = quest.questions;
-  const key = quickQuestKeys[quest.id][question.id];
-  if (key.kind !== "choice" || question.kind !== "choice") throw new Error("expected a choice question");
+  // The demo seed leaves today's first quest untouched (lib/demo/seed.ts). Its first choice,
+  // fill-in or word-order question is reached by answering the ones before it, whichever day it is.
+  const quest = dailyQuests(today())[0];
+  const index = quest.questions.findIndex((q) => q.kind === "choice" || q.kind === "fill" || q.kind === "order");
+  const question = quest.questions[index];
+  const key = quickQuestKeys[quest.id][question?.id];
+  if (!question) throw new Error("expected a choice, fill-in or word-order question");
   await page.goto(`/ru/demo/quests/${quest.id}`);
   await ready(page);
-  await page.locator(`[data-option="${question.options.find((o) => o.id !== key.correct)!.id}"]`).click();
+  for (const before of quest.questions.slice(0, index)) await answerQuestion(page, quest.id, before.id);
+  if (question.kind === "choice" && key.kind === "choice")
+    await page.locator(`[data-option="${question.options.find((o) => o.id !== key.correct)!.id}"]`).click();
+  else if (question.kind === "fill" && key.kind === "fill")
+    await page.locator(`[data-tile="${question.bank.find((w) => w !== key.correct)!}"]`).click();
+  else if (key.kind === "order") for (const tile of [...key.correct].reverse()) await page.locator(`[data-tile="${tile}"]`).click();
   await page.locator("[data-action=check]").click();
   await expect(page.getByRole("status")).toContainText("Осталось попыток: 1");
   await page.locator("[data-action=next]").click();

@@ -146,7 +146,9 @@ describe("help requests", () => {
     await tx((db) => join(db, other, code));
     // The request as the rules record it (askMentor, once the scene's attempts are used up).
     const ref = "forgotten-academy/tower-2";
-    await tx((db) => db.query("insert into questling.completions (user_id, kind, ref, at) values ($1, 'help_request', $2, now())", [asking, ref]));
+    await tx((db) =>
+      db.query("insert into questling.completions (user_id, kind, ref, at) values ($1, 'help_request', $2, now())", [asking, ref]),
+    );
     // Only someone who asked can be answered.
     await expect(studio(alice, { type: "replyHelp", userId: other, ref, body: "x" })).rejects.toMatchObject({ code: "not_found" });
     await studio(alice, { type: "replyHelp", userId: asking, ref, body: "Перечитай свиток." });
@@ -172,8 +174,20 @@ describe("the teacher's word of the day", () => {
       day: today,
       content: {
         word: { text: "lantern", ipa: "ˈlæntən", translation: { ru: "фонарь", en: "lantern" }, example: "The lantern shines." },
-        fact: { title: "Lanterns", text: "Old lanterns burned oil.", explanation: { ru: "Старые фонари жгли масло.", en: "Old lanterns burned oil." }, source: "A history book" },
-        quiz: { question: "What did old lanterns burn?", options: [{ id: "a", text: "water" }, { id: "b", text: "oil" }], correct: "b" },
+        fact: {
+          title: "Lanterns",
+          text: "Old lanterns burned oil.",
+          explanation: { ru: "Старые фонари жгли масло.", en: "Old lanterns burned oil." },
+          source: "A history book",
+        },
+        quiz: {
+          question: "What did old lanterns burn?",
+          options: [
+            { id: "a", text: "water" },
+            { id: "b", text: "oil" },
+          ],
+          correct: "b",
+        },
       },
     });
 
@@ -189,7 +203,10 @@ describe("the teacher's word of the day", () => {
     expect(wrong.outcome).toMatchObject({ kind: "graded", correct: false });
     const right = await tx((db) => act(db, student, { action: { type: "answerDailyQuiz", option: "b" } }));
     expect(right.outcome).toMatchObject({ kind: "graded", correct: true });
-    expect(right.facts.answers.filter((a) => a.scope === "daily").map((a) => a.ref)).toEqual([`${entry!.id}@${today}`, `${entry!.id}@${today}`]);
+    expect(right.facts.answers.filter((a) => a.scope === "daily").map((a) => a.ref)).toEqual([
+      `${entry!.id}@${today}`,
+      `${entry!.id}@${today}`,
+    ]);
 
     // A student outside the group keeps the built-in word of the day.
     const other = (await tx((db) => state(db, outsider))).facts;
