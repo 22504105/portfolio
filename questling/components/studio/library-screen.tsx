@@ -511,7 +511,9 @@ function Card(props: {
                 ></div>
               </div>
             </div>
-          ) : (
+          ) : null}
+          {/* A campaign with a published version shows where it is assigned, a draft next to it or not. */}
+          {entry.published !== null || !problems ? (
             <div className="gap-space-sm bg-surface-container-low p-space-sm grid grid-cols-1 rounded-lg sm:grid-cols-2">
               <div className="gap-space-sm flex items-center">
                 <div className="bg-surface-container-high text-secondary flex h-8 w-8 items-center justify-center rounded">
@@ -536,7 +538,7 @@ function Card(props: {
                 </div>
               </div>
             </div>
-          )}
+          ) : null}
           <div className="gap-space-sm pt-space-xs flex flex-wrap items-center justify-between" onClick={(e) => e.stopPropagation()}>
             <div className="gap-space-xs flex items-center">
               {entry.kind === "builtin" ? (

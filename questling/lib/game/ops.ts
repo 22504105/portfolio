@@ -255,7 +255,7 @@ function perform(facts: Facts, action: Action, ctx: Context): OpResult {
           question: scene.id,
           attempt: result.answer.attempt,
           correct: result.answer.correct,
-          skill: scene.kind === "puzzle" ? "cipher" : "reading",
+          skill: scene.kind === "puzzle" ? "cipher" : scene.kind === "question" && scene.listen ? "listening" : "reading",
         });
         if (result.answer.correct) effects.push({ type: "completion", kind: "story_node", ref: `${campaign.id}/${scene.id}` });
       }

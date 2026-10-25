@@ -41,6 +41,10 @@ for (const dir of ["app", "components", "lib"]) {
     for (const property of code.matchAll(/\bicon:\s*([^,\n}]+)/g)) {
       for (const literal of property[1].matchAll(/"([a-z0-9_]+)"/g)) wanted.add(literal[1]);
     }
+    // Maps named *_ICON / *_ICONS: const KIND_ICON: Record<Kind, string> = { narration: "castle", ... }
+    for (const map of code.matchAll(/\b[A-Z_]*ICONS?\b[^=\n]*=\s*\{([^}]*)\}/g)) {
+      for (const literal of map[1].matchAll(/"([a-z0-9_]+)"/g)) wanted.add(literal[1]);
+    }
     for (const union of code.matchAll(/type\s+\w*Icon\s*=\s*([^;]+);/g)) {
       for (const name of union[1].matchAll(/"([a-z0-9_]+)"/g)) wanted.add(name[1]);
     }
