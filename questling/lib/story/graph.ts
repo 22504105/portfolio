@@ -69,6 +69,8 @@ export type QuestionScene = SceneBase &
     kind: "question";
     parchment: string;
     translation: Text;
+    /** A listening riddle: the line is heard (read aloud by the device), not shown, until answered. */
+    listen?: boolean;
     prompt: { lead: Text; task: Text };
     options: { id: string; label: string; gloss: Text; icon: OptionIcon }[];
   };
@@ -167,6 +169,8 @@ export type Campaign = {
   clues: Clue[];
   /** The case number in the evidence journal. */
   caseNumber: number;
+  /** Where the builder draws each scene on its canvas (Teacher Studio); the story does not depend on it. */
+  layout?: Record<string, { x: number; y: number }>;
 };
 
 /** Answer keys, by scene id. */

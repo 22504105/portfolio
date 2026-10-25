@@ -102,6 +102,9 @@ export const en: Dictionary = {
     free: "Virtual rewards for learning • Free to play",
   },
   player: {
+    listen: "Listen to the line",
+    listenHint: "The line is spoken in English: listen and choose the answer.",
+    listenNoVoice: "This device cannot read aloud: ask your mentor for the line.",
     title: "Quest",
     options: "Answer options",
     check: "Check answer",

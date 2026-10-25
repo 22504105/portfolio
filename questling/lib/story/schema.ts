@@ -104,6 +104,7 @@ const scene = z.discriminatedUnion("kind", [
     kind: z.literal("question"),
     parchment: line(300),
     translation: text(300),
+    listen: z.boolean().optional(),
     prompt: z.object({ lead: text(200), task: text(200) }),
     options: z
       .array(z.object({ id, label: line(80), gloss: text(120), icon: z.enum(OPTION_ICONS) }))
@@ -185,6 +186,7 @@ export const campaignSchema = z.object({
   chapters: z.array(chapter).min(1).max(8),
   clues: z.array(clue).max(30),
   caseNumber: z.number().int().min(1).max(999),
+  layout: z.record(id, z.object({ x: z.number().min(-5000).max(20000), y: z.number().min(-5000).max(20000) })).optional(),
 });
 
 const explanations = z.record(id, text(300));

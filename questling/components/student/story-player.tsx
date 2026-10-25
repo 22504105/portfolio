@@ -7,6 +7,7 @@ import { fill, type Dictionary } from "@/lib/i18n";
 import { canCheck, initialState, reduce, type QuestionState } from "@/lib/story/engine";
 import type { GradeResult, QuestionNode } from "@/lib/story/types";
 import { BackHeader } from "./back-header";
+import { speak, useSpeechSupported } from "@/lib/client/sound";
 import { ExhaustedView, GrimoireSheet } from "./story-help";
 
 // The story player for a question or a piece of evidence. Ported from the Stitch story-player screens:
@@ -117,7 +118,7 @@ export function StoryPlayer({ t, node, grade, initial, backHref, profileHref, on
                 <span className="text-text-muted">{node.prompt.task || (node.evidence ? t.story.evidenceTask : "")}</span>
               </p>
             </div>
-            <Parchment text={node.clue.text} />
+            <Parchment text={node.clue.text} listen={node.listen && state.phase !== "correct"} t={t} />
             {state.phase === "correct" ? (
               <CorrectOptions t={t} node={node} state={state} />
             ) : (
@@ -314,8 +315,9 @@ function StepWithRay({ children, ray, last }: { children: React.ReactNode; ray: 
   );
 }
 
-/** The parchment with the scene's English line. */
-export function Parchment({ text }: { text: string }) {
+/** The parchment with the scene's English line; for a listening riddle, a button that reads it aloud instead. */
+export function Parchment({ text, listen = false, t }: { text: string; listen?: boolean; t?: Dictionary }) {
+  if (listen && t) return <ListenParchment text={text} t={t} />;
   return (
     <div className="mb-space-lg px-margin">
       <div className="p-space-lg relative overflow-hidden rounded-xl bg-[#D9C49B] text-[#231D15] shadow-[0_12px_32px_rgba(0,0,0,0.7)]">
@@ -648,5 +650,28 @@ function HintText({ text }: { text: string }) {
     ) : (
       part
     ),
+  );
+}
+
+/** A listening riddle's parchment: the line is heard, not read (the device's own voice). */
+function ListenParchment({ text, t }: { text: string; t: Dictionary }) {
+  const supported = useSpeechSupported();
+  return (
+    <div className="mb-space-lg px-margin">
+      <div className="p-space-lg relative flex flex-col items-center overflow-hidden rounded-xl bg-[#D9C49B] text-center text-[#231D15] shadow-[0_12px_32px_rgba(0,0,0,0.7)]">
+        <div className="mb-1 text-xs whitespace-pre text-[#6E5A3A] opacity-70">✦ ✤ ✦</div>
+        <button
+          type="button"
+          onClick={() => speak(text)}
+          disabled={!supported}
+          data-action="listen"
+          className="font-label-md text-label-md flex items-center gap-2 rounded-full bg-[#231D15] px-5 py-2.5 text-[#E8E1D5] shadow-md transition-transform active:scale-95 disabled:opacity-50"
+        >
+          <Icon name="volume_up" className="text-[20px]" />
+          <span>{t.player.listen}</span>
+        </button>
+        <p className="font-caption text-caption mt-2 text-[#534525]">{supported ? t.player.listenHint : t.player.listenNoVoice}</p>
+      </div>
+    </div>
   );
 }

@@ -78,6 +78,7 @@ export function questionNode(
       options: scene.options.map((o) => ({ id: o.id, label: o.label, gloss: tr(o.gloss, locale), icon: o.icon })),
       hint,
       evidence: false,
+      listen: !!scene.listen,
     };
   // Evidence: only the offered clues the student has found can be shown.
   const found = scene.clues.filter((id) => run.clues.includes(id)).map((id) => campaign.clues.find((c) => c.id === id)!);
@@ -94,6 +95,7 @@ export function questionNode(
     })),
     hint,
     evidence: true,
+    listen: false,
   };
 }
 

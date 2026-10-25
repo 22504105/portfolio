@@ -55,6 +55,8 @@ export type QuestionNode = NodeFrame & {
   hint: { topic: string; text: string };
   /** Evidence: the options are clues the student found. */
   evidence: boolean;
+  /** A listening riddle: the line is read aloud, and shown only once answered. */
+  listen: boolean;
 };
 
 /** A word-order cipher (06_interactive_puzzle). */
