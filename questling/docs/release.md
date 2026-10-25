@@ -61,6 +61,13 @@ Deploying is the owner's decision (the repository's rules): nothing here is run 
 - **Bot**: the menu button and Main Mini App point at the production address and need no change on a
   rollback.
 
+## Gate 5 deployed (2026-10-25)
+
+Gates 3–5 merged into `main` (6f95ba5); the owner deployed `questling/gate-05` to production
+(`dpl_9yuKZ9rxtRTNwqEii33kAVEmEYLg`). On the deployed site: `npx tsx scripts/live-check.mjs
+https://questling-dusky.vercel.app` **46 / 46**, test accounts removed; built-in recordings are served.
+Rollback: `npx vercel rollback --scope riddle6` to the previous deployment (migration 7 can stay).
+
 ## Database backup and migration 7 (done 2026-10-25)
 
 The owner confirmed (2026-10-25) that the Questling database holds only development data and allowed
