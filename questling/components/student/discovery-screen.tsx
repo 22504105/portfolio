@@ -5,11 +5,11 @@ import { useState, useTransition } from "react";
 import { Icon } from "@/components/ui/icon";
 import { DAILY_CLAIM_XP } from "@/lib/content/daily";
 import { tr } from "@/lib/content/text";
-import { speak, useSpeechSupported } from "@/lib/client/sound";
 import { useNow, useStudent } from "@/lib/client/student";
 import { balance, completed, dailyFor, programDay, PROGRAM_DAYS } from "@/lib/game/stats";
 import { dayOf } from "@/lib/game/time";
 import { fill, LOCALES } from "@/lib/i18n";
+import { LineAudioButton } from "./line-audio";
 
 // Ported from design-source/questling-v2/01_APPROVED_SCREENS/09_daily_discovery/code.html.
 // The day's word and fact come from the academy calendar. The quiz may be retried, as in the
@@ -22,7 +22,6 @@ const LETTERS = { ru: ["А", "Б", "В", "Г"], en: ["A", "B", "C", "D"] };
 
 export function DiscoveryScreen() {
   const { t, locale, base, facts, act } = useStudent();
-  const speech = useSpeechSupported();
   const today = dayOf(useNow());
   const entry = dailyFor(facts, today);
   const ref = `${entry.id}@${today}`;
@@ -130,15 +129,14 @@ export function DiscoveryScreen() {
                   </h2>
                   <p className="font-body-md text-body-md text-secondary tracking-wide">{entry.word.ipa}</p>
                 </div>
-                <button
-                  type="button"
-                  aria-label={t.home.pronounce}
-                  disabled={!speech}
-                  onClick={() => speak(entry.word.text)}
+                <LineAudioButton
+                  text={entry.word.text}
+                  label={t.home.pronounce}
+                  action="pronounce-word"
                   className="bg-primary text-on-primary flex h-11 w-11 cursor-pointer items-center justify-center rounded-full shadow-[0_0_16px_rgba(228,194,133,0.35)] transition-transform active:scale-90 disabled:opacity-50"
                 >
                   <Icon name="volume_up" className="text-[22px]" />
-                </button>
+                </LineAudioButton>
               </div>
             </div>
             <div className="bg-surface-container p-space-md mb-space-md rounded-lg">

@@ -23,6 +23,11 @@ export const en: Dictionary = {
     openDemo: "Open the demo",
     deleted: "Your data has been deleted. If you open Questling again, it will start from a clean slate.",
   },
+  audio: {
+    unavailable: "Audio is unavailable: this device has no English voice and this line has no recording.",
+    muted: "Sound is off. Turn it on on the hero selection screen.",
+    failed: "The sound could not be played. Check the connection and try again.",
+  },
   welcome: {
     title: "Welcome",
     lead: "Learn English through interactive investigations and the magical stories of the Forgotten Academy",
@@ -105,6 +110,7 @@ export const en: Dictionary = {
   player: {
     listen: "Listen to the line",
     listenHint: "The line is spoken in English: listen and choose the answer.",
+    listenLine: "Listen to {speaker}'s line",
     listenNoVoice: "This device cannot read aloud: ask your mentor for the line.",
     title: "Quest",
     options: "Answer options",

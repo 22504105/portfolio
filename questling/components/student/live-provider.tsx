@@ -10,6 +10,7 @@ import type { Facts } from "@/lib/game/facts";
 import type { Action, Outcome, Refusal } from "@/lib/game/ops";
 import { getDictionary, type Locale } from "@/lib/i18n";
 import type { Account } from "@/lib/student/profile";
+import { AudioNotice } from "./line-audio";
 
 // The signed-in student inside Telegram. Telegram hands the Mini App signed sign-in data
 // (initData); the server checks its signature and answers with a session and the student's
@@ -239,6 +240,7 @@ export function LiveProvider({ locale, children }: { locale: Locale; children: R
       <StudentProvider value={api}>
         <TelegramBack home={`/${locale}/app`} />
         <div data-student-ready>{children}</div>
+        <AudioNotice />
       </StudentProvider>
     );
   if (status === "loading" || status === "ready") return <div className="bg-background min-h-dvh" aria-busy="true"></div>;

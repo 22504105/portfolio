@@ -7,7 +7,7 @@ import { fill, type Dictionary } from "@/lib/i18n";
 import { canCheck, initialState, reduce, type QuestionState } from "@/lib/story/engine";
 import type { GradeResult, QuestionNode } from "@/lib/story/types";
 import { BackHeader } from "./back-header";
-import { speak, useSpeechSupported } from "@/lib/client/sound";
+import { useLineAudio } from "@/lib/client/audio";
 import { ExhaustedView, GrimoireSheet } from "./story-help";
 
 // The story player for a question or a piece of evidence. Ported from the Stitch story-player screens:
@@ -656,21 +656,26 @@ function HintText({ text }: { text: string }) {
   );
 }
 
-/** A listening riddle's parchment: the line is heard, not read (the device's own voice). */
-function ListenParchment({ text, t }: { text: string; t: Dictionary }) {
-  const supported = useSpeechSupported();
+/** A listening riddle's parchment: the line is heard, not read (a recording, else the device's voice). */
+function ListenParchment({ text, src, t }: { text: string; src?: string | null; t: Dictionary }) {
+  const { availability, state, play } = useLineAudio(text, src);
+  const supported = availability !== "none";
   return (
     <div className="mb-space-lg px-margin">
       <div className="p-space-lg relative flex flex-col items-center overflow-hidden rounded-xl bg-[#D9C49B] text-center text-[#231D15] shadow-[0_12px_32px_rgba(0,0,0,0.7)]">
         <div className="mb-1 text-xs whitespace-pre text-[#6E5A3A] opacity-70">✦ ✤ ✦</div>
         <button
           type="button"
-          onClick={() => speak(text)}
+          onClick={play}
           disabled={!supported}
+          aria-busy={state === "loading" || undefined}
+          aria-pressed={state === "playing" || state === "loading"}
+          data-audio={availability}
+          data-audio-state={state}
           data-action="listen"
           className="font-label-md text-label-md flex items-center gap-2 rounded-full bg-[#231D15] px-5 py-2.5 text-[#E8E1D5] shadow-md transition-transform active:scale-95 disabled:opacity-50"
         >
-          <Icon name="volume_up" className="text-[20px]" />
+          <Icon name="volume_up" className={`text-[20px] ${state === "playing" || state === "loading" ? "animate-pulse" : ""}`} />
           <span>{t.player.listen}</span>
         </button>
         <p className="font-caption text-caption mt-2 text-[#534525]">{supported ? t.player.listenHint : t.player.listenNoVoice}</p>

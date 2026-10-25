@@ -6,6 +6,7 @@ import { demoFacts } from "@/lib/demo/seed";
 import { applyEffects, type Facts } from "@/lib/game/facts";
 import { run, type Action } from "@/lib/game/ops";
 import { getDictionary, type Locale } from "@/lib/i18n";
+import { AudioNotice } from "./line-audio";
 import type { Account } from "@/lib/student/profile";
 
 // The demo student lives in this browser only: made-up history (lib/demo/seed.ts), actions
@@ -100,6 +101,7 @@ export function DemoProvider({ locale, children }: { locale: Locale; children: R
   return (
     <StudentProvider value={api}>
       <div data-student-ready>{children}</div>
+      <AudioNotice />
     </StudentProvider>
   );
 }

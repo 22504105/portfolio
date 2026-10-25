@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Icon } from "@/components/ui/icon";
 import { fill, type Dictionary } from "@/lib/i18n";
 import type { OptionIcon } from "@/lib/story/types";
+import { PronounceButton } from "./pronounce-button";
 import { BackHeader } from "./back-header";
 import { Parchment, SceneImage, StoryHeading } from "./story-player";
 
@@ -173,7 +174,10 @@ export function DialogueScreen({
       <div className="mb-space-lg gap-space-sm px-margin flex flex-col">
         {lines.map((line, i) => (
           <div key={i} className="bg-surface-container px-space-md py-space-sm relative flex w-full flex-col gap-1 rounded-xl shadow-md">
-            <span className="font-caption text-caption text-primary font-semibold tracking-wider uppercase">✦ {line.speaker}</span>
+            <div className="flex items-center justify-between gap-2">
+              <span className="font-caption text-caption text-primary font-semibold tracking-wider uppercase">✦ {line.speaker}</span>
+              <PronounceButton word={line.text} label={fill(t.player.listenLine, { speaker: line.speaker })} />
+            </div>
             <p className="font-georgia text-title-sm text-text-ivory leading-snug italic">“{line.text}”</p>
             {open ? <p className="font-caption text-caption text-text-muted">{line.translation}</p> : null}
           </div>

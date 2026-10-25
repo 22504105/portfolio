@@ -4,6 +4,7 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import { Icon } from "@/components/ui/icon";
 import { PlayScreen } from "@/components/student/play-screen";
 import { StudentProvider, type ActResult } from "@/lib/client/student";
+import { AudioNotice } from "@/components/student/line-audio";
 import { useStudio } from "@/lib/client/studio";
 import { applyEffects, emptyFacts, type Facts } from "@/lib/game/facts";
 import { run, type Action } from "@/lib/game/ops";
@@ -106,6 +107,7 @@ function Sandbox({ graph, keys, questId }: { graph: Version["graph"]; keys: Vers
   return (
     <StudentProvider value={api}>
       <PlayScreen campaignId={graph.id} />
+      <AudioNotice />
     </StudentProvider>
   );
 }

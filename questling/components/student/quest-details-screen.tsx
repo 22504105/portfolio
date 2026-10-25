@@ -4,7 +4,6 @@
 import Link from "next/link";
 import { Icon } from "@/components/ui/icon";
 import { tr } from "@/lib/content/text";
-import { speak, useSpeechSupported } from "@/lib/client/sound";
 import { useStudent } from "@/lib/client/student";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
@@ -14,6 +13,7 @@ import { isGraded } from "@/lib/story/graph";
 import { fill } from "@/lib/i18n";
 import { sceneLine } from "@/lib/student/story";
 import { BackHeader } from "./back-header";
+import { LineAudioButton } from "./line-audio";
 
 // Ported from design-source/questling-v2/01_APPROVED_SCREENS/04_quest_details/code.html.
 // The speaker reads the current diary entry aloud (the export toggled an ambient track that
@@ -39,7 +39,6 @@ export function QuestDetailsScreen({ chapterId, campaignId }: { chapterId: strin
 
 function Details({ chapterId, latest }: { chapterId: string; latest: NonNullable<ReturnType<typeof findCampaign>> }) {
   const { t, locale, base, facts } = useStudent();
-  const speech = useSpeechSupported();
   const campaign = playedCampaign(facts, latest);
   const chapter = campaign.chapters.find((c) => c.id === chapterId) ?? latest.chapters.find((c) => c.id === chapterId)!;
   const run = runOf(facts, campaign.id);
@@ -84,15 +83,14 @@ function Details({ chapterId, latest }: { chapterId: string; latest: NonNullable
               </div>
               {entry ? (
                 <div className="bottom-space-md right-space-md absolute">
-                  <button
-                    type="button"
-                    aria-label={t.details.listen}
-                    disabled={!speech}
-                    onClick={() => speak(sceneLine(entry))}
+                  <LineAudioButton
+                    text={sceneLine(entry)}
+                    label={t.details.listen}
+                    action="listen-diary"
                     className="bg-surface-container-high/90 text-primary flex h-10 w-10 items-center justify-center rounded-full shadow-lg backdrop-blur-md transition-transform active:scale-95 disabled:opacity-50"
                   >
                     <Icon name="volume_up" className="text-[20px]" />
-                  </button>
+                  </LineAudioButton>
                 </div>
               ) : null}
               <div className="bg-secondary-container/20 pointer-events-none absolute -bottom-6 -left-6 h-24 w-24 rounded-full blur-2xl"></div>
@@ -173,16 +171,15 @@ function Details({ chapterId, latest }: { chapterId: string; latest: NonNullable
                 </div>
                 <div className="flex flex-wrap gap-1.5">
                   {chapter.words.map((word) => (
-                    <button
+                    <LineAudioButton
                       key={word}
-                      type="button"
-                      disabled={!speech}
-                      onClick={() => speak(word)}
-                      className="bg-surface-container-high text-text-ivory font-label-sm active:bg-secondary-container flex items-center gap-1 rounded-md px-2.5 py-1 transition-colors"
+                      text={word}
+                      action="pronounce-chapter-word"
+                      className="bg-surface-container-high text-text-ivory font-label-sm active:bg-secondary-container flex items-center gap-1 rounded-md px-2.5 py-1 transition-colors disabled:opacity-50"
                     >
                       <span>{word}</span>
                       <Icon name="volume_down" className="text-primary text-[13px]" />
-                    </button>
+                    </LineAudioButton>
                   ))}
                 </div>
               </div>
