@@ -344,3 +344,88 @@ export function assignable(facts: StudioFacts, locale: Locale) {
     });
   return [...builtIn, ...own];
 }
+
+export type LibraryEntry = {
+  key: string;
+  kind: "builtin" | "own";
+  /** The quest's id for a teacher's campaign; the campaign id for a built-in one. */
+  id: string;
+  slug: string;
+  title: string;
+  subtitle: string | null;
+  cefr: string;
+  status: "published" | "draft" | "archived";
+  published: number | null;
+  draft: number | null;
+  versions: number;
+  campaign: Campaign;
+  author: string | null;
+  assignedTo: Group[];
+  playing: number;
+  progress: number;
+};
+
+/** Every campaign the studio offers: the built-in ones, then the teacher's own (by the latest version). */
+export function library(facts: StudioFacts, locale: Locale): LibraryEntry[] {
+  const groupsWith = (slug: string) => facts.groups.filter((g) => facts.assignments.some((a) => a.groupId === g.id && a.campaign === slug));
+  const learners = (campaign: Campaign) => {
+    const playing = facts.members.filter((m) => m.runs.some((r) => r.campaign === campaign.id));
+    return {
+      playing: playing.length,
+      progress: playing.length ? Math.round(playing.reduce((n, m) => n + progressIn(m, campaign), 0) / playing.length) : 0,
+    };
+  };
+  const builtIn: LibraryEntry[] = [...campaignById.values()].map((c) => ({
+    key: c.id,
+    kind: "builtin",
+    id: c.id,
+    slug: c.id,
+    title: tr(c.title, locale),
+    subtitle: locale === "ru" ? c.title.en : null,
+    cefr: c.cefr,
+    status: "published",
+    published: c.version,
+    draft: null,
+    versions: 1,
+    campaign: c,
+    author: null,
+    assignedTo: groupsWith(c.id),
+    ...learners(c),
+  }));
+  const own: LibraryEntry[] = facts.quests.map((q) => {
+    const published = q.versions.filter((v) => v.status === "published").at(-1) ?? null;
+    const draft = q.versions.find((v) => v.status === "draft") ?? null;
+    const latest = (draft ?? published ?? q.versions.at(-1))!;
+    return {
+      key: q.id,
+      kind: "own",
+      id: q.id,
+      slug: q.slug,
+      title: q.title,
+      subtitle: null,
+      cefr: q.cefr,
+      status: q.archivedAt ? "archived" : published ? "published" : "draft",
+      published: published?.version ?? null,
+      draft: draft?.version ?? null,
+      versions: q.versions.length,
+      campaign: latest.graph,
+      author: facts.teacher.displayName,
+      assignedTo: groupsWith(q.slug),
+      ...learners(published?.graph ?? latest.graph),
+    };
+  });
+  return [...builtIn, ...own];
+}
+
+/** How many runs of the group's students are bound to each version of a teacher's campaign. */
+export const runsOnVersion = (facts: StudioFacts, slug: string, version: number) =>
+  facts.members.filter((m) => m.runs.some((r) => r.campaign === slug && r.version === version)).length;
+
+/** Graded scenes by kind across the library's latest versions. */
+export function sceneKinds(entries: LibraryEntry[]) {
+  const counts = { question: 0, puzzle: 0, evidence: 0 };
+  for (const e of entries)
+    for (const c of e.campaign.chapters)
+      for (const s of c.scenes) if (s.kind === "question" || s.kind === "puzzle" || s.kind === "evidence") counts[s.kind]++;
+  return counts;
+}
