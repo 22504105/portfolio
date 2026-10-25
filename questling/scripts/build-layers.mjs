@@ -40,6 +40,51 @@ function inside(poly, x, y) {
   return hit;
 }
 
+// Necklines traced on the warped garments (cat frame): the back collar and the opening above the front collar's edge.
+const NECKLINES = {
+  "violet-tunic": [
+    [430, 520],
+    [600, 520],
+    [590, 562],
+    [568, 585],
+    [540, 602],
+    [510, 617],
+    [497, 622],
+    [482, 608],
+    [462, 592],
+    [447, 573],
+    [437, 560],
+  ],
+  "violet-robe": [
+    [420, 520],
+    [600, 520],
+    [595, 560],
+    [570, 575],
+    [530, 580],
+    [515, 590],
+    [507, 592],
+    [497, 585],
+    [470, 577],
+    [440, 570],
+    [425, 558],
+  ],
+  "brown-coat": [
+    [415, 520],
+    [615, 520],
+    [600, 556],
+    [572, 562],
+    [565, 590],
+    [545, 615],
+    [515, 650],
+    [500, 660],
+    [488, 645],
+    [470, 620],
+    [458, 595],
+    [452, 565],
+    [430, 556],
+  ],
+};
+
 // Which pixels of a master go to its back part. The rest is the front part.
 const SPLITS = {
   "witch-hat": async () => {
@@ -181,6 +226,14 @@ const SPLITS = {
   },
   // The strap above the bag goes over the shoulder, behind the body.
   satchel: async () => (x, y) => y < 175,
+  // The four garments re-cut in Blender for the chibi body (blender/warp.py): their masters are already
+  // in the cat base's 1024-px frame. Back = the inside of the neckline and the collar behind the neck,
+  // so the hero's head covers it and the hero's own shirt shows in the opening.
+  "violet-tunic": async () => (x, y) => inside(NECKLINES["violet-tunic"], x, y),
+  "violet-robe": async () => (x, y) => inside(NECKLINES["violet-robe"], x, y),
+  "brown-coat": async () => (x, y) => inside(NECKLINES["brown-coat"], x, y),
+  // The cloak's hood is cut off; its top edge and the folds above the clasp go behind the head.
+  "midnight-cloak": async () => (x, y) => y < 566 && x > 420 && x < 604,
   // The inside of the collar ring (the cape goes round the neck).
   "green-cape": async () => (x, y) => ((x - 450) / 150) ** 2 + ((y - 284) / 26) ** 2 < 1,
 };
@@ -268,6 +321,7 @@ async function build() {
 // companion). The same order as lib/content/figure.ts, which draws the app's figure.
 export const ORDER = [
   ["back", "outerwear"],
+  ["back", "outfit"],
   ["back", "back"],
   ["back", "neck"],
   ["back", "headwear"],
@@ -490,45 +544,6 @@ async function compareCape() {
   console.log("docs/visual-qa/equipment/cat-cape-scales.png (0.8, 0.7, 0.6)");
 }
 
-/**
- * The garments drawn for human proportions, each fitted to the cat twice: by the shoulders (their
- * width matches the cat's) and by the length (neck to hem matches the cat's tunic). Neither works,
- * which is why they are NEEDS_ART_ASSET (docs/ASSET_AUDIT.md). Measured on the masters: the neck's
- * centre, the shoulders' width and the hem.
- */
-async function compareGarments() {
-  await mkdir(qaDir, { recursive: true });
-  const garments = {
-    "violet-tunic": { neck: [455, 295], shoulders: 370, hem: 940 },
-    "violet-robe": { neck: [448, 262], shoulders: 400, hem: 957 },
-    "brown-coat": { neck: [455, 268], shoulders: 380, hem: 930 },
-    "midnight-cloak": { neck: [450, 430], shoulders: 420, hem: 995 },
-  };
-  // The cat on the rig: neck (512, 821), shoulders 300 px wide, its own tunic's hem at y 1056.
-  const cat = { neck: [512, 821], shoulders: 300, hem: 1056 };
-  const tiles = [];
-  for (const [item, g] of Object.entries(garments)) {
-    for (const scale of [cat.shoulders / g.shoulders, (cat.hem - cat.neck[1]) / (g.hem - g.neck[1])]) {
-      const fits = {
-        ...rig.fits.cat,
-        [item]: { x: Math.round(cat.neck[0] - g.neck[0] * scale), y: Math.round(cat.neck[1] - g.neck[1] * scale), scale },
-      };
-      const png = await compose("cat", [item], fits);
-      const shot = await sharp(background(W, H))
-        .composite([{ input: png }])
-        .png()
-        .toBuffer();
-      tiles.push(await sharp(shot).resize(300).png().toBuffer());
-    }
-  }
-  const tileH = Math.round((300 * H) / W);
-  await sharp({ create: { width: 300 * 8, height: tileH, channels: 3, background: "#101016" } })
-    .composite(tiles.map((input, i) => ({ input, left: i * 300, top: 0 })))
-    .png()
-    .toFile(path.join(qaDir, "cat-garments-fit.png"));
-  console.log("docs/visual-qa/equipment/cat-garments-fit.png (per garment: by shoulders, by length)");
-}
-
 /** Composes looks given as "item+item" (and optional fits as JSON) to art/preview/try/, to fit by eye. */
 async function tryLooks(looks, extraFits) {
   const dir = path.join(root, "art", "preview", "try");
@@ -554,9 +569,6 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
       process.argv.slice(tryAt + 1).filter((a, i, all) => !a.startsWith("--") && all[i - 1] !== "--fits"),
       extra,
     );
-  } else if (process.argv.includes("--compare-garments")) {
-    manifest = JSON.parse(await readFile(path.join(root, "lib", "content", "layers.json"), "utf8"));
-    await compareGarments();
   } else if (process.argv.includes("--compare-cape")) {
     manifest = JSON.parse(await readFile(path.join(root, "lib", "content", "layers.json"), "utf8"));
     await compareCape();

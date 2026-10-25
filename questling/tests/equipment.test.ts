@@ -55,13 +55,27 @@ describe("the layered figure", () => {
   });
 
   it("names worn items it cannot draw", () => {
-    const robe = figureOf("cat", { headwear: "wizard-hat", outfit: "violet-robe" });
-    expect(robe.kind === "layered" && robe.drawn).toEqual(["wizard-hat"]);
-    expect(robe.pending).toEqual(["violet-robe"]);
+    // Every item has art now (docs/ASSET_AUDIT.md); take one fit away to see an item without it.
+    const fits = rig.fits.cat as Record<string, unknown>;
+    const saved = fits["violet-robe"];
+    delete fits["violet-robe"];
+    try {
+      const robe = figureOf("cat", { headwear: "wizard-hat", outfit: "violet-robe" });
+      expect(robe.kind === "layered" && robe.drawn).toEqual(["wizard-hat"]);
+      expect(robe.pending).toEqual(["violet-robe"]);
+    } finally {
+      fits["violet-robe"] = saved;
+    }
   });
 
-  // The items whose art cannot be fitted (docs/ASSET_AUDIT.md, NEEDS_ART_ASSET); every other one is drawn on the cat.
-  const NEEDS_ART_ASSET = ["violet-robe", "violet-tunic", "brown-coat", "midnight-cloak"];
+  it("draws the garments re-cut for the chibi body behind and in front of it", () => {
+    const robe = figureOf("cat", { outfit: "violet-robe" });
+    expect(names(robe)).toEqual(["violet-robe-back", "cat-base", "violet-robe-front"]);
+    expect(robe.pending).toEqual([]);
+  });
+
+  // The items whose art cannot be fitted (docs/ASSET_AUDIT.md, NEEDS_ART_ASSET): none since the Blender pass.
+  const NEEDS_ART_ASSET: string[] = [];
 
   const heroes = ["girl", "boy", "cat", "fox", "owl", "forest"] as const;
 

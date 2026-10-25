@@ -6,8 +6,8 @@ import type { Text } from "./text";
 // Items are cosmetic only: no item changes XP, grading or anything else in learning
 // (the brief; the screens' "+15% опыта" lines are not implemented, see design-screen-map.md).
 // Pictures are cards. Drawing an item on the hero needs its own alpha layers fitted per species
-// (lib/content/figure.ts, rig.json): Gate 4 has them for the cat's witch hat, ceremonial cape and
-// star amulet; every other item is NEEDS_ART_ASSET (docs/ASSET_AUDIT.md) and is not drawn.
+// (lib/content/figure.ts, rig.json): all 24 have them on all six heroes (docs/ASSET_AUDIT.md); an item
+// without them would be named under the figure as not drawn, never faked.
 
 export const SLOTS = ["headwear", "face", "neck", "outerwear", "outfit", "back", "handheld", "companion"] as const;
 export type Slot = (typeof SLOTS)[number];

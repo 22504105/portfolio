@@ -60,11 +60,18 @@ export const SOURCES = {
   "crystal-staff": { file: stitch(equipment, 10), ...edge, soft: true },
   "star-crown": { file: stitch(equipment, 11), ...edge },
   "moon-pendant": { file: stitch(equipment, 12), ...edge, limit: 60 },
-  "violet-robe": { file: stitch(outfit, 1), step: 4, limit: 24, low: 10, high: 34 },
+  "violet-robe-flat": { file: stitch(outfit, 1), step: 4, limit: 24, low: 10, high: 34 },
   "green-cape": { file: stitch(outfit, 2), ...edge },
-  "violet-tunic": { file: stitch(outfit, 4), step: 4, limit: 24, low: 10, high: 34 },
-  "brown-coat": { file: stitch(outfit, 5), step: 4, limit: 24, low: 10, high: 34 },
-  "midnight-cloak": { file: stitch(outfit, "moon"), ...edge, step: 4, limit: 30 },
+  "violet-tunic-flat": { file: stitch(outfit, 4), step: 4, limit: 24, low: 10, high: 34 },
+  "brown-coat-flat": { file: stitch(outfit, 5), step: 4, limit: 24, low: 10, high: 34 },
+  "midnight-cloak-flat": { file: stitch(outfit, "moon"), ...edge, step: 4, limit: 30 },
+  // The four garments above were drawn for human proportions. blender/warp.py re-cuts each "-flat" master
+  // for the chibi body (shoulders, sleeves and hem moved, details kept at their size) into the cat
+  // base's frame; these are those renders. Run this script for the "-flat" ones first, then warp.py.
+  "violet-robe": { file: path.join(root, "blender", "violet-robe.png"), rendered: true },
+  "violet-tunic": { file: path.join(root, "blender", "violet-tunic.png"), rendered: true },
+  "brown-coat": { file: path.join(root, "blender", "brown-coat.png"), rendered: true },
+  "midnight-cloak": { file: path.join(root, "blender", "midnight-cloak.png"), rendered: true },
   raven: { file: stitch(companion, 1), step: 4, limit: 24, low: 10, high: 34 },
   "moon-cat": { file: stitch(companion, 2), step: 3, limit: 16, low: 8, high: 30 },
   // The Stitch sprite's glow is painted on its own dark haze and no matte separates them; it is

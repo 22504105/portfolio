@@ -33,8 +33,9 @@ the package. Fonts: EB Garamond, Cormorant Garamond, Cinzel, Inter, MedievalShar
    painted style. Teacher Studio will use the painted portraits or initials instead.
 6. **No outfit is split into back/front layers.** The ceremonial cape (`outfit_3`) is one flat image
    seen from the front; the cat test (cape_back behind the body, cape_front above it) needs a split or
-   a redraw. Gate 4 result: split offline and shipped as a documented compromise; 19 of 24 items are
-   drawn on all six heroes, 4 are `NEEDS_ART_ASSET` (the sprite, the fifth, was remodelled in Blender on 2026-10-25) (see "Equipment layers").
+   a redraw. Gate 4 result: split offline and shipped as a documented compromise; 19 of 24 items were
+   drawn on all six heroes and 5 were `NEEDS_ART_ASSET`; on 2026-10-25 those five were made in Blender
+   (see "Equipment layers", "Blender"), so all 24 are drawn.
 
 ## Standalone assets (`stitch-assets/`)
 
@@ -178,19 +179,29 @@ Known residual: a 1–2 px dark rim can show on light backgrounds; the app's bac
 
 ### Blender
 
-The glow sprite is modelled after the Stitch companion in Blender (`blender/sprite.blend`, in git) and
-rendered with true alpha to `blender/sprite.png`: body, face, antennae, wings with veins, a halo plane
-whose alpha falls off radially, sparks. `extract-layers.mjs` takes the render as it is (`rendered: true`),
-only measuring it. To change it: open the .blend, edit, render (F12) over `blender/sprite.png`, then
-`node scripts/extract-layers.mjs sprite` and `node scripts/build-layers.mjs`.
+The five items that could not be fitted were made in Blender on 2026-10-25 (`blender/`, in git):
+
+- **Glow sprite** — modelled after the Stitch companion (`blender/sprite.blend`) and rendered with true
+  alpha to `blender/sprite.png`: body, face, antennae, wings with veins, a halo plane whose alpha falls
+  off radially, sparks. To change it: open the .blend, edit, render (F12) over `blender/sprite.png`.
+- **Tunic, robe, coat, cloak** — the Stitch art itself, re-cut for the chibi body by `blender/warp.py`: the
+  `-flat` master is mapped on a grid whose rows and widths move (collar to the neck, sleeves to the short
+  arms, hem above the boots; collar, belt and hem border keep about their size, plain cloth is shortened)
+  and rendered unlit into the cat base's frame (`blender/<item>.png`), so the cat's fit is the base's.
+  The cloak's empty hood is folded away: the cloak starts at the shoulders and its top goes behind the
+  head. Splits (`NECKLINES` in `build-layers.mjs`): the inside of the neckline and the back collar go
+  behind the body, so the hero's own shirt shows in the opening. Other heroes follow by the neck anchor.
+  Draw order gained `back` / `outfit` (in `figure.ts` and `build-layers.mjs`).
+  To change one: edit its knots in `warp.py`, `blender -b --factory-startup --python blender/warp.py`.
+
+Both kinds are read by `extract-layers.mjs` as they are (`rendered: true`), then
+`node scripts/extract-layers.mjs <names>` and `node scripts/build-layers.mjs` as usual.
 
 ### NEEDS_ART_ASSET
 
-| Item                                        | Why it cannot be fitted                                                                                                                                                                                                                                         | What needs to be drawn                                                                                                                                                                                                                        |
-| ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `violet-robe`, `violet-tunic`, `brown-coat` | Drawn for human proportions: neck to hem ≈ 1.8–2.4× the shoulders; the chibi torso is ≈ 0.8× its shoulders. Fitted by the shoulders, they cover the legs and run off the canvas; fitted by the length, they are half the hero's width (`cat-garments-fit.png`). | The garment on the chibi body: shoulders as wide as the base's (≈ 300 px on a 1024 master), hem at the base's tunic hem, sleeves on its short arms; front view; transparent background; a separate back part (lining, collar) where it wraps. |
-| `midnight-cloak`                            | Drawn with the hood up and empty; the hood is a third of the heroes' head width, so it hangs at the chest (`cat-garments-fit.png`).                                                                                                                             | The cloak with the hood down on the shoulders (or a hood sized for the chibi head, split into back and front), body cut to the chibi proportions as above.                                                                                    |
-| `ceremonial-cape` (fit)                     | Shipped, as a compromise: its long, narrow shape cannot both cover the chibi shoulders and end at the feet; the mantle sits narrower than the tunic's shoulders (`cat-cape-scales.png`).                                                                        | Optional: a cape drawn for the chibi body, mantle as wide as the shoulders.                                                                                                                                                                   |
+| Item                    | Why it cannot be fitted                                                                                                                                                                  | What needs to be drawn                                                      |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| `ceremonial-cape` (fit) | Shipped, as a compromise: its long, narrow shape cannot both cover the chibi shoulders and end at the feet; the mantle sits narrower than the tunic's shoulders (`cat-cape-scales.png`). | Optional: a cape drawn for the chibi body, mantle as wide as the shoulders. |
 
 Worn items that are not drawn are listed under the wardrobe's figure ("Пока не нарисованы на фигуре"),
 never faked.

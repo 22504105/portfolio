@@ -109,25 +109,45 @@
     "part": "front",
     "box": [143, 258, 626, 675]
   },
+  "midnight-cloak-back": {
+    "item": "midnight-cloak",
+    "part": "back",
+    "box": [421, 548, 183, 18]
+  },
   "midnight-cloak-front": {
     "item": "midnight-cloak",
     "part": "front",
-    "box": [145, 187, 606, 808]
+    "box": [326, 548, 369, 327]
+  },
+  "violet-robe-back": {
+    "item": "violet-robe",
+    "part": "back",
+    "box": [424, 533, 174, 59]
   },
   "violet-robe-front": {
     "item": "violet-robe",
     "part": "front",
-    "box": [114, 234, 668, 723]
+    "box": [274, 544, 475, 319]
+  },
+  "violet-tunic-back": {
+    "item": "violet-tunic",
+    "part": "back",
+    "box": [437, 552, 154, 70]
   },
   "violet-tunic-front": {
     "item": "violet-tunic",
     "part": "front",
-    "box": [153, 275, 609, 669]
+    "box": [312, 557, 408, 296]
+  },
+  "brown-coat-back": {
+    "item": "brown-coat",
+    "part": "back",
+    "box": [428, 538, 175, 122]
   },
   "brown-coat-front": {
     "item": "brown-coat",
     "part": "front",
-    "box": [138, 247, 634, 689]
+    "box": [287, 551, 449, 300]
   },
   "satchel-back": {
     "item": "satchel",

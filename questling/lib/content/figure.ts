@@ -18,6 +18,7 @@ type Fit = { x: number; y: number; scale: number };
  */
 const ORDER: { part: "back" | "front"; slot: Slot }[] = [
   { part: "back", slot: "outerwear" },
+  { part: "back", slot: "outfit" },
   { part: "back", slot: "back" },
   { part: "back", slot: "neck" },
   { part: "back", slot: "headwear" },

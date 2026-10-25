@@ -1,9 +1,9 @@
 import { expect, test, type Page } from "@playwright/test";
 
 // Gate 4: equipment drawn on the hero (lib/content/rig.json, figureOf). The demo cat starts in the
-// wizard hat and the sunset cloak, with the crystal staff, all drawn in layers, and in the academy
-// tunic (a starter item), one of the five whose art cannot be fitted (NEEDS_ART_ASSET): it is named
-// under the figure instead of being faked.
+// wizard hat and the sunset cloak, with the crystal staff, and in the academy tunic (a starter item,
+// re-cut for the chibi body in Blender), all drawn in layers. Every item has art, so nothing is named
+// under the figure as not drawn.
 
 const ready = (page: Page) => expect(page.locator("[data-student-ready]")).toBeVisible();
 const layers = (page: Page) => page.locator("[data-figure-layers]").first().locator("img");
@@ -20,23 +20,24 @@ test("the hat, the cloak and the staff are drawn around the hero in the brief's 
   await ready(page);
   expect(await sources(page)).toEqual([
     "/images/layers/ceremonial-cape-back.webp",
+    "/images/layers/violet-tunic-back.webp",
     "/images/layers/witch-hat-back.webp",
     "/images/layers/cat-base.webp",
+    "/images/layers/violet-tunic-front.webp",
     "/images/layers/ceremonial-cape-front.webp",
     "/images/layers/witch-hat-front.webp",
     "/images/layers/crystal-staff-front.webp",
   ]);
-  await expect(page.locator("[data-not-drawn]")).toHaveText("Пока не нарисованы на фигуре: Туника академии");
+  await expect(page.locator("[data-not-drawn]")).toHaveCount(0);
 });
 
-test("taking off the item without art removes its note, and changes no layer", async ({ page }) => {
+test("taking the tunic off removes both its layers and nothing else", async ({ page }) => {
   await page.goto("/ru/demo/wardrobe");
   await ready(page);
   const before = await sources(page);
   await page.getByRole("tab", { name: "Мантии" }).click();
   await page.locator('[data-item="violet-tunic"]').getByRole("button", { name: /Снять/ }).click();
-  await expect(page.locator("[data-not-drawn]")).toHaveCount(0);
-  expect(await sources(page)).toEqual(before);
+  await expect.poll(() => sources(page)).toEqual(before.filter((src) => !src.includes("violet-tunic")));
 });
 
 test("taking the hat off removes both its layers, and the saved look is the one the profile shows", async ({ page }) => {
@@ -45,7 +46,9 @@ test("taking the hat off removes both its layers, and the saved look is the one 
   await page.locator('[data-item="wizard-hat"]').getByRole("button", { name: /Снять/ }).click();
   expect(await sources(page)).toEqual([
     "/images/layers/ceremonial-cape-back.webp",
+    "/images/layers/violet-tunic-back.webp",
     "/images/layers/cat-base.webp",
+    "/images/layers/violet-tunic-front.webp",
     "/images/layers/ceremonial-cape-front.webp",
     "/images/layers/crystal-staff-front.webp",
   ]);

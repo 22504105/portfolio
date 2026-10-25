@@ -107,6 +107,26 @@
         "x": -98,
         "y": 700,
         "scale": 0.5
+      },
+      "violet-tunic": {
+        "x": 0,
+        "y": 256,
+        "scale": 1
+      },
+      "violet-robe": {
+        "x": 0,
+        "y": 256,
+        "scale": 1
+      },
+      "brown-coat": {
+        "x": 0,
+        "y": 256,
+        "scale": 1
+      },
+      "midnight-cloak": {
+        "x": 0,
+        "y": 256,
+        "scale": 1
       }
     },
     "boy": {
@@ -214,6 +234,26 @@
         "x": -98,
         "y": 700,
         "scale": 0.5
+      },
+      "violet-tunic": {
+        "x": -9,
+        "y": 217,
+        "scale": 1.0167
+      },
+      "violet-robe": {
+        "x": -9,
+        "y": 217,
+        "scale": 1.0167
+      },
+      "brown-coat": {
+        "x": -9,
+        "y": 217,
+        "scale": 1.0167
+      },
+      "midnight-cloak": {
+        "x": -9,
+        "y": 217,
+        "scale": 1.0167
       }
     },
     "girl": {
@@ -321,6 +361,26 @@
         "x": -98,
         "y": 700,
         "scale": 0.5
+      },
+      "violet-tunic": {
+        "x": 0,
+        "y": 226,
+        "scale": 1
+      },
+      "violet-robe": {
+        "x": 0,
+        "y": 226,
+        "scale": 1
+      },
+      "brown-coat": {
+        "x": 0,
+        "y": 226,
+        "scale": 1
+      },
+      "midnight-cloak": {
+        "x": 0,
+        "y": 226,
+        "scale": 1
       }
     },
     "fox": {
@@ -428,6 +488,26 @@
         "x": -98,
         "y": 700,
         "scale": 0.5
+      },
+      "violet-tunic": {
+        "x": 0,
+        "y": 236,
+        "scale": 1
+      },
+      "violet-robe": {
+        "x": 0,
+        "y": 236,
+        "scale": 1
+      },
+      "brown-coat": {
+        "x": 0,
+        "y": 236,
+        "scale": 1
+      },
+      "midnight-cloak": {
+        "x": 0,
+        "y": 236,
+        "scale": 1
       }
     },
     "owl": {
@@ -535,6 +615,26 @@
         "x": -98,
         "y": 700,
         "scale": 0.5
+      },
+      "violet-tunic": {
+        "x": 0,
+        "y": 226,
+        "scale": 1
+      },
+      "violet-robe": {
+        "x": 0,
+        "y": 226,
+        "scale": 1
+      },
+      "brown-coat": {
+        "x": 0,
+        "y": 226,
+        "scale": 1
+      },
+      "midnight-cloak": {
+        "x": 0,
+        "y": 226,
+        "scale": 1
       }
     },
     "forest": {
@@ -642,6 +742,26 @@
         "x": -98,
         "y": 700,
         "scale": 0.5
+      },
+      "violet-tunic": {
+        "x": 17,
+        "y": 205,
+        "scale": 0.9667
+      },
+      "violet-robe": {
+        "x": 17,
+        "y": 205,
+        "scale": 0.9667
+      },
+      "brown-coat": {
+        "x": 17,
+        "y": 205,
+        "scale": 0.9667
+      },
+      "midnight-cloak": {
+        "x": 17,
+        "y": 205,
+        "scale": 0.9667
       }
     }
   },
