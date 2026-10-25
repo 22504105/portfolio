@@ -278,7 +278,7 @@ export function InventoryScreen() {
                     <div
                       key={item.id}
                       data-item={item.id}
-                      className="bg-surface-container-lowest/80 p-space-sm relative flex flex-col justify-between overflow-hidden rounded-xl opacity-75"
+                      className="bg-surface-container-lowest/80 p-space-sm relative flex flex-col justify-between overflow-hidden rounded-xl opacity-85"
                     >
                       <div className="mb-2 flex items-start justify-between">
                         <div className="bg-surface-container text-text-muted flex h-10 w-10 items-center justify-center rounded-lg">
@@ -290,9 +290,9 @@ export function InventoryScreen() {
                       </div>
                       <div>
                         <h4 className="font-body-md text-body-md text-text-muted truncate font-medium">{tr(item.name, locale)}</h4>
-                        <p className="font-caption text-caption text-outline truncate">{tr(item.note, locale)}</p>
+                        <p className="font-caption text-caption text-text-muted truncate">{tr(item.note, locale)}</p>
                       </div>
-                      <div className="bg-surface-container text-outline font-label-sm text-label-sm mt-2.5 flex w-full cursor-not-allowed items-center justify-center gap-1 rounded-lg py-1.5">
+                      <div className="bg-surface-container text-text-muted font-label-sm text-label-sm mt-2.5 flex w-full cursor-not-allowed items-center justify-center gap-1 rounded-lg py-1.5">
                         <Icon name="lock" className="text-[14px]" />
                         <span>{t.inventory.locked}</span>
                       </div>

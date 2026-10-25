@@ -468,7 +468,7 @@ export function DashboardScreen() {
                   <Icon name="psychology_alt" className="text-secondary text-[20px]" />
                   <h3 className="font-title-sm text-title-sm text-text-ivory">{t.dashboard.topics}</h3>
                 </div>
-                <span title={t.dashboard.topicsInfo} aria-label={t.dashboard.topicsInfo}>
+                <span role="img" title={t.dashboard.topicsInfo} aria-label={t.dashboard.topicsInfo}>
                   <Icon name="info" className="text-text-muted text-[18px]" />
                 </span>
               </div>

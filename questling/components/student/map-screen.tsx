@@ -226,7 +226,7 @@ export function MapScreen() {
             })}
 
             <div className="mt-4 flex w-full flex-col items-center overflow-hidden rounded-xl bg-[#D9C49B] p-4 text-center text-[#231D15] shadow-[0_8px_24px_rgba(0,0,0,0.7)]">
-              <div className="text-primary-container mb-1 flex items-center gap-2">
+              <div className="text-on-tertiary-fixed-variant mb-1 flex items-center gap-2">
                 <span>✦</span>
                 <span className="font-label-sm text-label-sm font-bold tracking-widest uppercase">{t.map.note}</span>
                 <span>✦</span>
@@ -367,16 +367,17 @@ function ChapterNode({ stop, previous, boss, compact }: { stop: Stop; previous: 
 
   return (
     <div
-      className={`relative z-10 flex w-full flex-col items-center ${compact ? "mb-6" : boss ? "mb-6" : "mb-14"} ${fade}`}
+      className={`relative z-10 flex w-full flex-col items-center ${compact ? "mb-6" : boss ? "mb-6" : "mb-14"}`}
       data-chapter={chapter.id}
       data-status={status}
     >
+      {/* Locked: the medallion fades as drawn; the words stay readable (WCAG AA). */}
       <div className="bg-surface-container-lowest mb-2 flex items-center gap-1.5 rounded-full px-3 py-1 shadow-xs">
         <Icon name={banner.icon} className={`text-[14px] ${banner.tone}`} />
         <span className={`font-caption text-caption ${banner.tone}`}>{banner.text}</span>
       </div>
       {boss ? (
-        <div className="bg-surface-container-lowest relative flex h-20 w-20 items-center justify-center rounded-full shadow-xl">
+        <div className={`bg-surface-container-lowest relative flex h-20 w-20 items-center justify-center rounded-full shadow-xl ${fade}`}>
           <div className="bg-surface-container-high text-primary-container flex h-16 w-16 items-center justify-center rounded-full shadow-inner">
             <Icon name="shield_moon" className="text-[32px]" />
           </div>
@@ -385,7 +386,9 @@ function ChapterNode({ stop, previous, boss, compact }: { stop: Stop; previous: 
           </div>
         </div>
       ) : (
-        <div className="bg-surface-container-low relative flex h-[72px] w-[72px] items-center justify-center rounded-full shadow-lg">
+        <div
+          className={`bg-surface-container-low relative flex h-[72px] w-[72px] items-center justify-center rounded-full shadow-lg ${fade}`}
+        >
           <div className="bg-surface-container text-text-muted flex h-16 w-16 items-center justify-center rounded-full shadow-inner">
             <Icon name={chapter.icon} className="text-[28px]" />
           </div>
@@ -395,7 +398,7 @@ function ChapterNode({ stop, previous, boss, compact }: { stop: Stop; previous: 
         </div>
       )}
       <div
-        className={`mt-3 flex flex-col items-center rounded-xl p-3 text-center shadow-xs ${boss ? "bg-surface/50 max-w-[250px]" : "bg-surface/70 max-w-[240px]"}`}
+        className={`mt-3 flex flex-col items-center rounded-xl p-3 text-center shadow-xs ${boss ? "bg-surface/90 max-w-[250px]" : "bg-surface/70 max-w-[240px]"} opacity-90`}
       >
         <span
           className={`font-label-sm text-[11px] uppercase ${boss ? "text-primary font-bold tracking-widest" : "text-text-muted tracking-wider"}`}

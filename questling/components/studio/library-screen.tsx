@@ -266,7 +266,7 @@ export function LibraryScreen() {
                     }`}
                   >
                     {l === "all" ? t.library.allLevels : l}{" "}
-                    {l !== "all" ? <span className="text-caption font-caption opacity-60">({count})</span> : null}
+                    {l !== "all" ? <span className="text-caption font-caption opacity-80">({count})</span> : null}
                   </button>
                 );
               })}

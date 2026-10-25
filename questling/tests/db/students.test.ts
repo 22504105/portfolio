@@ -349,4 +349,75 @@ describe("the API", () => {
     const viaState = await (await handle(request("GET", "state", { token: again.token }), ["state"])).json();
     expect(viaState.facts.inventory).toHaveLength(3);
   });
+
+  it("hands a student everything stored about them, and nobody else's", async () => {
+    const mine = await (await handle(request("POST", "session", { body: { initData: initData(801) } }), ["session"])).json();
+    await handle(request("POST", "actions", { token: mine.token, body: { action: { type: "chooseCharacter", characterId: "fox" } } }), [
+      "actions",
+    ]);
+    const theirs = await (await handle(request("POST", "session", { body: { initData: initData(802) } }), ["session"])).json();
+
+    expect((await handle(request("GET", "export"), ["export"])).status).toBe(401);
+    const exported = await handle(request("GET", "export", { token: mine.token }), ["export"]);
+    expect(exported.status).toBe(200);
+    expect(exported.headers.get("cache-control")).toBe("no-store");
+    const data = await exported.json();
+    expect(data.format).toBe("questling-export-1");
+    expect(data.identities).toEqual([expect.objectContaining({ provider: "telegram", subject: "801", username: "s801" })]);
+    expect(data.users[0].character_id).toBe("fox");
+    expect(data.inventory.length).toBeGreaterThan(0);
+    // Every row is the student's own.
+    for (const [table, rows] of Object.entries(data))
+      if (Array.isArray(rows) && table !== "users")
+        for (const row of rows as { user_id?: string }[]) expect(row.user_id, table).toBe(data.users[0].id);
+    expect(JSON.stringify(data)).not.toContain("s802");
+    expect(exported.headers.get("content-disposition")).toContain("attachment");
+
+    // Telegram's downloader sends no headers: a ticket in the link stands for the session, for this only.
+    const { url } = await (await handle(request("POST", "export/ticket", { token: mine.token, body: {} }), ["export", "ticket"])).json();
+    const viaTicket = await handle(new Request(`${origin}${url}`), ["export"]);
+    expect(viaTicket.status).toBe(200);
+    expect((await viaTicket.json()).users[0].id).toBe(data.users[0].id);
+    const ticket = new URL(url, origin).searchParams.get("ticket")!;
+    expect((await handle(request("GET", "state", { token: ticket }), ["state"])).status).toBe(401);
+    expect((await handle(new Request(`${origin}/api/v1/export?ticket=${ticket}x`), ["export"])).status).toBe(401);
+    expect((await handle(request("POST", "export/ticket", { token: theirs.token, body: {} }), ["export", "ticket"])).status).toBe(200);
+  });
+
+  it("deletes a student and everything about them, only when asked plainly, and keeps others", async () => {
+    const mine = await (await handle(request("POST", "session", { body: { initData: initData(901) } }), ["session"])).json();
+    await handle(request("POST", "actions", { token: mine.token, body: { action: { type: "chooseCharacter", characterId: "cat" } } }), [
+      "actions",
+    ]);
+    const theirs = await (await handle(request("POST", "session", { body: { initData: initData(902) } }), ["session"])).json();
+
+    // Not without the confirmation, not from another site, not without a session.
+    expect((await handle(request("POST", "account/delete", { token: mine.token, body: {} }), ["account", "delete"])).status).toBe(422);
+    expect(
+      (
+        await handle(
+          request("POST", "account/delete", { token: mine.token, origin: "https://evil.example", body: { confirm: "delete" } }),
+          ["account", "delete"],
+        )
+      ).status,
+    ).toBe(403);
+    expect((await handle(request("POST", "account/delete", { body: { confirm: "delete" } }), ["account", "delete"])).status).toBe(401);
+
+    const deleted = await handle(request("POST", "account/delete", { token: mine.token, body: { confirm: "delete" } }), [
+      "account",
+      "delete",
+    ]);
+    expect(deleted.status).toBe(200);
+    const left = await pg.db.query<{ n: number }>(
+      `select (select count(*) from questling.auth_identities where subject = '901')::int
+            + (select count(*) from questling.ledger l join questling.auth_identities i on i.user_id = l.user_id where i.subject = '901')::int as n`,
+    );
+    expect(left.rows[0].n).toBe(0);
+    // The old session now opens nothing; signing in again starts afresh.
+    expect((await handle(request("GET", "state", { token: mine.token }), ["state"])).status).toBe(404);
+    const fresh = await (await handle(request("POST", "session", { body: { initData: initData(901) } }), ["session"])).json();
+    expect(fresh.facts.profile.characterId).toBeNull();
+    // The other student is untouched.
+    expect((await handle(request("GET", "state", { token: theirs.token }), ["state"])).status).toBe(200);
+  });
 });

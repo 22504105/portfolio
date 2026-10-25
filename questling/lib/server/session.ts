@@ -32,8 +32,39 @@ export function readSession(token: unknown, secret: string, nowSeconds = Math.fl
   if (given.length !== expected.length || !timingSafeEqual(given, expected)) return null;
 
   try {
-    const { u, e } = JSON.parse(Buffer.from(payload, "base64url").toString("utf8")) as { u?: unknown; e?: unknown };
-    if (typeof u !== "string" || !/^[0-9a-f-]{36}$/.test(u) || typeof e !== "number" || e <= nowSeconds) return null;
+    const { u, e, p } = JSON.parse(Buffer.from(payload, "base64url").toString("utf8")) as { u?: unknown; e?: unknown; p?: unknown };
+    // A ticket (it names its purpose) is never a session.
+    if (p !== undefined || typeof u !== "string" || !/^[0-9a-f-]{36}$/.test(u) || typeof e !== "number" || e <= nowSeconds) return null;
+    return u;
+  } catch {
+    return null;
+  }
+}
+
+// A ticket: like a session, but for one purpose and five minutes, and it goes in a link's query. Telegram's
+// own downloader (WebApp.downloadFile) fetches a plain address with no headers, so the student's data file
+// is fetched with a ticket the page asked for with its session. Signed with a separate key so that one
+// can never be read as the other.
+export const TICKET_SECONDS = 5 * 60;
+
+const ticketKey = (secret: string) => createHmac("sha256", secret).update("questling-ticket").digest("base64url");
+
+export function issueTicket(userId: string, purpose: string, secret: string, nowSeconds = Math.floor(Date.now() / 1000)): string {
+  const payload = Buffer.from(JSON.stringify({ u: userId, e: nowSeconds + TICKET_SECONDS, p: purpose })).toString("base64url");
+  return `${payload}.${sign(payload, ticketKey(secret))}`;
+}
+
+/** The user a ticket was issued to for this purpose, or null. */
+export function readTicket(token: unknown, purpose: string, secret: string, nowSeconds = Math.floor(Date.now() / 1000)): string | null {
+  if (typeof token !== "string" || token.length > 512 || !secret) return null;
+  const [payload, signature, ...rest] = token.split(".");
+  if (!payload || !signature || rest.length > 0) return null;
+  const given = Buffer.from(signature, "base64url");
+  const expected = Buffer.from(sign(payload, ticketKey(secret)), "base64url");
+  if (given.length !== expected.length || !timingSafeEqual(given, expected)) return null;
+  try {
+    const { u, e, p } = JSON.parse(Buffer.from(payload, "base64url").toString("utf8")) as { u?: unknown; e?: unknown; p?: unknown };
+    if (p !== purpose || typeof u !== "string" || !/^[0-9a-f-]{36}$/.test(u) || typeof e !== "number" || e <= nowSeconds) return null;
     return u;
   } catch {
     return null;

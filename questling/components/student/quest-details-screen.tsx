@@ -190,7 +190,7 @@ function Details({ chapterId, latest }: { chapterId: string; latest: NonNullable
 
             {entry ? (
               <div className="bg-tertiary-fixed-dim/95 text-surface-container-lowest relative overflow-hidden rounded-xl p-4 shadow-xl">
-                <div className="text-on-tertiary font-georgia text-center text-[13px] tracking-widest opacity-75">
+                <div className="text-on-tertiary font-georgia text-center text-[13px] tracking-widest opacity-90">
                   ✦ {t.details.diary} ✦
                 </div>
                 <p className="font-headline-md text-surface-container-lowest mt-2 text-center text-[19px] leading-snug italic">

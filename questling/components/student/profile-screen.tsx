@@ -169,7 +169,7 @@ export function ProfileScreen() {
                 <Icon name="auto_stories" className="text-primary text-[18px]" />
                 <h2 className="font-headline-md text-headline-md text-text-ivory">{t.profile.progress}</h2>
               </div>
-              <span className="font-label-sm text-caption bg-secondary-container/40 text-secondary rounded-full border border-[#8D75C9]/30 px-2.5 py-0.5 font-semibold tracking-wider uppercase">
+              <span className="font-label-sm text-caption bg-secondary-container/40 rounded-full border border-[#8D75C9]/30 px-2.5 py-0.5 font-semibold tracking-wider text-[#A18DDB] uppercase">
                 CEFR {view.cefr}
               </span>
             </div>

@@ -93,7 +93,7 @@ export function JournalScreen({ campaignId }: { campaignId?: string }) {
                   <div className="gap-space-xs flex items-center justify-between">
                     <span className="font-label-md text-label-sm text-secondary tracking-widest uppercase">✦ {t.journal.deduction} ✦</span>
                     {latestXp ? (
-                      <span className="bg-status-success/20 text-status-success font-label-sm text-caption shrink-0 rounded-full px-2 py-[1px] font-medium">
+                      <span className="bg-status-success/20 font-label-sm text-caption shrink-0 rounded-full px-2 py-[1px] font-medium text-[#6FC4A8]">
                         +{latestXp} XP
                       </span>
                     ) : null}
@@ -217,14 +217,15 @@ export function JournalScreen({ campaignId }: { campaignId?: string }) {
                 <div
                   key={item.id}
                   data-clue-row={item.id}
-                  className={`p-space-sm gap-space-sm flex items-center rounded-xl ${final ? "bg-surface/40" : "bg-surface/50"} ${fade}`}
+                  className={`p-space-sm gap-space-sm flex items-center rounded-xl ${final ? "bg-surface/40" : "bg-surface/50"}`}
                 >
                   <div
-                    className={`text-text-muted flex h-14 w-14 shrink-0 items-center justify-center rounded-lg ${final ? "bg-surface-container-lowest" : "bg-surface-container-low"}`}
+                    className={`text-text-muted flex h-14 w-14 shrink-0 items-center justify-center rounded-lg ${final ? "bg-surface-container-lowest" : "bg-surface-container-low"} ${fade}`}
                   >
                     <Icon name={final ? "encrypted" : "lock"} className="text-[24px]" />
                   </div>
-                  <div className="min-w-0 flex-1">
+                  {/* Locked: the lock fades as drawn; the words are dimmed only as far as stays readable (WCAG AA). */}
+                  <div className="min-w-0 flex-1 opacity-80">
                     <div className="gap-space-xs flex items-center justify-between">
                       <h4 className="font-title-sm text-title-sm text-text-muted truncate">{tr(item.title, locale)}</h4>
                       {final ? null : (

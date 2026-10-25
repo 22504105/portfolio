@@ -242,7 +242,7 @@ export function DiscoveryScreen() {
                   onClick={() => run({ type: "toggleSavedFact" })}
                   className="text-on-tertiary"
                 >
-                  <Icon name="bookmark" filled={savedFact} className="text-[20px] opacity-70" />
+                  <Icon name="bookmark" filled={savedFact} className="text-[20px] opacity-85" />
                 </button>
               </div>
               <p

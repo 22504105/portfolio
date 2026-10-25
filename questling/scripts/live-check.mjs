@@ -204,6 +204,21 @@ try {
   const reply = await studio({ type: "replyHelp", userId: studentId, ref: "forgotten-academy/tower-2", body: "Перечитай свиток." });
   const messages = (await call("GET", "state", undefined, token)).data.facts?.world?.messages ?? [];
   check(reply.status === 200 && messages.some((m) => m.body === "Перечитай свиток."), "the mentor's reply reaches the student");
+
+  // Gate 5: the student's own data — downloaded through a ticket link, then deleted through the API.
+  const ticket = await call("POST", "export/ticket", {}, token);
+  const file = ticket.data.url ? await fetch(`${base}${ticket.data.url}`) : null;
+  const exported = file ? await file.json().catch(() => ({})) : {};
+  check(
+    file?.status === 200 && exported.identities?.[0]?.subject === String(telegramId) && exported.ledger?.length > 0,
+    "the student downloads their data through a ticket link",
+  );
+  check((await call("GET", "state", undefined, ticket.data.url?.split("ticket=")[1])).status === 401, "the ticket is not a session");
+  const deleted = await call("POST", "account/delete", { confirm: "delete" }, token);
+  const left = await db.query("select count(*)::int as n from questling.auth_identities where provider = 'telegram' and subject = $1", [
+    String(telegramId),
+  ]);
+  check(deleted.status === 200 && left.rows[0].n === 0, "the student deletes their data, and nothing of it is left");
 } finally {
   // Remove the test student and everything of theirs.
   const removed = await db.query(

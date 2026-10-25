@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useSyncExternalStore } from "react";
-import { StudentProvider, type ActResult } from "@/lib/client/student";
+import { saveFile, StudentProvider, type ActResult } from "@/lib/client/student";
 import { demoFacts } from "@/lib/demo/seed";
 import { applyEffects, type Facts } from "@/lib/game/facts";
 import { run, type Action } from "@/lib/game/ops";
@@ -65,12 +65,35 @@ export function DemoProvider({ locale, children }: { locale: Locale; children: R
     [locale],
   );
 
+  // The demo's data is this browser's record: downloading saves it, deleting starts the demo afresh.
+  const downloadData = useCallback(async () => {
+    saveFile("questling-demo-data.json", JSON.stringify(read(), null, 2));
+    return "ok" as const;
+  }, []);
+  const deleteData = useCallback(async () => {
+    try {
+      window.localStorage.removeItem(STORAGE_KEY);
+    } catch {}
+    write(demoFacts(new Date()));
+    return "ok" as const;
+  }, []);
+
   const api = useMemo(
     () =>
       facts
-        ? { mode: "demo" as const, locale, t: getDictionary(locale), base: `/${locale}/demo`, facts, account: demoAccount(locale), act }
+        ? {
+            mode: "demo" as const,
+            locale,
+            t: getDictionary(locale),
+            base: `/${locale}/demo`,
+            facts,
+            account: demoAccount(locale),
+            act,
+            downloadData,
+            deleteData,
+          }
         : null,
-    [facts, locale, act],
+    [facts, locale, act, downloadData, deleteData],
   );
 
   if (!api) return <div className="bg-background min-h-dvh" aria-busy="true"></div>;

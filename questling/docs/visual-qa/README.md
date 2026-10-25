@@ -117,6 +117,30 @@ Equipment on the heroes is checked on its own sheets (`equipment/`, `docs/ASSET_
 - **O. An added tab.** "Слово и факт дня" (the brief's daily content editor) has no export; it is the
   analytics screen's tab, built from its own cards, fields and gold button.
 
+## Gate 5: contrast (WCAG 2.2 AA, axe, 2026-10-25)
+
+`e2e/gate5.spec.ts` runs axe on every student screen (390 px) and studio screen (1440 px) in both
+languages. It found low-contrast text, almost all of it from the exports' own dimming. Changed, as little
+as passes 4.5:1, so the screens look the same at a glance:
+
+| Screen           | Export                                            | Now                                                                         |
+| ---------------- | ------------------------------------------------- | --------------------------------------------------------------------------- |
+| Journal          | locked clue rows faded whole (35–65 %)            | the lock tile keeps the fade; the row's words at 80 %                       |
+| Map              | locked chapter nodes faded whole (65–85 %)        | the medallion keeps the fade; the label card at 90 %, boss card more opaque |
+| Map              | parchment note heading gold on parchment (1.56:1) | the palette's dark gold `on-tertiary-fixed-variant` (5.49:1)                |
+| Journal          | "Изучено" badge green on green (4.39:1)           | a lighter green, `#6FC4A8`                                                  |
+| Profile, shop    | violet badge text on violet (3.0–3.9:1)           | lighter violets `#A18DDB`, `#B3A3E6`                                        |
+| Hero select      | the selected hero's violet caption (4.46:1)       | `#9D87D6`                                                                   |
+| Quest details    | the seal's legend at 75 %                         | 90 %                                                                        |
+| Inventory        | locked items at 75 %, captions in `outline`       | 85 %, captions in `text-muted`                                              |
+| Discovery        | the bookmark icon at 70 %                         | 85 %                                                                        |
+| Studio library   | tab counts at 60 %                                | 80 %                                                                        |
+| Studio dashboard | `aria-label` on a plain `span` (not allowed)      | `role="img"`                                                                |
+
+Icons (glyphs of the Material Symbols ligature font, `aria-hidden`) are excluded from the check: axe
+reads a ligature as text. The same suite checks that no student screen scrolls sideways at 320, 360, 390
+and 430 px and no studio screen at 1280 and 1440 px: none does.
+
 ## Behaviour beyond the exports
 
 - After a wrong answer and "Попробовать снова", the eliminated option stays in the list struck out

@@ -1,7 +1,7 @@
 import "server-only";
 import { accountsConfigured, serverEnv, standalone, transaction, type Db } from "./db";
-import { act, allowed, join, ServiceError, signInWithTelegram, state } from "./service";
-import { issueSession, readSession } from "./session";
+import { act, allowed, deleteStudent, exportData, join, ServiceError, signInWithTelegram, state } from "./service";
+import { issueSession, issueTicket, readSession, readTicket } from "./session";
 import { signInTeacher, StudioError, studioAct, studioState } from "./studio-service";
 import { recover, signIn, signUp, teacherAuthConfigured, updatePassword } from "./teacher-auth";
 import { verifyInitData } from "./telegram";
@@ -124,6 +124,35 @@ const ROUTES: Record<string, [Route, Limit?]> = {
     },
     { scope: "action", by: "user", max: 600, seconds: 3600 },
   ],
+  // The student's own data: all of it to download, or all of it deleted (the settings screen).
+  // A link for Telegram's downloader, which sends no headers: the ticket in it stands for the session, five minutes.
+  "POST export/ticket": [
+    async ({ request }) => ({ url: `/api/v1/export?ticket=${issueTicket(sessionUser(request), "export", serverEnv().sessionSecret)}` }),
+    { scope: "export", by: "user", max: 10, seconds: 3600 },
+  ],
+  "GET export": [
+    async ({ request, db }) => {
+      const ticket = new URL(request.url).searchParams.get("ticket");
+      const userId = ticket ? readTicket(ticket, "export", serverEnv().sessionSecret) : sessionUser(request);
+      if (!userId) throw new RequestError("unauthenticated", 401);
+      return new Response(JSON.stringify(await exportData(db, userId), null, 2), {
+        headers: {
+          "Content-Type": "application/json; charset=utf-8",
+          "Content-Disposition": 'attachment; filename="questling-my-data.json"',
+          "Cache-Control": "no-store",
+        },
+      });
+    },
+  ],
+  "POST account/delete": [
+    async ({ request, db }) => {
+      const userId = sessionUser(request);
+      if ((await body(request)).confirm !== "delete") throw new RequestError("invalid", 422);
+      await deleteStudent(db, userId);
+      return { status: "deleted" };
+    },
+    { scope: "delete", by: "user", max: 5, seconds: 3600 },
+  ],
 
   // ——— Teacher Studio ———
 
@@ -197,7 +226,8 @@ export async function handle(request: Request, path: string[]): Promise<Response
   const [route, limit] = entry;
   try {
     if (limit) await enforce(request, limit);
-    return json(await transaction((db) => route({ request, db })));
+    const result = await transaction((db) => route({ request, db }));
+    return result instanceof Response ? result : json(result);
   } catch (error) {
     if (error instanceof RequestError) return fail(error.code, error.status);
     if (error instanceof ServiceError) return fail(error.code, error.status);

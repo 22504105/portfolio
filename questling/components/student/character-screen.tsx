@@ -128,7 +128,7 @@ export function CharacterScreen() {
                     ) : (
                       <h3 className="font-cormorant text-arcana-ivory text-base leading-none font-bold">{tr(character.name, locale)}</h3>
                     )}
-                    <p className={`mt-0.5 text-[10px] ${selected ? "text-arcana-violet font-medium" : "text-arcana-muted"}`}>
+                    <p className={`mt-0.5 text-[10px] ${selected ? "font-medium text-[#9D87D6]" : "text-arcana-muted"}`}>
                       {tr(character.role, locale)}
                     </p>
                   </div>

@@ -134,6 +134,98 @@ function GroupSection() {
   );
 }
 
+/** Everything kept about the student: a file to keep, or all of it deleted (asked twice). */
+function DataSection() {
+  const { t, mode, downloadData, deleteData } = useStudent();
+  const s = t.settings;
+  const [message, setMessage] = useState<{ text: string; error: boolean } | null>(null);
+  const [confirming, setConfirming] = useState(false);
+  const [pending, start] = useTransition();
+  // A teacher's preview-as-student has no data of its own to hand over.
+  if (!downloadData || !deleteData) return null;
+  const download = () =>
+    start(async () => {
+      const outcome = await downloadData();
+      setMessage(
+        outcome === "ok" ? { text: s.downloadStarted, error: false } : { text: outcome === "limited" ? s.limited : s.failed, error: true },
+      );
+    });
+  const remove = () =>
+    start(async () => {
+      const outcome = await deleteData();
+      setConfirming(false);
+      // The live app leaves this screen once the data is gone; the demo starts afresh and says nothing.
+      if (outcome !== "ok") setMessage({ text: s.failed, error: true });
+    });
+  const button =
+    "from-primary to-primary-container text-on-primary font-label-md text-label-md rounded-lg bg-gradient-to-b px-4 py-2 shadow-md disabled:opacity-50";
+  return (
+    <section className="gap-space-sm flex flex-col" data-settings-data>
+      <div className="flex items-center gap-1.5 px-1">
+        <Icon name="shield_person" className="text-primary text-[18px]" />
+        <h2 className="font-headline-md text-headline-md text-text-ivory">{s.data}</h2>
+      </div>
+      <div className="p-space-md bg-surface flex flex-col gap-3 rounded-xl border border-[#6E5A3A]/20 shadow-md">
+        <p className="font-body-md text-body-md text-text-muted">{mode === "demo" ? s.demoData : s.dataNote}</p>
+        <div className="flex flex-wrap gap-2">
+          <button type="button" onClick={download} disabled={pending} data-action="download-data" className={button}>
+            <span className="flex items-center gap-1.5">
+              <Icon name="download" className="text-[18px]" />
+              {s.download}
+            </span>
+          </button>
+          {!confirming ? (
+            <button
+              type="button"
+              onClick={() => (setConfirming(true), setMessage(null))}
+              disabled={pending}
+              data-action="delete-data"
+              className="bg-surface-container-high text-status-error font-label-md text-label-md rounded-lg px-4 py-2 shadow-md disabled:opacity-50"
+            >
+              <span className="flex items-center gap-1.5">
+                <Icon name="delete" className="text-[18px]" />
+                {s.remove}
+              </span>
+            </button>
+          ) : null}
+        </div>
+        {confirming ? (
+          <div role="alertdialog" aria-label={s.remove} className="flex flex-col gap-2" data-confirm-delete>
+            <p className="font-body-md text-body-md text-status-error">{s.removeConfirm}</p>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={remove}
+                disabled={pending}
+                data-action="delete-data-confirm"
+                className="bg-status-error text-text-ivory font-label-md text-label-md rounded-lg px-4 py-2 shadow-md disabled:opacity-50"
+              >
+                {s.removeYes}
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirming(false)}
+                disabled={pending}
+                className="bg-surface-container-high text-text-ivory font-label-md text-label-md rounded-lg px-4 py-2 shadow-md"
+              >
+                {s.removeNo}
+              </button>
+            </div>
+          </div>
+        ) : null}
+        {message ? (
+          <p
+            role={message.error ? "alert" : "status"}
+            className={`font-caption text-caption ${message.error ? "text-status-error" : "text-status-success"}`}
+          >
+            {message.text}
+          </p>
+        ) : null}
+      </div>
+    </section>
+  );
+}
+
 export function SettingsScreen() {
   const { t, locale, base, account } = useStudent();
   const path = usePathname();
@@ -216,6 +308,7 @@ export function SettingsScreen() {
           </section>
 
           <GroupSection />
+          <DataSection />
         </div>
       </main>
       <BottomNav base={base} active="profile" labels={t.nav} position="screen" />

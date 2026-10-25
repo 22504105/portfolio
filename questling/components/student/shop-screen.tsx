@@ -160,7 +160,7 @@ export function ShopScreen({ focus }: { focus?: string }) {
                 <span className="text-xs text-[#DFC082]">✨</span>
                 <span className="font-cinzel text-xs font-bold tracking-wider text-[#DFC082] uppercase">{t.shop.fitting}</span>
               </div>
-              <span className="inline-flex items-center gap-1 rounded-full border border-[#8D75C9]/35 bg-[#8D75C9]/15 px-2 py-0.5 font-sans text-[10px] font-semibold text-[#8D75C9]">
+              <span className="inline-flex items-center gap-1 rounded-full border border-[#8D75C9]/35 bg-[#8D75C9]/15 px-2 py-0.5 font-sans text-[10px] font-semibold text-[#B3A3E6]">
                 <span className="h-1.5 w-1.5 rounded-full bg-[#8D75C9] motion-safe:animate-pulse"></span>
                 {t.shop.live}
               </span>

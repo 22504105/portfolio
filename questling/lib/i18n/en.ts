@@ -21,6 +21,7 @@ export const en: Dictionary = {
       "The Questling server is not connected to its database and bot yet. Meanwhile, try the demo — it runs right in the browser.",
     failed: "Signing in through Telegram did not work. Close and reopen the app, or try the demo for now.",
     openDemo: "Open the demo",
+    deleted: "Your data has been deleted. If you open Questling again, it will start from a clean slate.",
   },
   welcome: {
     title: "Welcome",
@@ -364,6 +365,15 @@ export const en: Dictionary = {
     replies: "Mentor's replies",
     noReplies: "No replies yet. Stuck on a scene? Ask for help, and the reply shows up here.",
     account: "@{username} (ID #{id})",
+    data: "My data",
+    dataNote: "Everything Questling keeps about you: progress, coins, items, answers, groups.",
+    download: "Download my data",
+    downloadStarted: "Your data file is downloading.",
+    remove: "Delete my data",
+    removeConfirm: "Delete everything for good? Progress, coins, items and group membership will be gone and cannot be restored.",
+    removeYes: "Delete for good",
+    removeNo: "Cancel",
+    demoData: "The demo keeps its data in this browser only: download saves it as a file, delete starts the demo afresh.",
   },
   wardrobe: {
     notDrawn: "Not drawn on the figure yet: {items}",

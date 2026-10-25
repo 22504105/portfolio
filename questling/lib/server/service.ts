@@ -17,7 +17,7 @@ import type { TelegramUser } from "./telegram";
 
 export class ServiceError extends Error {
   constructor(
-    public code: "not_found" | "invalid" | Refusal,
+    public code: "not_found" | "invalid" | "forbidden" | Refusal,
     public status: number,
   ) {
     super(code);
@@ -141,6 +141,45 @@ export async function act(
   if (!result.ok) throw new ServiceError(result.refusal, REFUSAL_STATUS[result.refusal]);
   await persist(db, userId, result.effects, now);
   return { outcome: result.outcome, facts: applyEffects(facts, result.effects, now.toISOString()) };
+}
+
+// What is stored about a student, table by table: the "download my data" file holds all of it. Group
+// membership and mentors' replies are theirs too; the groups and the teachers themselves are not.
+const STUDENT_TABLES = [
+  "auth_identities",
+  "ledger",
+  "answers",
+  "completions",
+  "saved",
+  "inventory",
+  "equipped",
+  "story_runs",
+  "group_members",
+  "mentor_messages",
+] as const;
+
+/** Everything stored about a student, as rows, for them to keep (the settings screen's download). */
+export async function exportData(db: Db, userId: string): Promise<Record<string, unknown>> {
+  const users = await db.query("select * from questling.users where id = $1", [userId]);
+  if (users.rowCount === 0) throw new ServiceError("not_found", 404);
+  const data: Record<string, unknown> = { format: "questling-export-1", exportedAt: new Date().toISOString(), users: users.rows };
+  for (const table of STUDENT_TABLES) {
+    const rows = await db.query(`select * from questling.${table} where user_id = $1`, [userId]);
+    data[table === "auth_identities" ? "identities" : table] = rows.rows;
+  }
+  return data;
+}
+
+/**
+ * Deletes a student and, by the schema's cascades, everything about them (progress, ledger, items,
+ * runs, memberships, replies); the audit log keeps its rows with the actor cleared. A teacher's
+ * account is not deleted here: that would take their groups and campaigns with it.
+ */
+export async function deleteStudent(db: Db, userId: string): Promise<void> {
+  const teacher = await db.query("select 1 from questling.teachers where user_id = $1", [userId]);
+  if (teacher.rowCount) throw new ServiceError("forbidden", 403);
+  const deleted = await db.query("delete from questling.users where id = $1", [userId]);
+  if (deleted.rowCount === 0) throw new ServiceError("not_found", 404);
 }
 
 /** Counts an attempt in a time window and says whether it is still within the limit. */
