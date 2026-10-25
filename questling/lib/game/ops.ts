@@ -207,8 +207,11 @@ function perform(facts: Facts, action: Action, ctx: Context): OpResult {
       const correct = action.option === key.correct;
       const attempt = mine.length + 1;
       const effects: Effect[] = [{ type: "answer", scope: "daily", ref, question: action.option, attempt, correct, skill: "vocabulary" }];
-      if (attempt === 1) effects.push({ type: "completion", kind: "daily_quiz", ref: today });
-      const rewarded = correct && attempt === 1;
+      // One quiz mark and one quiz reward a day: a teacher may plan the day's word after the student
+      // has already answered the built-in one, and the new quiz is then answered without a second of either.
+      if (attempt === 1 && !completed(facts, "daily_quiz", today)) effects.push({ type: "completion", kind: "daily_quiz", ref: today });
+      const rewardedToday = facts.ledger.some((l) => l.currency === "xp" && l.key === `daily_quiz:${today}`);
+      const rewarded = correct && attempt === 1 && !rewardedToday;
       if (rewarded)
         effects.push({ type: "ledger", currency: "xp", amount: entry.quiz.xp, key: `daily_quiz:${today}`, reason: "daily_quiz" });
       return done(effects, {
@@ -359,6 +362,16 @@ export function settleAchievements(facts: Facts): Effect[] {
         reason: "achievement",
       });
     else if (!owns(facts, achievement.reward.item)) effects.push({ type: "own", item: achievement.reward.item, source: "achievement" });
+    // Already bought: the reward is paid as the item's price, so earning it is never worth nothing
+    // (a free item has no price to pay, and the ledger takes no zero rows).
+    else if (itemById.get(achievement.reward.item)?.price)
+      effects.push({
+        type: "ledger",
+        currency: "coins",
+        amount: itemById.get(achievement.reward.item)!.price,
+        key: `achievement:${achievement.id}`,
+        reason: "achievement",
+      });
   }
   return effects;
 }

@@ -5,6 +5,7 @@ from an approved Google Stitch design (20 screens, four story-player states) int
 sign-in, a server-authoritative game record, versioned story campaigns with branches and evidence, a
 coin shop and layered hero equipment, teachers' groups, a visual quest builder and analytics.
 
+- Staging (demo only, isolated): https://questling-staging.vercel.app
 - Production: https://questling-dusky.vercel.app — student app inside Telegram (@QuestlingEnglish_bot),
   `/ru/demo` (the whole student app in the browser, labelled "Демо"), `/ru/studio` (Teacher Studio) and
   `/ru/demo/studio` (its demo).
@@ -70,6 +71,7 @@ from this folder; settings with `node scripts/vercel-env.mjs`. Release order, st
 | [`docs/design-screen-map.md`](docs/design-screen-map.md)   | every Stitch screen and state → route, owner's decisions   |
 | [`docs/visual-qa/README.md`](docs/visual-qa/README.md)     | screenshot comparison and every known visual difference    |
 | [`docs/ASSET_AUDIT.md`](docs/ASSET_AUDIT.md)               | images, equipment layers, what was made in Blender         |
+| [`docs/qa-report.md`](docs/qa-report.md)                   | the functional QA report, bugs fixed and left              |
 | [`docs/security.md`](docs/security.md)                     | the security review and its findings                       |
 | [`docs/telegram-checklist.md`](docs/telegram-checklist.md) | the manual check on phones (not done yet)                  |
 | [`docs/release.md`](docs/release.md)                       | release, staging, rollback, known limitations              |

@@ -20,16 +20,32 @@ Deploying is the owner's decision (the repository's rules): nothing here is run 
 2. **Migrations first, if the gate has any** (Gate 5 has none): take a copy of the data
    (`pg_dump "$DATABASE_URL" --schema=questling --data-only > backup-<date>.sql`, kept outside git), then
    `npm run db:migrate`. Migrations only add; each is written to work with the code before and after it.
-3. **Staging** (optional, recommended for a gate with server changes): a preview deployment
-   `npx vercel deploy --yes --scope riddle6` (no `--prod`). Production settings are not given to previews,
-   so a preview runs as the demo plus the "not connected" screen in `/app`; with the owner's permission, a
-   preview can be given the settings for a one-off check and have them removed afterwards.
+3. **Staging**: the separate Vercel project `questling-staging` (below). Deploy the branch there first.
 4. **Production**: `npx vercel deploy --prod --yes --scope riddle6` from `questling/` (the owner runs it
    with `!` in Claude Code: the auto mode does not deploy by itself).
 5. **Check the deployed site**: `node scripts/live-check.mjs https://questling-dusky.vercel.app` — signs a
    made-up student in with the real bot token, plays, checks the studio with a throwaway teacher, downloads
    and deletes the student's data, and removes everything it made (34 points from Gate 5).
 6. Run the manual list in `docs/telegram-checklist.md` on at least one phone.
+
+## Staging
+
+- **Now (2026-10-25)**: https://questling-staging.vercel.app — Vercel project `questling-staging`
+  (`prj_p9hVJ4FA2ZHHhflITc5UGdiSZlsZ`), its own settings (none yet), not connected to GitHub. It shows
+  the demo, the demo studio and the "not connected" screens; it cannot sign in and cannot reach the
+  production database. Deploy from `questling/` (this folder is linked to production, so name the
+  project explicitly, or `--prod` goes to the production site):
+
+  ```bash
+  VERCEL_ORG_ID=team_TCMWVpqI5RzzK6WqMqwMV15H VERCEL_PROJECT_ID=prj_p9hVJ4FA2ZHHhflITc5UGdiSZlsZ     npx vercel deploy --prod --yes --scope riddle6
+  ```
+
+- **For real sign-in on staging the owner decides**: (1) a database — a second Supabase project; the free
+  plan allows two active projects and two are active now (Questling, Barbershop Project), so one has to be
+  paused or the plan changed; (2) a test bot from @BotFather with its Mini App URL set to the staging site;
+  (3) the five settings for the `questling-staging` project; then `npm run db:migrate` against the
+  staging database and `node scripts/live-check.mjs https://questling-staging.vercel.app` with a
+  `.env.local` holding the staging values. Production data is never copied to staging.
 
 ## Rollback
 
@@ -60,8 +76,10 @@ are missing there) and passes the rest.
 - Audio: pronunciation uses the device's speech synthesis; teacher-uploaded audio is not implemented.
 - Equipment art: all 24 items are drawn on the six heroes; the ceremonial cape is a documented
   compromise, and four garments are Blender re-cuts of the Stitch art (`docs/ASSET_AUDIT.md`).
-- The 3D cat (`docs/3d.md`) is a first pass, not wired into the app; the brief's rule stands: the app does
-  not present its heroes as interactive 3D.
+- The 3D hero is **postponed** (owner, 2026-10-25), not a release blocker: the app uses the 2D layered
+  heroes; the first pass (`docs/3d.md`) is not wired in.
+- Assigned quick quests exist only in the demo; assignment due dates are shown, not enforced; a group's
+  CEFR level does not restrict what is assigned to it (`docs/qa-report.md`).
 - Contrast: a few dimmed "locked" texts and violet labels were lightened for WCAG AA (Gate 5), a small
   documented difference from the Stitch screens (`docs/visual-qa/README.md`).
 - Free-tier limits: Supabase pauses an idle project; Vercel Hobby limits function time and bandwidth.

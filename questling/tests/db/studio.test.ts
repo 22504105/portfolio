@@ -8,7 +8,7 @@ import { act, join, signInWithTelegram, state } from "@/lib/server/service";
 import { signInTeacher, studioAct, studioState } from "@/lib/server/studio-service";
 import { loadStudio, persistStudio } from "@/lib/server/studio-store";
 import type { StudioAction } from "@/lib/studio/ops";
-import { TOKEN } from "../telegram-fixture";
+import { sign, TOKEN } from "../telegram-fixture";
 import { codeOf, startTestDatabase, type TestDatabase } from "./harness";
 
 // Teacher Studio on a real PostgreSQL: teachers see and change only their own; students join by code
@@ -288,6 +288,62 @@ describe("assignments and versions", () => {
     expect(await codeOf(() => pg.db.query("delete from questling.quest_versions where quest_id = $1 and version = 1", [questId]))).toBe(
       "55000",
     );
+  });
+
+  it("a teacher sees a shared student's work on built-in and own campaigns only, not on another teacher's", async () => {
+    const alice = await newTeacher(11);
+    const bob = await newTeacher(12);
+    const aliceGroup = idOf(await studio(alice, { type: "createGroup", name: "Группа Алисы", cefr: "A2" }));
+    const bobGroup = idOf(await studio(bob, { type: "createGroup", name: "Группа Боба", cefr: "A2" }));
+    const questId = idOf(await studio(bob, { type: "createQuest", title: "Тайна Боба", cefr: "A2" }));
+    await studio(bob, { type: "publish", questId });
+    const bobFacts = await tx((db) => studioState(db, bob));
+    const slug = bobFacts.quests[0].slug;
+    await studio(bob, { type: "assign", groupId: bobGroup, campaign: slug });
+
+    const student = await newStudent(13);
+    const codes = [
+      (await tx((db) => studioState(db, alice))).groups.find((g) => g.id === aliceGroup)!.inviteCode,
+      bobFacts.groups[0].inviteCode,
+    ];
+    for (const code of codes) await tx((db) => join(db, student, code));
+    const move = (m: object) => tx((db) => act(db, student, { action: { type: "story", campaign: slug, move: m } }));
+    await move({ type: "advance", scene: "start" });
+    await move({ type: "answer", scene: "question-1", answer: "table" });
+
+    // Bob sees it; Alice sees the same student, but nothing of Bob's campaign.
+    const ofBob = (await tx((db) => studioState(db, bob))).members.find((m) => m.userId === student)!;
+    expect(ofBob.runs.some((r) => r.campaign === slug)).toBe(true);
+    const ofAlice = (await tx((db) => studioState(db, alice))).members.find((m) => m.userId === student)!;
+    expect(ofAlice).toBeTruthy();
+    expect(JSON.stringify(ofAlice)).not.toContain(slug);
+  });
+
+  it("a student opened by an invite link joins the group; a stale code still lets them in", async () => {
+    const alice = await newTeacher(21);
+    await studio(alice, { type: "createGroup", name: "Ссылка-приглашение", cefr: "A2" });
+    const code = (await tx((db) => studioState(db, alice))).groups[0].inviteCode;
+    const open = (id: number, startParam: string) =>
+      handle(
+        new Request("http://localhost:3000/api/v1/session", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            initData: sign({
+              auth_date: String(Math.floor(Date.now() / 1000)),
+              user: JSON.stringify({ id, first_name: "S", username: `link${id}` }),
+              start_param: startParam,
+            }),
+          }),
+        }),
+        ["session"],
+      );
+    const joined = await open(9201, code);
+    expect(joined.status).toBe(200);
+    expect((await joined.json()).account.group?.name).toBe("Ссылка-приглашение");
+    const stale = await open(9202, "ZZZZ9999");
+    expect(stale.status).toBe(200);
+    expect((await stale.json()).account.group).toBeNull();
   });
 
   it("a student not in a group sees no teacher's campaign, and cannot play one by its id", async () => {

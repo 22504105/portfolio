@@ -2,6 +2,7 @@
 
 /* eslint-disable @next/next/no-img-element -- illustrations are pre-sized WebP in public/images (scripts/import-images.mjs) */
 import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Icon } from "@/components/ui/icon";
 import { StudentProvider, type ActResult } from "@/lib/client/student";
@@ -21,7 +22,33 @@ type TelegramWebApp = {
   expand: () => void;
   /** Bot API 8.0+: Telegram downloads the file itself (a page inside Telegram cannot save one). */
   downloadFile?: (params: { url: string; file_name: string }) => void;
+  /** Telegram's own back button (in its header; Android's hardware back presses it too). */
+  BackButton?: { show: () => void; hide: () => void; onClick: (cb: () => void) => void; offClick: (cb: () => void) => void };
 };
+
+/**
+ * Telegram's back button follows the app's screens: shown everywhere but the home and welcome
+ * screens, it steps back. Without it, Android's hardware back would close the whole app.
+ */
+function TelegramBack({ home }: { home: string }) {
+  const path = usePathname();
+  const router = useRouter();
+  useEffect(() => {
+    const button = window.Telegram?.WebApp?.BackButton;
+    if (!button) return;
+    const root = path === home || path === `${home}/home` || path === `${home}/welcome`;
+    // Opened straight onto an inner screen (a link), there is no history to go back to: go home.
+    const back = () => (window.history.length > 1 ? router.back() : router.push(`${home}/home`));
+    if (root) {
+      button.hide();
+      return;
+    }
+    button.onClick(back);
+    button.show();
+    return () => button.offClick(back);
+  }, [path, home, router]);
+  return null;
+}
 declare global {
   interface Window {
     Telegram?: { WebApp?: TelegramWebApp };
@@ -210,6 +237,7 @@ export function LiveProvider({ locale, children }: { locale: Locale; children: R
   if (status === "ready" && api)
     return (
       <StudentProvider value={api}>
+        <TelegramBack home={`/${locale}/app`} />
         <div data-student-ready>{children}</div>
       </StudentProvider>
     );

@@ -61,10 +61,15 @@ export function validateCampaign(campaign: Campaign, keys: CampaignKeys): string
   if (problems.length) return problems;
 
   // Every path, with what the student holds on it: (scene, flags, clues) states, each walked once.
+  // The moves between states are kept, so that afterwards every state can be asked whether some
+  // ending is still reachable from it: a loop is fine while a choice can leave it, a trap is not.
   const reached = new Set<string>();
   const seen = new Set<string>();
+  const moves = new Map<string, string[]>();
+  const endings: string[] = [];
+  const stateOf = (scene: string, flags: string[], clues: string[]) => `${scene}|${[...flags].sort()}|${[...clues].sort()}`;
   const walk = (scene: string, flags: string[], clues: string[], depth: number) => {
-    const state = `${scene}|${[...flags].sort()}|${[...clues].sort()}`;
+    const state = stateOf(scene, flags, clues);
     if (seen.has(state)) return;
     seen.add(state);
     reached.add(scene);
@@ -72,10 +77,12 @@ export function validateCampaign(campaign: Campaign, keys: CampaignKeys): string
     const here = locate(campaign, scene)!.scene;
     const go = (to: string | null, nextFlags: string[], nextClues: string[]) => {
       if (!to) return problem(`${scene} leads nowhere`);
+      moves.set(state, [...(moves.get(state) ?? []), stateOf(to, nextFlags, nextClues)]);
       walk(to, nextFlags, nextClues, depth + 1);
     };
     switch (here.kind) {
       case "ending":
+        endings.push(state);
         return;
       case "choice":
         for (const option of here.options) go(option.to, [...new Set([...flags, ...(option.set ?? [])])], clues);
@@ -91,6 +98,20 @@ export function validateCampaign(campaign: Campaign, keys: CampaignKeys): string
     go(nextScene(campaign, here.id, { flags, clues: found }), flags, found);
   };
   walk(campaign.chapters[0].scenes[0].id, [], [], 0);
+
+  // Backwards from the endings: every state not reached this way is in a loop with no way out.
+  const into = new Map<string, string[]>();
+  for (const [from, tos] of moves) for (const to of tos) into.set(to, [...(into.get(to) ?? []), from]);
+  const canEnd = new Set(endings);
+  const queue = [...endings];
+  while (queue.length)
+    for (const from of into.get(queue.pop()!) ?? []) {
+      if (canEnd.has(from)) continue;
+      canEnd.add(from);
+      queue.push(from);
+    }
+  const trapped = new Set([...seen].filter((state) => !canEnd.has(state)).map((state) => state.split("|")[0]));
+  for (const scene of trapped) problem(`from ${scene} no path reaches an ending`);
 
   for (const scene of scenes) if (!reached.has(scene.id)) problem(`${scene.id} can never be reached`);
   if (!scenes.some((scene) => scene.kind === "ending")) problem("no ending");

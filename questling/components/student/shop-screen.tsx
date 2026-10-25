@@ -328,7 +328,7 @@ export function ShopScreen({ focus }: { focus?: string }) {
                         className="relative z-10 h-full w-auto object-contain drop-shadow-[0_4px_8px_rgba(141,117,201,0.5)]"
                       />
                       <span
-                        className={`absolute top-1.5 left-1.5 rounded-sm border px-1.5 py-[1px] font-sans text-[9px] font-medium ${RARITY_TAG[item.rarity]}`}
+                        className={`absolute top-1.5 left-1.5 z-20 rounded-sm border px-1.5 py-[1px] font-sans text-[9px] font-medium ${RARITY_TAG[item.rarity]}`}
                       >
                         {tr(RARITY_LABEL[item.rarity], locale)}
                       </span>

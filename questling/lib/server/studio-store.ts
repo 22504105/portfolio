@@ -1,4 +1,5 @@
 import "server-only";
+import { campaignById } from "@/lib/content/campaigns";
 import { isCharacterId } from "@/lib/content/characters";
 import type { Cefr, Member, Quest, StudioEffect, StudioFacts } from "@/lib/studio/model";
 import type { Campaign, CampaignKeys } from "@/lib/story/graph";
@@ -47,6 +48,13 @@ export async function loadStudio(db: Db, teacherId: string): Promise<StudioFacts
     [userIds],
   );
 
+  // A student may be in another teacher's group too: of their story work this teacher sees the built-in
+  // campaigns and their own, never another teacher's (the brief: teacher access scoped to the class).
+  const ownSlugs = await db.query<{ slug: string }>("select slug from questling.quests where teacher_id = $1", [teacherId]);
+  const visible = new Set([...campaignById.keys(), ...ownSlugs.rows.map((q) => q.slug)]);
+  const STORY_KINDS = new Set(["story_node", "chapter", "ending", "help_request"]);
+  const campaignOfRef = (ref: string) => ref.split("/")[0];
+
   const members: Member[] = people.rows.map((p) => ({
     userId: p.id,
     heroName: p.hero_name,
@@ -55,7 +63,7 @@ export async function loadStudio(db: Db, teacherId: string): Promise<StudioFacts
     groups: memberships.rows.filter((m) => m.user_id === p.id).map((m) => ({ groupId: m.group_id, joinedAt: iso(m.joined_at) })),
     xp: p.xp,
     answers: answers.rows
-      .filter((a) => a.user_id === p.id)
+      .filter((a) => a.user_id === p.id && (a.scope !== "story" || visible.has(a.ref)))
       .map((a) => ({
         scope: a.scope,
         ref: a.ref,
@@ -65,8 +73,10 @@ export async function loadStudio(db: Db, teacherId: string): Promise<StudioFacts
         skill: a.skill,
         at: iso(a.at),
       })),
-    completions: completions.rows.filter((c) => c.user_id === p.id).map((c) => ({ kind: c.kind, ref: c.ref, at: iso(c.at) })),
-    runs: runs.rows.filter((r) => r.user_id === p.id).map((r) => r.state),
+    completions: completions.rows
+      .filter((c) => c.user_id === p.id && (!STORY_KINDS.has(c.kind) || visible.has(campaignOfRef(c.ref))))
+      .map((c) => ({ kind: c.kind, ref: c.ref, at: iso(c.at) })),
+    runs: runs.rows.filter((r) => r.user_id === p.id && visible.has(r.state.campaign)).map((r) => r.state),
   }));
 
   const quests = await db.query(

@@ -13,6 +13,31 @@ The script needs a running production build (`npm run build && npx next start -p
 it elsewhere). Every app shot starts from a fresh demo student (a new browser context, so a new
 `localStorage`). The images are regenerated, not hand-edited, and are not committed.
 
+## Results (Gate 5 re-run, all 24 screens and states, 2026-10-25)
+
+Run again on `questling/gate-05` after Gate 4's layered heroes and Gate 5's contrast changes; every
+side-by-side was looked at by eye. The tables of Gates 3 and 4 below keep their explanations (A–O);
+here only what moved.
+
+| Screen                                                                                                           | Gate 3/4                       | Now                   | Why                                                                                                                                                     |
+| ---------------------------------------------------------------------------------------------------------------- | ------------------------------ | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| welcome, details, player, player-correct, player-incorrect, puzzle, player-exhausted, player-grimoire, character | —                              | same ±0.1%            | unchanged                                                                                                                                               |
+| home                                                                                                             | 2.79%                          | 4.53%                 | the hero card now draws the student's hero in their gear, as on the export and as on the profile (it showed the bare base picture: **fixed in Gate 5**) |
+| map                                                                                                              | 11.66%                         | 11.74%                | locked chapters fade their medallion, not their words (contrast)                                                                                        |
+| journal                                                                                                          | 34.63%                         | 34.99%                | locked clues fade their lock tile, not their words (contrast)                                                                                           |
+| quests, discovery, rewards                                                                                       | 31.07 / 9.98 / 5.41%           | 31.22 / 10.01 / 5.18% | real figures of the day (B)                                                                                                                             |
+| profile                                                                                                          | 7.76%                          | 13.27%                | the hero is the layered figure (Gate 4), larger in its frame than the export's picture (A)                                                              |
+| wardrobe                                                                                                         | 14.32%                         | 17.09%                | as profile; equipment slots drawn on the figure (A, G)                                                                                                  |
+| shop                                                                                                             | 10.04%                         | 11.37%                | as profile; the rarity tag above the item picture (it was hidden under it: **fixed in Gate 5**)                                                         |
+| inventory                                                                                                        | 46.48%                         | 46.13%                | the bag holds the demo student's real items (B, G)                                                                                                      |
+| studio dashboard, groups, library, analytics                                                                     | 18.21 / 17.28 / 15.84 / 21.74% | same                  | unchanged                                                                                                                                               |
+| studio builder                                                                                                   | 18.78%                         | 19.58%                | the demo draft's graph (B)                                                                                                                              |
+
+Material differences left, each a documented decision: the hero art (layered heroes instead of the
+export's single picture, A), real data instead of the export's sample figures (B), header and navigation
+by the owner's decisions (C), and the studio's honest replacements for features the exports only drew
+(J–O). No screen has a block missing, moved or restyled.
+
 ## Results (Gate 3, Next 16.4.2, Chrome, 2026-10-24)
 
 The Russian routes are compared, since the exports are in Russian. `e2e/gate1.spec.ts` checks that

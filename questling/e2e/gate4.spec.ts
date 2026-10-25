@@ -41,6 +41,15 @@ test("the builder edits, autosaves and publishes a draft, and the preview plays 
   await page.locator('[data-action="preview"]').click();
   await expect(page.locator("[data-preview]")).toBeVisible();
   await expect(page.locator("[data-preview]")).toContainText("You open the door of the old library.");
+
+  // Playing in the preview changes nothing stored: not the studio's data, not a student's.
+  const stored = () => page.evaluate(() => JSON.stringify(Object.entries(window.localStorage).sort()));
+  const before = await stored();
+  await page.locator('[data-preview] [data-action="next"]').first().click();
+  await page.locator('[data-preview] [data-option="table"]').click();
+  await page.locator('[data-preview] [data-action="check"]').click();
+  await expect(page.locator("[data-preview] [data-phase=correct]")).toBeVisible();
+  expect(await stored()).toBe(before);
 });
 
 test("a broken link is caught by the validator and blocks publishing", async ({ page }) => {

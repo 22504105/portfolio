@@ -46,6 +46,22 @@ describe("campaign graphs", () => {
     expect(validateCampaign(orphan, echoTowerKeys).join("\n")).toMatch(/e-footprints can never be reached/);
   });
 
+  it("finds a loop with no way out, but allows one a choice can leave", () => {
+    // After the choice, the two paths point at each other: whoever takes either never reaches an ending.
+    const trap: Campaign = clone(echoTower);
+    const scene = (id: string) => trap.chapters[0].scenes.find((s) => s.id === id) as { next?: unknown };
+    scene("e-confess").next = "e-footprints";
+    scene("e-footprints").next = "e-confess";
+    const problems = validateCampaign(trap, echoTowerKeys).join("\n");
+    expect(problems).toMatch(/from e-confess no path reaches an ending/);
+    expect(problems).toMatch(/from e-footprints no path reaches an ending/);
+
+    // A loop back to the choice is fine: the student can always take the other way out.
+    const back: Campaign = clone(echoTower);
+    (back.chapters[0].scenes.find((s) => s.id === "e-footprints") as { next?: unknown }).next = "e-choice";
+    expect(validateCampaign(back, echoTowerKeys).join("\n")).not.toMatch(/no path reaches an ending/);
+  });
+
   it("finds a missing answer key", () => {
     const keys = clone(echoTowerKeys);
     delete keys["a-proof"];

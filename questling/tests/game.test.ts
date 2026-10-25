@@ -3,7 +3,7 @@ import { quickQuestKeys } from "@/lib/content/quick-quest-keys";
 import { dailyQuizKeys } from "@/lib/content/daily-keys";
 import { demoFacts, DEMO_COINS } from "@/lib/demo/seed";
 import { applyEffects, emptyFacts, type Facts } from "@/lib/game/facts";
-import { run, type Action } from "@/lib/game/ops";
+import { run, settleAchievements, type Action } from "@/lib/game/ops";
 import {
   balance,
   bestStreak,
@@ -21,7 +21,7 @@ import {
   runState,
   weeklyQuestCount,
 } from "@/lib/game/stats";
-import { dayOf } from "@/lib/game/time";
+import { dayOf, msUntilNextDay, weekOf } from "@/lib/game/time";
 import { itemById } from "@/lib/content/items";
 import type { Answer, QuestionKey } from "@/lib/learning/questions";
 
@@ -186,6 +186,33 @@ describe("daily discovery", () => {
     expect(facts.saved).toEqual([expect.objectContaining({ kind: "word", ref: entry.id })]);
     expect(refusal(facts, { type: "claimDaily" })).toBe("already_done");
   });
+
+  it("keeps one quiz mark and one reward a day when a teacher plans the day's word after the student answered", () => {
+    // The student answers the built-in quiz; later the same day their teacher plans a word for today.
+    let facts = play(newcomer(), [{ type: "answerDailyQuiz", option: key.correct }]);
+    const other = dailyEntry("2026-10-25");
+    const teacherEntry = { ...other, id: "teacher-entry-1" };
+    facts = { ...facts, world: { groups: [], assignments: [], campaigns: [], messages: [], daily: [{ day: TODAY, entry: teacherEntry }] } };
+    const ctx = {
+      now: NOW,
+      locale: "ru" as const,
+      demo: false,
+      dailyKeys: (id: string) => (id === teacherEntry.id ? dailyQuizKeys[other.id] : null),
+    };
+    const step = (action: Action) => {
+      const result = run(facts, action, ctx);
+      if (!result.ok) throw new Error(`${action.type} refused: ${result.refusal}`);
+      facts = applyEffects(facts, result.effects, NOW.toISOString());
+    };
+    // The teacher's quiz can be answered, and then the day claimed …
+    step({ type: "answerDailyQuiz", option: dailyQuizKeys[other.id].correct });
+    step({ type: "claimDaily" });
+    // … without a second quiz mark for the day or a second quiz reward (the database refuses both).
+    expect(facts.completions.filter((c) => c.kind === "daily_quiz" && c.ref === TODAY)).toHaveLength(1);
+    const keys = facts.ledger.map((l) => `${l.currency}:${l.key}`);
+    expect(new Set(keys).size).toBe(keys.length);
+    expect(balance(facts, "xp")).toBe(entry.quiz.xp + 25);
+  });
 });
 
 // The story's rules (runs, branches, attempts, the grimoire, rewards) are tested in story-run.test.ts.
@@ -239,6 +266,34 @@ describe("coins and items", () => {
 });
 
 describe("streaks and achievements", () => {
+  it("pays an achievement's item in coins when the student already bought it", () => {
+    // The crown is the "moon library" reward (ten manuscripts read on the first try); bought first here.
+    let facts = applyEffects(newcomer(), [{ type: "own", item: "star-crown", source: "purchase" }], NOW.toISOString());
+    facts = applyEffects(
+      facts,
+      Array.from({ length: 10 }, (_, i) => ({
+        type: "answer" as const,
+        scope: "story" as const,
+        ref: "forgotten-academy",
+        question: `q${i}`,
+        attempt: 1,
+        correct: true,
+        skill: "reading" as const,
+      })),
+      NOW.toISOString(),
+    );
+    const effects = settleAchievements(facts);
+    expect(effects).toContainEqual({ type: "completion", kind: "achievement", ref: "moon-library" });
+    expect(effects).toContainEqual(
+      expect.objectContaining({
+        type: "ledger",
+        currency: "coins",
+        amount: itemById.get("star-crown")!.price,
+        key: "achievement:moon-library",
+      }),
+    );
+  });
+
   it("count days in a row, and grant an achievement once its goal is met", () => {
     let facts = newcomer();
     for (let back = 6; back >= 0; back--) {
@@ -263,5 +318,32 @@ describe("the demo student", () => {
     // The prologue done, chapter II begun: the run waits at the sealed letter of the approved player screen.
     expect(runOf(facts, "forgotten-academy")).toMatchObject({ scene: "tower-2", chapters: ["prologue"], ending: null });
     expect(facts.equipped).toMatchObject({ headwear: "wizard-hat", outerwear: "sunset-cloak", handheld: "crystal-staff" });
+  });
+});
+
+describe("the academy calendar", () => {
+  it("turns the day over at midnight in Moscow, for everyone", () => {
+    expect(dayOf("2026-10-21T20:59:59Z")).toBe("2026-10-21");
+    expect(dayOf("2026-10-21T21:00:00Z")).toBe("2026-10-22");
+    expect(msUntilNextDay(new Date("2026-10-21T20:59:00Z"))).toBe(60_000);
+    expect(msUntilNextDay(new Date("2026-10-21T21:00:00Z"))).toBe(24 * 3_600_000);
+    // The chest's week starts on Monday.
+    expect(weekOf("2026-10-25")).toBe("2026-10-19");
+    expect(weekOf("2026-10-26")).toBe("2026-10-26");
+  });
+});
+
+describe("the student's small choices", () => {
+  it("saves the day's fact and takes it back", () => {
+    let facts = play(newcomer(), [{ type: "toggleSavedFact" }]);
+    expect(facts.saved).toEqual([expect.objectContaining({ kind: "fact", ref: dailyEntry(TODAY).id })]);
+    facts = play(facts, [{ type: "toggleSavedFact" }]);
+    expect(facts.saved.filter((s) => s.kind === "fact")).toEqual([]);
+  });
+
+  it("names the hero within bounds, and never with markup", () => {
+    expect(play(newcomer(), [{ type: "renameHero", name: "  Барсик  " }]).profile.heroName).toBe("Барсик");
+    for (const name of ["Б", "x".repeat(25), "<b>Кот</b>", "{{name}}"])
+      expect(refusal(newcomer(), { type: "renameHero", name })).toBe("invalid");
   });
 });

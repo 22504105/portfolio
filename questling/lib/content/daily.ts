@@ -1,9 +1,9 @@
 import type { Text } from "./text";
 
 // Daily Discovery (09_daily_discovery): a word and a fact for each day, prewritten. The day's
-// entry is chosen by the calendar (lib/game/time.ts), in rotation. Facts carry a source line
-// for editorial checking; they are general knowledge, re-checked against the cited kind of
-// source when written. Quiz answer keys are in daily-keys.ts.
+// entry is chosen by the calendar (lib/game/time.ts), in rotation. Facts carry a source line for
+// editorial checking: a real, findable publication where the fact can be verified (Gate 5 replaced
+// made-up ones; the brief forbids fabricated citations). "Архив №" is only the entry's number. Quiz answer keys are in daily-keys.ts.
 
 export type DailyEntry = {
   id: string;
@@ -48,7 +48,7 @@ export const dailyEntries: DailyEntry[] = [
         ru: "Знаете ли вы? У осьминогов три сердца, а их кровь имеет голубой цвет из-за меди.",
         en: "Did you know? Octopuses have three hearts, and their blood is blue because of copper.",
       },
-      source: "Морская биология, изд. Академии, 2024",
+      source: "Smithsonian Ocean, «Octopuses»",
       archive: 412,
     },
   },
@@ -77,7 +77,7 @@ export const dailyEntries: DailyEntry[] = [
         ru: "Знаете ли вы? Мёд почти не портится: съедобный мёд находили в гробницах Древнего Египта.",
         en: "Did you know? Honey hardly ever spoils: edible honey has been found in ancient Egyptian tombs.",
       },
-      source: "История пищи, изд. Академии, 2023",
+      source: "Smithsonian Magazine, «The Science Behind Honey’s Eternal Shelf Life», 2013",
       archive: 418,
     },
   },
@@ -106,7 +106,7 @@ export const dailyEntries: DailyEntry[] = [
         ru: "Знаете ли вы? Сова может повернуть голову примерно на 270 градусов.",
         en: "Did you know? An owl can turn its head about 270 degrees.",
       },
-      source: "Птицы мира, изд. Академии, 2022",
+      source: "Johns Hopkins Medicine; de Kok-Mercado et al., Science, 2013",
       archive: 425,
     },
   },
@@ -138,7 +138,7 @@ export const dailyEntries: DailyEntry[] = [
         ru: "Знаете ли вы? Молния примерно в пять раз горячее поверхности Солнца.",
         en: "Did you know? A bolt of lightning is about five times hotter than the surface of the Sun.",
       },
-      source: "Физика атмосферы, изд. Академии, 2023",
+      source: "NOAA National Weather Service, «Lightning science»",
       archive: 431,
     },
   },
@@ -167,7 +167,7 @@ export const dailyEntries: DailyEntry[] = [
         ru: "Знаете ли вы? Самой старой из сохранившихся датированных печатных книг больше тысячи лет.",
         en: "Did you know? The oldest surviving dated printed book is more than a thousand years old.",
       },
-      source: "История книги, изд. Академии, 2021",
+      source: "British Library, «The Diamond Sutra» (868 г.)",
       archive: 437,
     },
   },
@@ -196,7 +196,7 @@ export const dailyEntries: DailyEntry[] = [
         ru: "Знаете ли вы? Пчёлы общаются танцем: он показывает, где искать цветы.",
         en: "Did you know? Bees talk by dancing: the dance shows where to find flowers.",
       },
-      source: "Жизнь насекомых, изд. Академии, 2022",
+      source: "K. von Frisch, Нобелевская премия 1973 г. (танец пчёл)",
       archive: 442,
     },
   },
@@ -228,7 +228,7 @@ export const dailyEntries: DailyEntry[] = [
         ru: "Знаете ли вы? Свет от Солнца идёт до Земли около восьми минут.",
         en: "Did you know? Light from the Sun takes about eight minutes to reach the Earth.",
       },
-      source: "Астрономия для всех, изд. Академии, 2024",
+      source: "NASA Space Place, «How long does it take sunlight to reach Earth?»",
       archive: 449,
     },
   },

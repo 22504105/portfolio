@@ -4,6 +4,9 @@ What automated tests cannot see: the real Telegram WebView, its safe areas, its 
 downloader. **None of this has been done yet** (no physical device was available to the developer); the
 columns are for whoever runs it. Mark each cell ✓, ✗ (with a note) or n/a.
 
+The interface alone (no sign-in) can be checked on phones in a browser on the staging site,
+https://questling-staging.vercel.app/ru/demo. The rows below need the real app.
+
 Open the bot @QuestlingEnglish_bot → menu button "Играть" (it opens `https://questling-dusky.vercel.app/ru/app`).
 
 | #   | Check                                                                                                    | Android | iOS | Desktop |

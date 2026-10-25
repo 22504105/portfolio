@@ -80,15 +80,16 @@ other students untouched), `e2e/gate5.spec.ts` (the demo's download and deletion
 
 ## Findings of this review
 
-| #   | Finding                                                                             | Status                                                      |
-| --- | ----------------------------------------------------------------------------------- | ----------------------------------------------------------- |
-| 1   | No way for a student to get or delete their data (brief §7)                         | Fixed: export and deletion, with tests                      |
-| 2   | `.env.example` lacked the teacher sign-in variables                                 | Fixed                                                       |
-| 3   | A teacher session can also call the student routes (it is a `users` row)            | Accepted: it acts as a student of its own, sees no one else |
-| 4   | Sessions cannot be revoked before they expire (6 h)                                 | Accepted: after deletion the token opens nothing (404)      |
-| 5   | Off Vercel, the rate-limit address comes from `X-Forwarded-For`, which is forgeable | Accepted: on Vercel `x-vercel-forwarded-for` is read first  |
-| 6   | CSP allows `'unsafe-inline'` scripts (Next.js's inline bootstrap)                   | Accepted: no user content is ever rendered as HTML          |
-| 7   | Supabase's built-in mailer sends only to the project team's addresses               | Open, owner's decision (own SMTP or confirmation off)       |
+| #   | Finding                                                                                     | Status                                                                   |
+| --- | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| 1   | No way for a student to get or delete their data (brief §7)                                 | Fixed: export and deletion, with tests                                   |
+| 2   | `.env.example` lacked the teacher sign-in variables                                         | Fixed                                                                    |
+| 3   | A teacher session can also call the student routes (it is a `users` row)                    | Accepted: it acts as a student of its own, sees no one else              |
+| 4   | Sessions cannot be revoked before they expire (6 h)                                         | Accepted: after deletion the token opens nothing (404)                   |
+| 5   | Off Vercel, the rate-limit address comes from `X-Forwarded-For`, which is forgeable         | Accepted: on Vercel `x-vercel-forwarded-for` is read first               |
+| 6   | CSP allows `'unsafe-inline'` scripts (Next.js's inline bootstrap)                           | Accepted: no user content is ever rendered as HTML                       |
+| 7   | Supabase's built-in mailer sends only to the project team's addresses                       | Open, owner's decision (own SMTP or confirmation off)                    |
+| 8   | A teacher saw a shared student's work on another teacher's campaigns, and could reply to it | Fixed (Gate 5): only built-in and own campaigns' work is loaded; DB test |
 
 ## Not examined
 
