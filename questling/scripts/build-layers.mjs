@@ -135,9 +135,85 @@ const SPLITS = {
     return (x, y) => inCollar(x, y) || inside(opening, x, y) || (!inside(clasp, x, y) && smooth[y * width + x] > 127);
   },
   "star-amulet": async () => (x, y) => y < 262,
+  // The cord above the bail, as for the star amulet.
+  "moon-pendant": async () => (x, y) => y < 300,
+  "forest-hood": async () => {
+    // The dark inside of the hood, traced on the master: the face shows through it.
+    const opening = [
+      [500, 286],
+      [560, 292],
+      [615, 315],
+      [648, 360],
+      [662, 420],
+      [660, 490],
+      [640, 540],
+      [600, 570],
+      [540, 585],
+      [470, 585],
+      [420, 565],
+      [400, 520],
+      [398, 450],
+      [405, 380],
+      [430, 325],
+      [460, 300],
+    ];
+    return (x, y) => inside(opening, x, y);
+  },
+  "star-crown": async () => {
+    // The far side of the band, above the front band's scalloped top edge: it goes behind the head.
+    const edge = [
+      [232, 392],
+      [262, 470],
+      [300, 415],
+      [345, 450],
+      [400, 505],
+      [455, 455],
+      [510, 425],
+      [565, 455],
+      [612, 505],
+      [660, 455],
+      [712, 412],
+      [755, 468],
+      [792, 392],
+    ];
+    const above = [[200, 300], ...edge, [830, 300]];
+    return (x, y) => inside(above, x, y);
+  },
+  // The strap above the bag goes over the shoulder, behind the body.
+  satchel: async () => (x, y) => y < 175,
+  // The inside of the collar ring (the cape goes round the neck).
+  "green-cape": async () => (x, y) => ((x - 450) / 150) ** 2 + ((y - 284) / 26) ** 2 < 1,
 };
 
-const ITEMS = { "cat-base": null, "witch-hat": "witch-hat", "ceremonial-cape": "ceremonial-cape", "star-amulet": "star-amulet" };
+// Every master: a hero's base (one layer), or an item, split into back and front by SPLITS or, when it
+// sits wholly over the hero (glasses, a bow, a held wand, a companion), one front layer.
+const BASES = ["cat-base", "boy-base", "girl-base", "fox-base", "owl-base", "forest-base"];
+// Which slot each item's art is worn in: the draw order below goes by slot, as lib/content/figure.ts does.
+export const ART_SLOT = {
+  "witch-hat": "headwear",
+  "forest-hood": "headwear",
+  "star-crown": "headwear",
+  "round-glasses": "face",
+  "star-amulet": "neck",
+  "moon-pendant": "neck",
+  "red-bow": "neck",
+  "ceremonial-cape": "outerwear",
+  "green-cape": "outerwear",
+  "midnight-cloak": "outerwear",
+  "violet-robe": "outfit",
+  "violet-tunic": "outfit",
+  "brown-coat": "outerwear",
+  satchel: "back",
+  wand: "handheld",
+  "crystal-staff": "handheld",
+  lantern: "handheld",
+  spellbook: "handheld",
+  raven: "companion",
+  "moon-cat": "companion",
+  "fox-cub": "companion",
+  owlet: "companion",
+  ghost: "companion",
+};
 
 let manifest = {};
 
@@ -171,10 +247,11 @@ async function writeLayer(name, item, part, master, keep) {
 async function build() {
   await mkdir(publicDir, { recursive: true });
   manifest = {};
-  for (const [name, item] of Object.entries(ITEMS)) {
-    const master = await load(name);
-    if (!item) {
-      await writeLayer(name, "base", "body", master, () => true);
+  for (const name of BASES) await writeLayer(name, "base", "body", await load(name), () => true);
+  for (const item of Object.keys(ART_SLOT)) {
+    const master = await load(item);
+    if (!SPLITS[item]) {
+      await writeLayer(`${item}-front`, item, "front", master, () => true);
       continue;
     }
     const back = await SPLITS[item](master);
@@ -186,24 +263,37 @@ async function build() {
 
 // ——— The cat's eight looks ———
 
-// Draw order, back to front (the brief: cape_back, body, cape_front, then amulet, hat, companion).
-const ORDER = [
-  "ceremonial-cape-back",
-  "star-amulet-back",
-  "witch-hat-back",
-  "cat-base",
-  "ceremonial-cape-front",
-  "star-amulet-front",
-  "witch-hat-front",
+// Draw order by slot, back to front (the brief: cape_back, body, cape_front, then amulet, hat,
+// companion). The same order as lib/content/figure.ts, which draws the app's figure.
+export const ORDER = [
+  ["back", "outerwear"],
+  ["back", "back"],
+  ["back", "neck"],
+  ["back", "headwear"],
+  ["body", "base"],
+  ["front", "outfit"],
+  ["front", "outerwear"],
+  ["front", "back"],
+  ["front", "neck"],
+  ["front", "face"],
+  ["front", "headwear"],
+  ["front", "handheld"],
+  ["front", "companion"],
 ];
 const [W, H] = rig.canvas;
 
+/** The layer names to draw for a species wearing these items, back to front. */
+const stackOf = (species, items) =>
+  ORDER.flatMap(([part, slot]) =>
+    part === "body" ? [`${species}-base`] : items.filter((item) => ART_SLOT[item] === slot).map((item) => `${item}-${part}`),
+  ).filter((name) => manifest[name]);
+
 export async function compose(species, items, fits = rig.fits[species]) {
   const layers = [];
-  for (const name of ORDER) {
+  for (const name of stackOf(species, items)) {
     const { item, box } = manifest[name];
-    if (item !== "base" && !items.includes(item)) continue;
     const fit = item === "base" ? fits.base : fits[item];
+    if (!fit) continue;
     const width = Math.max(1, Math.round(box[2] * fit.scale));
     const height = Math.max(1, Math.round(box[3] * fit.scale));
     const input = await sharp(path.join(publicDir, `${name}.webp`))
@@ -261,7 +351,119 @@ async function eightLooks() {
   console.log(`docs/visual-qa/equipment/: ${tiles.length} looks, cat-eight-looks.png, cat-full-on-checker.png`);
 }
 
-/** The cape at three scales, its mantle on the shoulders: why it cannot both cover them and end at the feet. */
+// ——— The other heroes ———
+
+// Held in the left paw (the companion sits on the right of the canvas' free side, to the left).
+const LEFT_HAND = new Set(["crystal-staff"]);
+const FEET = 1176; // the rig line every hero stands on (the cat's boots)
+
+/**
+ * The fits of every hero but the cat, derived from the cat's checked ones: all six share the same
+ * chibi body and differ in the head, so each item moves with the anchor its slot hangs from (rig.json
+ * "anchors", measured on the masters): headwear with the top and width of the head, glasses with the
+ * eyes, held things with the paw, companions with the feet, the rest with the neck and shoulders.
+ * rig.json "tweaks" nudge a single item on a single hero (dx, dy in rig px, k a scale factor).
+ */
+async function deriveFits() {
+  const cat = rig.anchors.cat;
+  const lift = (a) => FEET - a.feet;
+  const at = (a, [x, y]) => [x, y + lift(a)];
+  const mid = (e) => [(e[0][0] + e[1][0]) / 2, (e[0][1] + e[1][1]) / 2];
+  const span = (e) => Math.hypot(e[1][0] - e[0][0], e[1][1] - e[0][1]);
+  for (const [species, a] of Object.entries(rig.anchors)) {
+    if (species === "cat") continue;
+    const fits = { base: { x: 0, y: lift(a), scale: 1 } };
+    for (const [item, fit] of Object.entries(rig.fits.cat)) {
+      if (item === "base") continue;
+      const slot = ART_SLOT[item];
+      let from, to, k;
+      if (slot === "headwear") [from, to, k] = [at(cat, [512, cat.headTop]), at(a, [512, a.headTop]), a.headWidth / cat.headWidth];
+      else if (slot === "face") [from, to, k] = [at(cat, mid(cat.eyes)), at(a, mid(a.eyes)), span(a.eyes) / span(cat.eyes)];
+      else if (slot === "handheld") {
+        const hand = LEFT_HAND.has(item) ? 0 : 1;
+        [from, to, k] = [at(cat, cat.paws[hand]), at(a, a.paws[hand]), a.shoulders / cat.shoulders];
+      } else if (slot === "companion") [from, to, k] = [[0, FEET], [0, FEET], 1];
+      else [from, to, k] = [at(cat, cat.neck), at(a, a.neck), a.shoulders / cat.shoulders];
+      // A tweak's scale pivots on the same anchor, so a smaller hat stays centred on the head.
+      const t = rig.tweaks?.[species]?.[item] ?? {};
+      const kk = k * (t.k ?? 1);
+      fits[item] = {
+        x: Math.round(to[0] + kk * (fit.x - from[0]) + (t.dx ?? 0)),
+        y: Math.round(to[1] + kk * (fit.y - from[1]) + (t.dy ?? 0)),
+        scale: Number((kk * fit.scale).toFixed(4)),
+      };
+    }
+    rig.fits[species] = fits;
+  }
+  await writeFile(path.join(root, "lib", "content", "rig.json"), JSON.stringify(rig, null, 2) + "\n");
+  console.log(
+    `lib/content/rig.json: fits derived for ${Object.keys(rig.anchors)
+      .filter((s) => s !== "cat")
+      .join(", ")}`,
+  );
+}
+
+/** Every fitted item on each hero, one tile each, and the cat's looks that combine slots, for checking by eye. */
+async function everyItem() {
+  for (const species of Object.keys(rig.fits)) await heroSheet(species);
+  await combinations();
+}
+
+async function heroSheet(species) {
+  const fitted = Object.keys(ART_SLOT).filter((item) => rig.fits[species][item]);
+  const tileW = 300;
+  const tileH = Math.round((tileW * H) / W);
+  const tiles = [];
+  for (const item of [null, ...fitted]) {
+    const png = await compose(species, item ? [item] : []);
+    const shot = await sharp(background(W, H))
+      .composite([{ input: png }])
+      .png()
+      .toBuffer();
+    tiles.push(await sharp(shot).resize(tileW, tileH).png().toBuffer());
+  }
+  const columns = 7;
+  const rows = Math.ceil(tiles.length / columns);
+  await sharp({ create: { width: tileW * columns, height: tileH * rows, channels: 3, background: "#101016" } })
+    .composite(tiles.map((input, i) => ({ input, left: (i % columns) * tileW, top: Math.floor(i / columns) * tileH })))
+    .png()
+    .toFile(path.join(qaDir, `${species}-every-item.png`));
+  console.log(`docs/visual-qa/equipment/${species}-every-item.png (bare + ${fitted.length} items)`);
+}
+
+/** Looks that combine every slot, on each hero. */
+async function combinations() {
+  const combos = [
+    ["forest-hood", "round-glasses", "green-cape", "lantern", "fox-cub"],
+    ["star-crown", "red-bow", "ceremonial-cape", "crystal-staff", "owlet"],
+    ["witch-hat", "round-glasses", "star-amulet", "satchel", "wand", "raven"],
+    ["star-crown", "moon-pendant", "spellbook", "ghost"],
+    ["witch-hat", "ceremonial-cape", "star-amulet", "crystal-staff", "moon-cat"],
+    ["forest-hood", "satchel", "wand"],
+  ];
+  const tileW = 300;
+  const tileH = Math.round((tileW * H) / W);
+  const sheet = async (looks, file, columns, species = "cat") => {
+    const tiles = [];
+    for (const look of looks) {
+      const png = await compose(species, look);
+      const shot = await sharp(background(W, H))
+        .composite([{ input: png }])
+        .png()
+        .toBuffer();
+      tiles.push(await sharp(shot).resize(tileW, tileH).png().toBuffer());
+    }
+    const rows = Math.ceil(tiles.length / columns);
+    await sharp({ create: { width: tileW * columns, height: tileH * rows, channels: 3, background: "#101016" } })
+      .composite(tiles.map((input, i) => ({ input, left: (i % columns) * tileW, top: Math.floor(i / columns) * tileH })))
+      .png()
+      .toFile(path.join(qaDir, file));
+  };
+  for (const species of Object.keys(rig.fits)) await sheet(combos, `${species}-combinations.png`, 6, species);
+  console.log(`docs/visual-qa/equipment/<hero>-combinations.png (${combos.length} looks each)`);
+}
+
+/** The cat at three scales, its mantle on the shoulders: why it cannot both cover them and end at the feet. */
 async function compareCape() {
   await mkdir(qaDir, { recursive: true });
   const tiles = [];
@@ -287,12 +489,80 @@ async function compareCape() {
   console.log("docs/visual-qa/equipment/cat-cape-scales.png (0.8, 0.7, 0.6)");
 }
 
+/**
+ * The garments drawn for human proportions, each fitted to the cat twice: by the shoulders (their
+ * width matches the cat's) and by the length (neck to hem matches the cat's tunic). Neither works,
+ * which is why they are NEEDS_ART_ASSET (docs/ASSET_AUDIT.md). Measured on the masters: the neck's
+ * centre, the shoulders' width and the hem.
+ */
+async function compareGarments() {
+  await mkdir(qaDir, { recursive: true });
+  const garments = {
+    "violet-tunic": { neck: [455, 295], shoulders: 370, hem: 940 },
+    "violet-robe": { neck: [448, 262], shoulders: 400, hem: 957 },
+    "brown-coat": { neck: [455, 268], shoulders: 380, hem: 930 },
+    "midnight-cloak": { neck: [450, 430], shoulders: 420, hem: 995 },
+  };
+  // The cat on the rig: neck (512, 821), shoulders 300 px wide, its own tunic's hem at y 1056.
+  const cat = { neck: [512, 821], shoulders: 300, hem: 1056 };
+  const tiles = [];
+  for (const [item, g] of Object.entries(garments)) {
+    for (const scale of [cat.shoulders / g.shoulders, (cat.hem - cat.neck[1]) / (g.hem - g.neck[1])]) {
+      const fits = {
+        ...rig.fits.cat,
+        [item]: { x: Math.round(cat.neck[0] - g.neck[0] * scale), y: Math.round(cat.neck[1] - g.neck[1] * scale), scale },
+      };
+      const png = await compose("cat", [item], fits);
+      const shot = await sharp(background(W, H))
+        .composite([{ input: png }])
+        .png()
+        .toBuffer();
+      tiles.push(await sharp(shot).resize(300).png().toBuffer());
+    }
+  }
+  const tileH = Math.round((300 * H) / W);
+  await sharp({ create: { width: 300 * 8, height: tileH, channels: 3, background: "#101016" } })
+    .composite(tiles.map((input, i) => ({ input, left: i * 300, top: 0 })))
+    .png()
+    .toFile(path.join(qaDir, "cat-garments-fit.png"));
+  console.log("docs/visual-qa/equipment/cat-garments-fit.png (per garment: by shoulders, by length)");
+}
+
+/** Composes looks given as "item+item" (and optional fits as JSON) to art/preview/try/, to fit by eye. */
+async function tryLooks(looks, extraFits) {
+  const dir = path.join(root, "art", "preview", "try");
+  await mkdir(dir, { recursive: true });
+  const fits = { ...rig.fits.cat, ...extraFits };
+  for (const look of looks) {
+    const png = await compose("cat", look.split("+"), fits);
+    await sharp(background(W, H))
+      .composite([{ input: png }])
+      .png()
+      .toFile(path.join(dir, `${look}.png`));
+  }
+  console.log(`art/preview/try/: ${looks.join(", ")}`);
+}
+
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  if (process.argv.includes("--compare-cape")) {
+  const tryAt = process.argv.indexOf("--try");
+  if (tryAt >= 0) {
+    manifest = JSON.parse(await readFile(path.join(root, "lib", "content", "layers.json"), "utf8"));
+    const fitsArg = process.argv.indexOf("--fits");
+    const extra = fitsArg >= 0 ? JSON.parse(await readFile(process.argv[fitsArg + 1], "utf8")) : {};
+    await tryLooks(
+      process.argv.slice(tryAt + 1).filter((a, i, all) => !a.startsWith("--") && all[i - 1] !== "--fits"),
+      extra,
+    );
+  } else if (process.argv.includes("--compare-garments")) {
+    manifest = JSON.parse(await readFile(path.join(root, "lib", "content", "layers.json"), "utf8"));
+    await compareGarments();
+  } else if (process.argv.includes("--compare-cape")) {
     manifest = JSON.parse(await readFile(path.join(root, "lib", "content", "layers.json"), "utf8"));
     await compareCape();
   } else {
     await build();
+    await deriveFits();
     await eightLooks();
+    await everyItem();
   }
 }

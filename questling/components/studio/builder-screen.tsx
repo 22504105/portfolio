@@ -251,10 +251,10 @@ function Builder({ quest }: { quest: Quest }) {
   };
   const at = (id: string) => (dragAt?.id === id ? dragAt : place[id]);
 
-  const fit = () => {
+  const fit = (least = 0.4) => {
     const box = canvas.current?.getBoundingClientRect();
     if (!box) return;
-    setZoom(Math.max(0.4, Math.min(1.5, Math.floor(Math.min(box.width / width, box.height / height) * 20) / 20)));
+    setZoom(Math.max(least, Math.min(1.5, Math.floor(Math.min(box.width / width, box.height / height) * 20) / 20)));
   };
 
   // On opening, a graph wider than the canvas is fitted to it.
@@ -264,7 +264,7 @@ function Builder({ quest }: { quest: Quest }) {
     fitted.current = true;
     const frame = requestAnimationFrame(() => {
       const box = canvas.current?.getBoundingClientRect();
-      if (box && (box.width < width || box.height < height)) fit();
+      if (box && (box.width < width || box.height < height)) fit(0.75);
     });
     return () => cancelAnimationFrame(frame);
   });
@@ -375,7 +375,7 @@ function Builder({ quest }: { quest: Quest }) {
           <div className="bg-surface-variant mx-1 h-4 w-px"></div>
           <button
             type="button"
-            onClick={fit}
+            onClick={() => fit()}
             className="text-on-surface-variant hover:text-text-ivory hover:bg-surface-container font-label-sm text-label-sm flex items-center gap-1 rounded px-2 py-1 transition-colors"
             title={t.builder.fitTitle}
           >

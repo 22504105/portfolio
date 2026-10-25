@@ -4,6 +4,31 @@
     "part": "body",
     "box": [228, 95, 630, 830]
   },
+  "boy-base": {
+    "item": "base",
+    "part": "body",
+    "box": [246, 85, 527, 834]
+  },
+  "girl-base": {
+    "item": "base",
+    "part": "body",
+    "box": [160, 84, 673, 856]
+  },
+  "fox-base": {
+    "item": "base",
+    "part": "body",
+    "box": [222, 52, 636, 880]
+  },
+  "owl-base": {
+    "item": "base",
+    "part": "body",
+    "box": [165, 106, 693, 836]
+  },
+  "forest-base": {
+    "item": "base",
+    "part": "body",
+    "box": [196, 91, 632, 857]
+  },
   "witch-hat-back": {
     "item": "witch-hat",
     "part": "back",
@@ -13,6 +38,56 @@
     "item": "witch-hat",
     "part": "front",
     "box": [103, 188, 806, 606]
+  },
+  "forest-hood-back": {
+    "item": "forest-hood",
+    "part": "back",
+    "box": [398, 287, 264, 298]
+  },
+  "forest-hood-front": {
+    "item": "forest-hood",
+    "part": "front",
+    "box": [242, 170, 527, 643]
+  },
+  "star-crown-back": {
+    "item": "star-crown",
+    "part": "back",
+    "box": [231, 362, 564, 143]
+  },
+  "star-crown-front": {
+    "item": "star-crown",
+    "part": "front",
+    "box": [216, 387, 591, 255]
+  },
+  "round-glasses-front": {
+    "item": "round-glasses",
+    "part": "front",
+    "box": [130, 363, 762, 296]
+  },
+  "star-amulet-back": {
+    "item": "star-amulet",
+    "part": "back",
+    "box": [428, 0, 166, 262]
+  },
+  "star-amulet-front": {
+    "item": "star-amulet",
+    "part": "front",
+    "box": [286, 262, 452, 525]
+  },
+  "moon-pendant-back": {
+    "item": "moon-pendant",
+    "part": "back",
+    "box": [396, 0, 232, 300]
+  },
+  "moon-pendant-front": {
+    "item": "moon-pendant",
+    "part": "front",
+    "box": [331, 300, 332, 496]
+  },
+  "red-bow-front": {
+    "item": "red-bow",
+    "part": "front",
+    "box": [202, 203, 620, 615]
   },
   "ceremonial-cape-back": {
     "item": "ceremonial-cape",
@@ -24,14 +99,89 @@
     "part": "front",
     "box": [147, 290, 613, 651]
   },
-  "star-amulet-back": {
-    "item": "star-amulet",
+  "green-cape-back": {
+    "item": "green-cape",
     "part": "back",
-    "box": [428, 0, 166, 262]
+    "box": [301, 259, 299, 51]
   },
-  "star-amulet-front": {
-    "item": "star-amulet",
+  "green-cape-front": {
+    "item": "green-cape",
     "part": "front",
-    "box": [286, 262, 452, 525]
+    "box": [143, 258, 626, 675]
+  },
+  "midnight-cloak-front": {
+    "item": "midnight-cloak",
+    "part": "front",
+    "box": [145, 187, 606, 808]
+  },
+  "violet-robe-front": {
+    "item": "violet-robe",
+    "part": "front",
+    "box": [114, 234, 668, 723]
+  },
+  "violet-tunic-front": {
+    "item": "violet-tunic",
+    "part": "front",
+    "box": [153, 275, 609, 669]
+  },
+  "brown-coat-front": {
+    "item": "brown-coat",
+    "part": "front",
+    "box": [138, 247, 634, 689]
+  },
+  "satchel-back": {
+    "item": "satchel",
+    "part": "back",
+    "box": [257, 0, 487, 175]
+  },
+  "satchel-front": {
+    "item": "satchel",
+    "part": "front",
+    "box": [212, 175, 598, 711]
+  },
+  "wand-front": {
+    "item": "wand",
+    "part": "front",
+    "box": [229, 120, 597, 761]
+  },
+  "crystal-staff-front": {
+    "item": "crystal-staff",
+    "part": "front",
+    "box": [383, 83, 231, 871]
+  },
+  "lantern-front": {
+    "item": "lantern",
+    "part": "front",
+    "box": [334, 106, 349, 769]
+  },
+  "spellbook-front": {
+    "item": "spellbook",
+    "part": "front",
+    "box": [143, 215, 728, 620]
+  },
+  "raven-front": {
+    "item": "raven",
+    "part": "front",
+    "box": [331, 211, 388, 606]
+  },
+  "moon-cat-front": {
+    "item": "moon-cat",
+    "part": "front",
+    "box": [301, 174, 516, 683]
+  },
+  "fox-cub-front": {
+    "item": "fox-cub",
+    "part": "front",
+    "box": [300, 144, 545, 721]
+  },
+  "owlet-front": {
+    "item": "owlet",
+    "part": "front",
+    "box": [267, 202, 493, 628]
+  },
+  "ghost-front": {
+    "item": "ghost",
+    "part": "front",
+    "box": [248, 211, 510, 600]
   }
 }

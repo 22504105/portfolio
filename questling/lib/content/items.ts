@@ -29,12 +29,12 @@ export type Item = {
   species: readonly CharacterId[];
   /** Slots it cannot be worn with: wearing it takes off what is there. */
   conflicts: readonly Slot[];
-  /** Its layered art (lib/content/layers.json), where there is any. */
-  art?: string;
+  /** Its layered art (lib/content/layers.json); drawn on a hero only where rig.json has a fit for it. */
+  art: string;
 };
 
-// Art cut for the Gate 4 slice: catalogue item -> layer set.
-const ART: Record<string, string> = { "wizard-hat": "witch-hat", "sunset-cloak": "ceremonial-cape", "star-amulet": "star-amulet" };
+// The layer set of an item is named after it, but for the first slice's three, named after their art.
+const ART: Record<string, string> = { "wizard-hat": "witch-hat", "sunset-cloak": "ceremonial-cape" };
 // The ceremonial cape's back part covers the back, so nothing is carried there with it.
 const CONFLICTS: Record<string, Slot[]> = { "sunset-cloak": ["back"] };
 
@@ -50,7 +50,7 @@ const item = (id: string, slot: Slot, rarity: Rarity, price: number, name: Text,
   // No item's art rules out a hero yet; the check is the server's either way.
   species: CHARACTER_IDS,
   conflicts: CONFLICTS[id] ?? [],
-  art: ART[id],
+  art: ART[id] ?? id,
 });
 
 export const items: Item[] = [

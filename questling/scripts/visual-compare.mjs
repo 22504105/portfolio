@@ -6,7 +6,8 @@
 // of pixels that differ. The app must be running (npm run dev or start).
 //
 // Usage: node scripts/visual-compare.mjs <screen> [<screen> …] [--base http://localhost:3100] [--width 390] [--height 844]
-//   screens: see SCREENS below (all 15 student screens and the five player states)
+//   screens: see SCREENS below (all 15 student screens, the five player states, the five Teacher Studio screens)
+//   The studio screens are desktop ones: they are shot at their own viewport (1440×900) unless --width is given.
 import { readFile, mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
@@ -93,6 +94,19 @@ const SCREENS = {
   wardrobe: { html: "01_APPROVED_SCREENS/13_wardrobe_2/code.html", route: "/ru/demo/wardrobe" },
   shop: { html: "01_APPROVED_SCREENS/14_arcane_shop_2/code.html", route: "/ru/demo/shop" },
   inventory: { html: "01_APPROVED_SCREENS/15_inventory/code.html", route: "/ru/demo/inventory" },
+  // Teacher Studio (Gate 4), the demo studio's made-up classes.
+  "studio-dashboard": { html: "01_APPROVED_SCREENS/16_teacher_dashboard/code.html", route: "/ru/demo/studio", desktop: true },
+  "studio-groups": { html: "01_APPROVED_SCREENS/17_group_management/code.html", route: "/ru/demo/studio/groups", desktop: true },
+  "studio-builder": {
+    html: "01_APPROVED_SCREENS/18_quest_builder/code.html",
+    route: "/ru/demo/studio/builder?quest=99999999-0000-4000-8000-000000000001",
+    desktop: true,
+    // The builder fills the screen like the export: compared one screenful.
+    viewportOnly: true,
+    steps: [["click", "[data-node=question-1]"]],
+  },
+  "studio-library": { html: "01_APPROVED_SCREENS/19_story_library/code.html", route: "/ru/demo/studio/library", desktop: true },
+  "studio-analytics": { html: "01_APPROVED_SCREENS/20_teacher_analytics/code.html", route: "/ru/demo/studio/analytics", desktop: true },
 };
 
 const args = process.argv.slice(2);
@@ -101,8 +115,8 @@ const opt = (name, fallback) => {
   return i >= 0 ? args.splice(i, 2)[1] : fallback;
 };
 const base = opt("base", "http://localhost:3100");
-const width = Number(opt("width", 390));
-const height = Number(opt("height", 844));
+const widthOption = opt("width", null);
+const heightOption = opt("height", null);
 const names = args.length ? args : Object.keys(SCREENS);
 
 const index = JSON.parse(await readFile(path.join(remoteDir, "index.json"), "utf8"));
@@ -113,15 +127,15 @@ const browser = await chromium.launch({ channel: process.env.CI ? undefined : "c
 const freeze =
   "*,*::before,*::after{animation:none!important;transition:none!important;caret-color:transparent!important}[data-demo-badge]{display:none!important}";
 
-async function shoot(url, steps = [], route, viewportOnly = false) {
-  const context = await browser.newContext({ viewport: { width, height }, deviceScaleFactor: 1, reducedMotion: "reduce" });
+async function shoot(url, steps = [], route, viewportOnly = false, viewport = { width: 390, height: 844 }) {
+  const context = await browser.newContext({ viewport, deviceScaleFactor: 1, reducedMotion: "reduce" });
   const page = await context.newPage();
   if (route) await page.route(/lh3\.googleusercontent\.com/, route);
   // The app keeps prefetching links, so "network idle" may never come; wait for load and give it a moment.
   await page.goto(url, { waitUntil: "load" });
   await page.waitForLoadState("networkidle", { timeout: 5000 }).catch(() => {});
-  // The student screens render once the student's record is loaded.
-  if (!url.startsWith("file:")) await page.waitForSelector("[data-student-ready]", { timeout: 15000 });
+  // The screens render once the student's (or the teacher's) record is loaded.
+  if (!url.startsWith("file:")) await page.waitForSelector("[data-student-ready], [data-studio-ready]", { timeout: 15000 });
   await page.addStyleTag({ content: freeze });
   for (const [action, selector] of steps) {
     if (action === "click") await page.click(selector);
@@ -153,8 +167,12 @@ for (const name of names) {
   await mkdir(out, { recursive: true });
 
   // The reference runs the exported page's own script; its first option starts selected, as on the screenshot.
-  const reference = await shoot(pathToFileURL(path.join(design, screen.html)).href, [], serveLocal, screen.viewportOnly);
-  const app = await shoot(`${base}${screen.route}`, screen.steps, undefined, screen.viewportOnly);
+  const viewport = {
+    width: Number(widthOption ?? (screen.desktop ? 1440 : 390)),
+    height: Number(heightOption ?? (screen.desktop ? 900 : 844)),
+  };
+  const reference = await shoot(pathToFileURL(path.join(design, screen.html)).href, [], serveLocal, screen.viewportOnly, viewport);
+  const app = await shoot(`${base}${screen.route}`, screen.steps, undefined, screen.viewportOnly, viewport);
 
   const [ma, mb] = await Promise.all([sharp(reference).metadata(), sharp(app).metadata()]);
   const w = Math.max(ma.width, mb.width);

@@ -44,13 +44,31 @@ Where a page is taller, it is because it lists more of the student's own things 
 not because a block grew: every block keeps the export's size and spacing, which the side-by-side
 images show row for row.
 
+## Results (Gate 4, Teacher Studio, 1440×900, 2026-10-25)
+
+The studio screens are desktop ones: `npm run visual -- studio-dashboard studio-groups studio-builder
+studio-library studio-analytics` shoots both sides at 1440×900 (`--width` overrides). The app side is
+the demo studio (`/ru/demo/studio`), whose classes are simulated through the real rules
+(`lib/studio/demo.ts`). At 1280 the screens were checked by eye for overflow; below 1536 px the builder
+shows two of its toolbar buttons as icons with tooltips.
+
+| Screen    | Export                 | App route                                      | Size (ref → app) | Differing pixels | What differs                                                                      |
+| --------- | ---------------------- | ---------------------------------------------- | ---------------- | ---------------- | --------------------------------------------------------------------------------- |
+| dashboard | `16_teacher_dashboard` | `/ru/demo/studio`                              | 1440×1250 → 1310 | 18.21%           | real figures and names (B); help requests, not essays (J); Telegram card (K)      |
+| groups    | `17_group_management`  | `/ru/demo/studio/groups`                       | 1440×1401 → 1295 | 17.28%           | real roster and assignments (B); a real QR code and invite link                   |
+| builder   | `18_quest_builder`     | `/ru/demo/studio/builder?quest=…` (one screen) | 1440×900 → same  | 18.78%           | the teacher's real draft graph (B); validator messages (L); no reward node (M)    |
+| library   | `19_story_library`     | `/ru/demo/studio/library`                      | 1440×1310 → 1308 | 15.84%           | real campaigns and versions (B); runs per version, no diff or CDN ping (N)        |
+| analytics | `20_teacher_analytics` | `/ru/demo/studio/analytics`                    | 1440×1523 → 1458 | 21.74%           | help queue from the run, no AI pre-check (J); real skills, heatmap (B); a tab (O) |
+
+Equipment on the heroes is checked on its own sheets (`equipment/`, `docs/ASSET_AUDIT.md`).
+
 ## Known deltas
 
 - **A. Character art.** The exports draw the cat dressed in the wizard set (`7fcd196e09a2`) and cut
-  the character-select portraits out of a reference sheet with labels on it. The app shows each
-  hero's plain standalone base model (`stitch-assets/…base_character_model_1…6`), the same picture
-  on every screen. Drawing worn items onto the figure needs alpha-separated layers: Gate 4,
-  `NEEDS_ART_ASSET` until then (`docs/ASSET_AUDIT.md`). The welcome screen keeps the dressed cat:
+  the character-select portraits out of a reference sheet with labels on it. The app draws each
+  hero from its standalone base model (`stitch-assets/…base_character_model_1…6`) with the worn items
+  as layers cut offline (Gate 4, `docs/ASSET_AUDIT.md` "Equipment layers"); the five items whose art
+  cannot be fitted are named under the figure, not faked. The welcome screen keeps the dressed cat:
   there it is the academy's guide, not the student's hero.
 - **B. Real data instead of the export's sample values.** Every number is worked out from the
   student's record (`lib/game/stats.ts`). The demo student's history is played through the real
@@ -73,12 +91,31 @@ images show row for row.
   подключена") instead of an online status, and the toast says "Свиток сохранён!", not "доставлен".
   The way back leads to the story map ("Вернуться к карте"), the hub of the stories; there is no
   separate story library screen. The card is titled "Спросить наставника": the mentor's name in the
-  accusative is not known for every group.
+  accusative is not known for every group. Since Gate 4 the card says the group's mentor sees the
+  request in Teacher Studio and their reply shows on the card; without a group it says how to join.
 - **I. The grimoire's riddle card.** In the export the scrolling column squashes the riddle card to
   its heading; the app keeps every card at its height, so the riddle's quote shows, with the rule's
   key word marked as the export marks «never».
 - **G. Item pictures.** The exports show emoji for items; the app shows each item's own standalone
   picture from the archive.
+- **J. Teacher Studio reviews what exists (Gate 4).** The exports review free-text essays and audio
+  "checked by AI" and offer "+50 XP" in a batch. Questling has no essays, recordings or AI: the review
+  queue is the students' help requests — the scene they are stuck at, the answers they gave there
+  (from their run), the right one, and figures counted from their answers ("Посчитано по ответам
+  ученика, без ИИ"). The mentor's reply goes to the student, who reads it on the paused scene and in
+  the settings.
+- **K. Honest status cards.** No made-up webhook, CDN or "100% OK" figures; the Telegram card shows the
+  bot and how students join. The export's "AI auto-balance" recommendation is replaced by the weakest
+  skill, as counted.
+- **L. The validator's messages** are the publishing check's own (technical English, e.g.
+  "question-2 leads to unknown scene x"); their count, the "Перейти" link and the red nodes are in the
+  interface language.
+- **M. No reward node.** Rewards belong to graded scenes, chapters and endings in the story graph;
+  the palette's "Награда" says where to set them instead of adding a node that would do nothing.
+- **N. The release log counts runs on each version** instead of the export's "16 сессий стабильно";
+  "Diff изменений" and the "Telegram CDN ping" are left out.
+- **O. An added tab.** "Слово и факт дня" (the brief's daily content editor) has no export; it is the
+  analytics screen's tab, built from its own cards, fields and gold button.
 
 ## Behaviour beyond the exports
 

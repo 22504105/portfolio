@@ -12,14 +12,23 @@ import rig from "./rig.json";
 type LayerName = keyof typeof layers;
 type Fit = { x: number; y: number; scale: number };
 
-/** Back to front: cape_back behind the body, cape_front over it, then neck, then hat (the brief). */
+/**
+ * Back to front (the brief: cape_back behind the body, cape_front over it, then the neck, the hat and
+ * the companion), the same order as scripts/build-layers.mjs composes the QA looks in.
+ */
 const ORDER: { part: "back" | "front"; slot: Slot }[] = [
   { part: "back", slot: "outerwear" },
+  { part: "back", slot: "back" },
   { part: "back", slot: "neck" },
   { part: "back", slot: "headwear" },
+  { part: "front", slot: "outfit" },
   { part: "front", slot: "outerwear" },
+  { part: "front", slot: "back" },
   { part: "front", slot: "neck" },
+  { part: "front", slot: "face" },
   { part: "front", slot: "headwear" },
+  { part: "front", slot: "handheld" },
+  { part: "front", slot: "companion" },
 ];
 
 export type FigureLayer = { src: string; left: number; top: number; width: number; height: number };

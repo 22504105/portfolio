@@ -61,13 +61,21 @@ player's approved parts (`components/student/story-scenes.tsx`).
 
 ## Teacher Studio (desktop, 1440×900 baseline)
 
-| Source folder          | Route                           | Purpose                                                              | Impl | Visual QA | Gate |
-| ---------------------- | ------------------------------- | -------------------------------------------------------------------- | ---- | --------- | ---- |
-| `16_teacher_dashboard` | `/studio`                       | Overview: groups, activity, attention list, recent results           | —    | —         | 4    |
-| `17_group_management`  | `/studio/groups/[groupId]`      | Group card, CEFR level, students table, invite QR, assignments       | —    | —         | 4    |
-| `18_quest_builder`     | `/studio/quests/[questId]/edit` | Node palette, graph canvas, node property panel, validation, publish | —    | —         | 4    |
-| `19_story_library`     | `/studio/library`               | Campaign/quest cards, versions, publication status, filters          | —    | —         | 4    |
-| `20_teacher_analytics` | `/studio/analytics`             | Results per student, answer review, question-level error heatmap     | —    | —         | 4    |
+| Source folder          | Route                     | Purpose                                                         | Impl | Visual QA | Gate |
+| ---------------------- | ------------------------- | --------------------------------------------------------------- | ---- | --------- | ---- |
+| `16_teacher_dashboard` | `/studio`                 | Overview: groups, activity, help requests, topics               | yes  | yes       | 4    |
+| `17_group_management`  | `/studio/groups`          | Group card, CEFR level, students table, invite QR, assignments  | yes  | yes       | 4    |
+| `18_quest_builder`     | `/studio/builder?quest=…` | Node palette, graph canvas, node inspector, validation, publish | yes  | yes       | 4    |
+| `19_story_library`     | `/studio/library`         | Campaigns, versions and history, forks, assignment, filters     | yes  | yes       | 4    |
+| `20_teacher_analytics` | `/studio/analytics`       | Help queue and replies, gradebook, skills, heatmap, mistakes    | yes  | yes       | 4    |
+
+Every studio route exists twice: signed in (`/[locale]/studio/…`, teachers' email and password) and
+as the demo (`/[locale]/demo/studio/…`, made-up classes in the browser). Screens without an export,
+built only from the approved screens' parts: sign-in, sign-up, password reset
+(`components/studio/auth-screen.tsx`), the draft preview in a phone frame
+(`/studio/preview/[quest]`, the student player in a sandbox), and the analytics screen's
+"Слово и факт дня" tab (`components/studio/daily-editor.tsx`). On the student side, the settings
+screen gained "Группа и наставник" (join by code) and "Ответы наставника".
 
 ## Experiments (`03_EXPERIMENTS/`) — not routes
 

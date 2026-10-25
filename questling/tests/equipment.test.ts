@@ -54,12 +54,39 @@ describe("the layered figure", () => {
     }
   });
 
-  it("names worn items it cannot draw, and draws heroes without fitted art plainly", () => {
-    const glasses = figureOf("cat", { headwear: "wizard-hat", face: "round-glasses" });
-    expect(glasses.kind === "layered" && glasses.drawn).toEqual(["wizard-hat"]);
-    expect(glasses.pending).toEqual(["round-glasses"]);
-    const owl = figureOf("owl", { headwear: "wizard-hat" });
-    expect(owl).toEqual({ kind: "plain", image: "/images/characters/owl.webp", pending: ["wizard-hat"] });
+  it("names worn items it cannot draw", () => {
+    const robe = figureOf("cat", { headwear: "wizard-hat", outfit: "violet-robe" });
+    expect(robe.kind === "layered" && robe.drawn).toEqual(["wizard-hat"]);
+    expect(robe.pending).toEqual(["violet-robe"]);
+  });
+
+  // The items whose art cannot be fitted (docs/ASSET_AUDIT.md, NEEDS_ART_ASSET); every other one is drawn on the cat.
+  const NEEDS_ART_ASSET = ["violet-robe", "violet-tunic", "brown-coat", "midnight-cloak", "sprite"];
+
+  const heroes = ["girl", "boy", "cat", "fox", "owl", "forest"] as const;
+
+  it("draws every item on every hero but the ones documented as needing new art", () => {
+    for (const hero of heroes)
+      for (const item of itemById.values()) {
+        const figure = figureOf(hero, { [item.slot]: item.id });
+        expect(figure.kind, hero).toBe("layered");
+        expect(figure.pending, `${hero} ${item.id}`).toEqual(NEEDS_ART_ASSET.includes(item.id) ? [item.id] : []);
+      }
+  });
+
+  it("keeps every fitted item's layers inside the rig, on every hero", () => {
+    for (const hero of heroes)
+      for (const item of itemById.values()) {
+        const figure = figureOf(hero, { [item.slot]: item.id });
+        if (figure.kind !== "layered") throw new Error(`${hero} is layered`);
+        for (const layer of figure.layers) {
+          const where = `${hero} ${item.id} ${layer.src}`;
+          expect(layer.left, where).toBeGreaterThanOrEqual(0);
+          expect(layer.top, where).toBeGreaterThanOrEqual(0);
+          expect(layer.left + layer.width, where).toBeLessThanOrEqual(100.01);
+          expect(layer.top + layer.height, where).toBeLessThanOrEqual(100.01);
+        }
+      }
   });
 });
 

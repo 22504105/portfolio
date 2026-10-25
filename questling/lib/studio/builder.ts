@@ -319,7 +319,7 @@ export function positions(graph: Campaign): Record<string, { x: number; y: numbe
     const col = depth.get(scene.id) ?? unreached++;
     const row = rows.get(col) ?? 0;
     rows.set(col, row + 1);
-    out[scene.id] = graph.layout?.[scene.id] ?? { x: 40 + col * (NODE_W + 72), y: 40 + row * (NODE_H + 56) };
+    out[scene.id] = graph.layout?.[scene.id] ?? { x: 40 + col * (NODE_W + 48), y: 40 + row * (NODE_H + 56) };
   }
   return out;
 }

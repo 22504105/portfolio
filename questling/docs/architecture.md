@@ -133,7 +133,38 @@ keys live apart (`lib/content/campaigns/*-keys.ts`, `keys.ts`), read by the rule
 - Stored in `questling.story_runs` (one row per student and campaign, `state jsonb`, version column;
   migration `20261024000300_story_runs.sql`), loaded with the rest of the facts.
 
-## 6. Data model still to come (Gates 3–4)
+## 5b. Teacher Studio (_decided_, Gate 4)
+
+- **Who.** Anyone who signs up with email and password (Supabase Auth, called over REST from
+  `lib/server/teacher-auth.ts`; email confirmation on) becomes a teacher: a `teachers` row, an
+  `auth_identities` row with provider `supabase`. The studio session is the app's own HMAC token in
+  the Authorization header, like the student's; every studio route checks the token _and_ the
+  `teachers` row (403 `not_teacher`). Teachers are isolated from each other: every read is by
+  `teacher_id`, and every write in `persistStudio` is scoped to the acting teacher in SQL (a forged
+  effect on another teacher's group changes nothing; a draft on another's quest raises 42501).
+- **Rules as facts and effects**, as for students: `loadStudio` reads the teacher's `StudioFacts`
+  (groups, members with their records, quests and versions, assignments, words of the day, replies),
+  `studioRun` (`lib/studio/ops.ts`) returns effects, `persistStudio` writes them in one transaction under
+  a lock on the teacher row. The demo studio runs the same rules in the browser (`lib/studio/demo.ts`:
+  three groups whose students are played through the student rules with a seeded RNG).
+- **Migration 4** (`supabase/migrations/20261025000100_teacher_studio.sql`): `teachers`, `groups`
+  (invite code `^[A-Z0-9]{8}$`, unique), `group_members`, `quests` (slug `t-…`), `quest_versions`
+  (draft/published; a trigger refuses any change to a published row, errcode 55000; one draft per
+  quest), `assignments` (group + campaign + pinned version), `daily_entries` (group + day), `mentor_messages`,
+  `audit_log`. RLS on, no grants to `anon`/`authenticated`: only the server touches them.
+- **Versions.** An edit writes the draft (the next version after the last published one). Publishing
+  checks the draft with the schema (`lib/story/schema.ts`: plain text, the app's own illustrations
+  only) and the graph validator (start, endings, reachability, keys, evidence). An assignment pins a
+  published version; a student's run stays on the version it started on.
+- **Students' world** (`lib/server/world-store.ts`): their groups and mentors, the groups'
+  assignments, the teachers' campaign graphs they need (no keys), the mentors' replies, and the groups'
+  words of the day (no answers). Keys stay on the server and reach the rules through the context
+  (`ctx.keys`, `ctx.dailyKeys`). A student joins by the invite link (`t.me/<bot>?startapp=CODE`, read
+  from the signed `start_param`) or by typing the code in the settings.
+- **Equipment** (`docs/ASSET_AUDIT.md` "Equipment layers"): items carry species and slot conflicts;
+  `saveLook` refuses wrong species and conflicts; the figure is layers placed by `rig.json`.
+
+## 6. Data model as proposed in Gate 1 (Gates 3–4 built it as sections 5a and 5b)
 
 All tables in schema `questling`. Ids are UUIDs; money-like values are integers.
 
