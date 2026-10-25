@@ -241,6 +241,60 @@ const SPLITS = {
 // Every master: a hero's base (one layer), or an item, split into back and front by SPLITS or, when it
 // sits wholly over the hero (glasses, a bow, a held wand, a companion), one front layer.
 const BASES = ["cat-base", "boy-base", "girl-base", "fox-base", "owl-base", "forest-base"];
+// Tall ears above the head's dome, cut along it (on the base's master), drawn as their own layer so a
+// hat that sits on the head can hide them (HIDES_EARS); every other look draws them right after the body.
+const EARS = {
+  "cat-base": [
+    [
+      [250, 80],
+      [450, 80],
+      [450, 175],
+      [430, 195],
+      [400, 220],
+      [360, 242],
+      [320, 264],
+      [290, 295],
+      [250, 300],
+    ],
+    [
+      [774, 80],
+      [574, 80],
+      [574, 175],
+      [594, 195],
+      [624, 220],
+      [664, 242],
+      [704, 264],
+      [734, 295],
+      [774, 300],
+    ],
+  ],
+  "fox-base": [
+    [
+      [230, 30],
+      [470, 30],
+      [470, 172],
+      [450, 195],
+      [410, 220],
+      [365, 245],
+      [325, 268],
+      [295, 295],
+      [240, 300],
+    ],
+    [
+      [794, 30],
+      [554, 30],
+      [554, 172],
+      [574, 195],
+      [614, 220],
+      [659, 245],
+      [699, 268],
+      [729, 295],
+      [784, 300],
+    ],
+  ],
+};
+/** Hats worn over the ears, like lib/content/figure.ts. */
+export const HIDES_EARS = new Set(["witch-hat"]);
 // Which slot each item's art is worn in: the draw order below goes by slot, as lib/content/figure.ts does.
 export const ART_SLOT = {
   "witch-hat": "headwear",
@@ -301,7 +355,13 @@ async function writeLayer(name, item, part, master, keep) {
 async function build() {
   await mkdir(publicDir, { recursive: true });
   manifest = {};
-  for (const name of BASES) await writeLayer(name, "base", "body", await load(name), () => true);
+  for (const name of BASES) {
+    const ears = EARS[name];
+    const isEar = (x, y) => !!ears && ears.some((poly) => inside(poly, x, y));
+    const master = await load(name);
+    await writeLayer(name, "base", "body", master, (x, y) => !isEar(x, y));
+    if (ears) await writeLayer(name.replace(/-base$/, "-ears"), "base", "ears", master, isEar);
+  }
   for (const item of Object.keys(ART_SLOT)) {
     const master = await load(item);
     if (!SPLITS[item]) {
@@ -340,7 +400,9 @@ const [W, H] = rig.canvas;
 /** The layer names to draw for a species wearing these items, back to front. */
 const stackOf = (species, items) =>
   ORDER.flatMap(([part, slot]) =>
-    part === "body" ? [`${species}-base`] : items.filter((item) => ART_SLOT[item] === slot).map((item) => `${item}-${part}`),
+    part === "body"
+      ? [`${species}-base`, ...(items.some((item) => HIDES_EARS.has(item)) ? [] : [`${species}-ears`])]
+      : items.filter((item) => ART_SLOT[item] === slot).map((item) => `${item}-${part}`),
   ).filter((name) => manifest[name]);
 
 export async function compose(species, items, fits = rig.fits[species]) {

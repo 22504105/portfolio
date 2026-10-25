@@ -27,13 +27,15 @@ describe("the layered figure", () => {
       "star-amulet-front",
       "witch-hat-front",
     ]);
-    // Every combination draws two layers per item plus the body, and nothing it does not wear.
+    // Every combination draws two layers per item plus the body, and the cat's ears unless the hat
+    // (worn over them) is on; nothing it does not wear.
     const keys = Object.keys(slice) as (keyof typeof slice)[];
     for (let mask = 0; mask < 8; mask++) {
       const worn = Object.fromEntries(keys.filter((_, i) => mask & (1 << i)).map((k) => [k, slice[k]]));
       const figure = figureOf("cat", worn);
       expect(figure.kind).toBe("layered");
-      expect(names(figure)).toHaveLength(1 + 2 * Object.keys(worn).length);
+      expect(names(figure)).toHaveLength(1 + 2 * Object.keys(worn).length + ("headwear" in worn ? 0 : 1));
+      expect(names(figure).includes("cat-ears")).toBe(!("headwear" in worn));
       if (figure.kind === "layered") expect(figure.pending).toEqual([]);
     }
   });
@@ -70,7 +72,7 @@ describe("the layered figure", () => {
 
   it("draws the garments re-cut for the chibi body behind and in front of it", () => {
     const robe = figureOf("cat", { outfit: "violet-robe" });
-    expect(names(robe)).toEqual(["violet-robe-back", "cat-base", "violet-robe-front"]);
+    expect(names(robe)).toEqual(["violet-robe-back", "cat-base", "cat-ears", "violet-robe-front"]);
     expect(robe.pending).toEqual([]);
   });
 

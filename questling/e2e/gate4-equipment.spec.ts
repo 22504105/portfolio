@@ -40,7 +40,9 @@ test("taking the tunic off removes both its layers and nothing else", async ({ p
   await expect.poll(() => sources(page)).toEqual(before.filter((src) => !src.includes("violet-tunic")));
 });
 
-test("taking the hat off removes both its layers, and the saved look is the one the profile shows", async ({ page }) => {
+test("taking the hat off removes both its layers and shows the ears again, and the saved look is the one the profile shows", async ({
+  page,
+}) => {
   await page.goto("/ru/demo/wardrobe");
   await ready(page);
   await page.locator('[data-item="wizard-hat"]').getByRole("button", { name: /Снять/ }).click();
@@ -48,6 +50,7 @@ test("taking the hat off removes both its layers, and the saved look is the one 
     "/images/layers/ceremonial-cape-back.webp",
     "/images/layers/violet-tunic-back.webp",
     "/images/layers/cat-base.webp",
+    "/images/layers/cat-ears.webp",
     "/images/layers/violet-tunic-front.webp",
     "/images/layers/ceremonial-cape-front.webp",
     "/images/layers/crystal-staff-front.webp",

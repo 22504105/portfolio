@@ -177,6 +177,13 @@ that every item but the ones below is drawn on every hero, and that no layer lea
 
 Known residual: a 1–2 px dark rim can show on light backgrounds; the app's backgrounds are dark.
 
+### Hat over the ears
+
+The witch hat sits on the head (owner, 2026-10-25: it must cover the ears, not float above them). The cat's
+and the fox's tall ears are cut from their bases along the head's dome into their own layer
+(`<hero>-ears`, `EARS` in `build-layers.mjs`), drawn right after the body unless a hat worn over the ears
+is on (`HIDES_EARS`, also in `lib/content/figure.ts`); the cut lies wholly under the hat.
+
 ### Blender
 
 The five items that could not be fitted were made in Blender on 2026-10-25 (`blender/`, in git):

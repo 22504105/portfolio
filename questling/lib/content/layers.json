@@ -2,7 +2,12 @@
   "cat-base": {
     "item": "base",
     "part": "body",
-    "box": [228, 95, 630, 830]
+    "box": [228, 171, 630, 754]
+  },
+  "cat-ears": {
+    "item": "base",
+    "part": "ears",
+    "box": [267, 95, 489, 202]
   },
   "boy-base": {
     "item": "base",
@@ -17,7 +22,12 @@
   "fox-base": {
     "item": "base",
     "part": "body",
-    "box": [222, 52, 636, 880]
+    "box": [222, 165, 636, 767]
+  },
+  "fox-ears": {
+    "item": "base",
+    "part": "ears",
+    "box": [251, 52, 520, 246]
   },
   "owl-base": {
     "item": "base",

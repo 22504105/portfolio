@@ -10,6 +10,8 @@ import rig from "./rig.json";
 // screen can say so instead of pretending. A species without a rig shows its plain base picture.
 
 type LayerName = keyof typeof layers;
+/** Hats worn over the ears: a species' tall ears (its "-ears" layer) are not drawn under them. */
+const HIDES_EARS = new Set(["witch-hat"]);
 type Fit = { x: number; y: number; scale: number };
 
 /**
@@ -72,6 +74,12 @@ export function figureOf(species: CharacterId, equipped: Partial<Record<Slot, st
   };
   for (const step of ORDER.filter((s) => s.part === "back")) add(step.part, step.slot);
   stack.push(place(baseLayer, fits.base));
+  const earsLayer = `${species}-ears` as LayerName;
+  const hatOverEars = Object.values(equipped).some((id) => {
+    const art = id ? itemById.get(id)?.art : undefined;
+    return !!art && HIDES_EARS.has(art) && !!fits[art];
+  });
+  if (earsLayer in layers && !hatOverEars) stack.push(place(earsLayer, fits.base));
   for (const step of ORDER.filter((s) => s.part === "front")) add(step.part, step.slot);
 
   const drawn = worn.filter((id) => {
