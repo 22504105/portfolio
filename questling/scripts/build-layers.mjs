@@ -213,6 +213,7 @@ export const ART_SLOT = {
   "fox-cub": "companion",
   owlet: "companion",
   ghost: "companion",
+  sprite: "companion",
 };
 
 let manifest = {};

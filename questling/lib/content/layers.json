@@ -183,5 +183,10 @@
     "item": "ghost",
     "part": "front",
     "box": [248, 211, 510, 600]
+  },
+  "sprite-front": {
+    "item": "sprite",
+    "part": "front",
+    "box": [202, 187, 649, 637]
   }
 }

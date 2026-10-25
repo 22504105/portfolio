@@ -61,7 +61,7 @@ describe("the layered figure", () => {
   });
 
   // The items whose art cannot be fitted (docs/ASSET_AUDIT.md, NEEDS_ART_ASSET); every other one is drawn on the cat.
-  const NEEDS_ART_ASSET = ["violet-robe", "violet-tunic", "brown-coat", "midnight-cloak", "sprite"];
+  const NEEDS_ART_ASSET = ["violet-robe", "violet-tunic", "brown-coat", "midnight-cloak"];
 
   const heroes = ["girl", "boy", "cat", "fox", "owl", "forest"] as const;
 

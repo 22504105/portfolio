@@ -67,7 +67,9 @@ export const SOURCES = {
   "midnight-cloak": { file: stitch(outfit, "moon"), ...edge, step: 4, limit: 30 },
   raven: { file: stitch(companion, 1), step: 4, limit: 24, low: 10, high: 34 },
   "moon-cat": { file: stitch(companion, 2), step: 3, limit: 16, low: 8, high: 30 },
-  sprite: { file: stitch(companion, 3), step: 8, limit: 80, low: 30, high: 120, soft: true, luma: true },
+  // The Stitch sprite's glow is painted on its own dark haze and no matte separates them; it is
+  // modelled after it in Blender (blender/sprite.blend) and rendered with true alpha.
+  sprite: { file: path.join(root, "blender", "sprite.png"), rendered: true },
   "fox-cub": { file: stitch(companion, 4), ...edge },
   owlet: { file: stitch(companion, 5), ...edge },
   ghost: { file: stitch(companion, 6), step: 8, limit: 80, low: 10, high: 60, soft: true },
@@ -75,7 +77,8 @@ export const SOURCES = {
 
 const out = path.join(root, "art", "layers");
 
-export async function extract({ file, step, limit, low, high, holes = [], soft = false, glass = [], luma = false }) {
+export async function extract({ file, step, limit, low, high, holes = [], soft = false, glass = [], luma = false, rendered = false }) {
+  if (rendered) return measure(file);
   const { data, info } = await sharp(file).removeAlpha().raw().toBuffer({ resolveWithObject: true });
   const { width: w, height: h } = info;
   const n = w * h;
@@ -209,6 +212,36 @@ export async function extract({ file, step, limit, low, high, holes = [], soft =
     width: w,
     height: h,
     transparent: transparent / n,
+    box: { left: minX, top: minY, width: maxX - minX + 1, height: maxY - minY + 1 },
+  };
+}
+
+/** A render that already has true alpha: kept as it is, only measured the same way. */
+async function measure(file) {
+  const { data, info } = await sharp(file).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  const { width: w, height: h } = info;
+  let transparent = 0;
+  let minX = w,
+    minY = h,
+    maxX = -1,
+    maxY = -1;
+  for (let i = 0; i < w * h; i++) {
+    const a = data[i * 4 + 3];
+    if (a === 0) transparent++;
+    else if (a > 8) {
+      const x = i % w;
+      const y = (i / w) | 0;
+      if (x < minX) minX = x;
+      if (x > maxX) maxX = x;
+      if (y < minY) minY = y;
+      if (y > maxY) maxY = y;
+    }
+  }
+  return {
+    rgba: data,
+    width: w,
+    height: h,
+    transparent: transparent / (w * h),
     box: { left: minX, top: minY, width: maxX - minX + 1, height: maxY - minY + 1 },
   };
 }
