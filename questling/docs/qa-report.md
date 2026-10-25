@@ -51,8 +51,9 @@ Not fixed, by decision or because they need the owner:
 - **CEFR**: a group's level and a campaign's level are both shown, but assigning a B1 campaign to an A2
   group is not refused (the teacher decides).
 - **Teacher email**: Supabase's built-in mailer reaches only the project team; real teachers need SMTP.
-- **Pronunciation** uses the device's speech synthesis; uploaded audio is not implemented; not tested
-  automatically.
+- **Audio** (since 2026-10-25, `docs/audio.md`): built-in recordings for every built-in line, teachers'
+  uploads, the device's voice only as a fallback; not yet heard on a physical device; teachers' uploads
+  need migration 7 on the production database.
 - **The weekly chest** counts finished quick quests, passed or not (each can be played once a day, so it
   cannot be farmed) — a rule, noted here.
 - **"Архив №…" and "День N из 30"** on the discovery screen are the entry's number and a 30-day cycle

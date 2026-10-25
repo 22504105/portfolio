@@ -57,6 +57,8 @@ export type QuestionNode = NodeFrame & {
   evidence: boolean;
   /** A listening riddle: the line is read aloud, and shown only once answered. */
   listen: boolean;
+  /** A teacher's recording of the line (its id; the screen finds its link in the student's world). */
+  audio?: string;
 };
 
 /** A word-order cipher (06_interactive_puzzle). */

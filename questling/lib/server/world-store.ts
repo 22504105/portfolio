@@ -6,6 +6,7 @@ import { studentDaily, teacherDailyId, teacherDailyKey } from "@/lib/studio/dail
 import type { DailyContent } from "@/lib/studio/model";
 import type { Campaign, CampaignKeys } from "@/lib/story/graph";
 import type { Db } from "./db";
+import { studentMediaUrls } from "./media";
 
 // What surrounds a signed-in student (lib/game/world.ts): their groups and teachers, what the groups
 // were assigned, the teachers' campaigns they may play (the pinned version of each assignment, and
@@ -29,8 +30,8 @@ export async function loadWorld(
     [groupIds, now],
   );
   // The teachers' campaign versions needed: the assigned ones, and those the student's runs are bound to.
-  const wanted = await db.query<{ graph: Campaign; keys: CampaignKeys }>(
-    `select v.graph, v.keys from questling.quest_versions v join questling.quests q on q.id = v.quest_id
+  const wanted = await db.query<{ graph: Campaign; keys: CampaignKeys; teacher_id: string }>(
+    `select v.graph, v.keys, q.teacher_id from questling.quest_versions v join questling.quests q on q.id = v.quest_id
       where v.status = 'published' and (
         (q.slug, v.version) in (select campaign, version from questling.assignments where group_id = any($1::uuid[]) and starts_at <= $3 and version is not null)
         or (q.slug, v.version) in (select state->>'campaign', (state->>'version')::int from questling.story_runs where user_id = $2 and campaign like 't-%')
@@ -45,18 +46,32 @@ export async function loadWorld(
   // The groups' words of the day around today (the last weeks, for what the student answered then).
   // With two groups planning the same day, the one joined first wins.
   const today = dayOf(now);
-  const planned = await db.query<{ id: string; day: string; content: DailyContent; cefr: string; mentor: string; joined_at: Date }>(
-    `select d.id, d.day::text as day, d.content, g.cefr, t.display_name as mentor, m.joined_at
+  const planned = await db.query<{
+    id: string;
+    day: string;
+    content: DailyContent;
+    cefr: string;
+    mentor: string;
+    joined_at: Date;
+    teacher_id: string;
+  }>(
+    `select d.id, d.day::text as day, d.content, g.cefr, t.display_name as mentor, m.joined_at, d.teacher_id
        from questling.daily_entries d join questling.groups g on g.id = d.group_id
        join questling.group_members m on m.group_id = g.id and m.user_id = $1 join questling.teachers t on t.user_id = g.teacher_id
       where g.archived_at is null and d.day between $2::date and $3::date order by d.day, m.joined_at`,
     [userId, dayFromNumber(dayNumber(today) - 45), today],
   );
+  // Teachers' recordings this student may hear: those of their campaigns and words of the day.
+  const media = await studentMediaUrls(db, userId, [
+    ...wanted.rows.map((row) => ({ teacherOf: row.teacher_id, value: row.graph })),
+    ...planned.rows.map((row) => ({ teacherOf: row.teacher_id, value: row.content })),
+  ]);
   const daily: NonNullable<World["daily"]> = [];
   const dailyKeys = new Map<string, { correct: string; explanation: Text }>();
   for (const row of planned.rows) {
     if (daily.some((d) => d.day === row.day)) continue;
-    daily.push({ day: row.day, entry: studentDaily(row.id, row.day, row.content, row.cefr, row.mentor) });
+    const audio = row.content.word.audio ? (media[row.content.word.audio] ?? null) : null;
+    daily.push({ day: row.day, entry: studentDaily(row.id, row.day, row.content, row.cefr, row.mentor, audio) });
     dailyKeys.set(teacherDailyId(row.id), teacherDailyKey(row.content));
   }
   const keys = new Map(wanted.rows.map((row) => [`${row.graph.id}@${row.graph.version}`, row.keys]));
@@ -72,6 +87,7 @@ export async function loadWorld(
       campaigns: wanted.rows.map((row) => row.graph),
       messages: messages.rows.map((m) => ({ id: m.id, ref: m.ref, body: m.body, mentor: m.mentor, createdAt: m.created_at.toISOString() })),
       daily,
+      media,
     },
     keys,
     dailyKeys,

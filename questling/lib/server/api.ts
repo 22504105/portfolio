@@ -4,6 +4,7 @@ import { act, allowed, deleteStudent, exportData, join, ServiceError, signInWith
 import { issueSession, issueTicket, readSession, readTicket } from "./session";
 import { signInTeacher, StudioError, studioAct, studioState } from "./studio-service";
 import { recover, signIn, signUp, teacherAuthConfigured, updatePassword } from "./teacher-auth";
+import { deleteAudio, loadAudio, MAX_AUDIO_BYTES, mediaUrl, saveAudio, ticketOpens } from "./media";
 import { verifyInitData } from "./telegram";
 
 // The API, /api/v1/…: the student app's routes and Teacher Studio's (studio/…). Each request is
@@ -210,6 +211,32 @@ const ROUTES: Record<string, [Route, Limit?]> = {
     },
     { scope: "studio-password", by: "address", max: 10, seconds: 3600 },
   ],
+  // A teacher's recording, as raw bytes (MP3, M4A or WAV; checked by content in lib/server/media.ts).
+  "POST studio/media": [
+    async ({ request, db }) => {
+      const teacherId = sessionUser(request);
+      const declared = Number(request.headers.get("content-length") ?? "0");
+      if (declared > MAX_AUDIO_BYTES) throw new RequestError("too_large", 413);
+      const bytes = new Uint8Array(await request.arrayBuffer());
+      if (bytes.length > MAX_AUDIO_BYTES) throw new RequestError("too_large", 413);
+      const name = decodeURIComponent(request.headers.get("x-file-name") ?? "recording").slice(0, 200);
+      const saved = await saveAudio(db, teacherId, name, bytes);
+      if (!saved.ok) throw new RequestError(saved.reason, saved.reason === "not_teacher" ? 403 : saved.reason === "quota" ? 409 : 422);
+      return { asset: { ...saved.asset, url: mediaUrl(teacherId, saved.asset.id) } };
+    },
+    { scope: "studio-media", by: "user", max: 60, seconds: 3600 },
+  ],
+  "POST studio/media/delete": [
+    async ({ request, db }) => {
+      const teacherId = sessionUser(request);
+      const { id } = await body(request);
+      if (typeof id !== "string" || !/^[0-9a-f-]{36}$/.test(id)) throw new RequestError("invalid", 422);
+      const result = await deleteAudio(db, teacherId, id);
+      if (result !== "deleted") throw new RequestError(result, result === "in_use" ? 409 : 404);
+      return { status: "deleted" };
+    },
+    { scope: "studio-media", by: "user", max: 60, seconds: 3600 },
+  ],
   "GET studio/state": [async ({ request, db }) => ({ facts: await studioState(db, sessionUser(request)) })],
   "POST studio/actions": [
     async ({ request, db }) => studioAct(db, sessionUser(request), await body(request)),
@@ -217,9 +244,46 @@ const ROUTES: Record<string, [Route, Limit?]> = {
   ],
 };
 
+/**
+ * A recording, to whoever holds a ticket for it (a teacher's own, or a student's whose campaign or word
+ * of the day uses it). Byte ranges are served: Safari on iOS will not play audio without them.
+ */
+async function serveMedia(request: Request, id: string): Promise<Response> {
+  if (!/^[0-9a-f-]{36}$/.test(id) || !ticketOpens(new URL(request.url).searchParams.get("ticket"), id)) return fail("forbidden", 403);
+  const audio = await transaction((db) => loadAudio(db, id));
+  if (!audio) return fail("not_found", 404);
+  const total = audio.bytes.length;
+  const headers = {
+    "Content-Type": audio.mime,
+    "Accept-Ranges": "bytes",
+    "Cache-Control": "private, max-age=3600",
+    "X-Content-Type-Options": "nosniff",
+  };
+  const range = /^bytes=(\d*)-(\d*)$/.exec(request.headers.get("range") ?? "");
+  if (!range) return new Response(new Uint8Array(audio.bytes), { headers: { ...headers, "Content-Length": String(total) } });
+  let start = range[1] ? Number(range[1]) : total - Number(range[2]);
+  let end = range[1] ? (range[2] ? Number(range[2]) : total - 1) : total - 1;
+  start = Math.max(0, start);
+  end = Math.min(total - 1, end);
+  if (start > end || start >= total)
+    return new Response(null, { status: 416, headers: { ...headers, "Content-Range": `bytes */${total}` } });
+  return new Response(new Uint8Array(audio.bytes.subarray(start, end + 1)), {
+    status: 206,
+    headers: { ...headers, "Content-Length": String(end - start + 1), "Content-Range": `bytes ${start}-${end}/${total}` },
+  });
+}
+
 /** Handles one API request. `path` is what follows /api/v1/. */
 export async function handle(request: Request, path: string[]): Promise<Response> {
   if (!accountsConfigured()) return fail("not_configured", 503);
+  if (request.method === "GET" && path.length === 2 && path[0] === "media") {
+    try {
+      return await serveMedia(request, path[1]);
+    } catch (error) {
+      console.error("media error", (error as Error).message);
+      return fail("server_error", 500);
+    }
+  }
   const entry = ROUTES[`${request.method} ${path.join("/")}`];
   if (!entry) return fail("not_found", 404);
   if (request.method !== "GET" && !sameOrigin(request)) return fail("forbidden", 403);

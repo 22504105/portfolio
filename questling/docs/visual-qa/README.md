@@ -166,6 +166,12 @@ Icons (glyphs of the Material Symbols ligature font, `aria-hidden`) are excluded
 reads a ligature as text. The same suite checks that no student screen scrolls sideways at 320, 360, 390
 and 430 px and no studio screen at 1280 and 1440 px: none does.
 
+## Audio controls (2026-10-25)
+
+Dialogue lines carry the small speaker button of the home screen's word of the day (the same element);
+a narration or dialogue with a teacher's recording gets the quick quests' "listen" button above it. Both
+appear nowhere else and change no block of an approved screen; a speaker's icon pulses while it plays.
+
 ## Behaviour beyond the exports
 
 - After a wrong answer and "Попробовать снова", the eliminated option stays in the list struck out

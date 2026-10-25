@@ -384,5 +384,6 @@ export function demoStudio(now: Date): StudioFacts {
     })),
     daily: [],
     messages: [],
+    media: [],
   };
 }

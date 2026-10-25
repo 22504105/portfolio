@@ -57,6 +57,7 @@ const dailySchema = z.object({
     ipa: z.string().max(60),
     translation: z.object({ ru: z.string().trim().min(1).max(120), en: z.string().trim().min(1).max(120) }),
     example: z.string().trim().min(1).max(200),
+    audio: z.string().uuid().optional(),
   }),
   fact: z.object({
     title: z.string().trim().min(1).max(100),
@@ -244,6 +245,10 @@ export function studioRun(facts: StudioFacts, action: StudioAction, ctx: StudioC
       const parsed = parseAuthored(draft.graph, draft.keys);
       if (!parsed.ok) return refuse("invalid_graph", [parsed.problem]);
       const problems = validateCampaign(parsed.campaign, parsed.keys);
+      // A recording must be one of the teacher's own (an id from elsewhere would play nothing).
+      for (const scene of parsed.campaign.chapters.flatMap((c) => c.scenes))
+        if ("audio" in scene && scene.audio && !facts.media.some((m) => m.id === scene.audio))
+          problems.push(`${scene.id}: its recording is not one of yours`);
       if (problems.length) return refuse("invalid_graph", problems);
       return done([
         { type: "version.publish", questId: found.id, version: draft.version },
@@ -257,6 +262,7 @@ export function studioRun(facts: StudioFacts, action: StudioAction, ctx: StudioC
       if (!isDay(action.day)) return refuse("invalid");
       const parsed = dailySchema.safeParse(action.content);
       if (!parsed.success || !parsed.data.quiz.options.some((o) => o.id === parsed.data.quiz.correct)) return refuse("invalid");
+      if (parsed.data.word.audio && !facts.media.some((m) => m.id === parsed.data.word.audio)) return refuse("invalid");
       const existing = facts.daily.find((d) => d.groupId === found.id && d.day === action.day);
       const id = existing?.id ?? ctx.newId();
       return done(

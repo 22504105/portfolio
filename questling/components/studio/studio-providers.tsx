@@ -2,11 +2,11 @@
 
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
-import { pickGroup, StudioProvider, type StudioActResult, type StudioApi } from "@/lib/client/studio";
+import { pickGroup, StudioProvider, type MediaRefusal, type StudioActResult, type StudioApi } from "@/lib/client/studio";
 import type { Locale } from "@/lib/i18n";
 import { studioDictionary } from "@/lib/i18n/studio";
 import { demoStudio } from "@/lib/studio/demo";
-import { applyStudioEffects, type StudioFacts } from "@/lib/studio/model";
+import { applyStudioEffects, type MediaItem, type StudioFacts } from "@/lib/studio/model";
 import { studioRun, type StudioAction, type StudioOutcome, type StudioRefusal } from "@/lib/studio/ops";
 
 // The two homes of Teacher Studio's facts. The demo studio keeps made-up classes in this browser
@@ -192,6 +192,49 @@ export function LiveStudioProvider({ locale, children }: { locale: Locale; child
     [session, router, login],
   );
 
+  // Recordings go up as raw bytes (the server checks what they really are) and come back with a link.
+  const media = useMemo<StudioApi["media"]>(
+    () =>
+      session
+        ? {
+            upload: async (file) => {
+              const response = await fetch("/api/v1/studio/media", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/octet-stream",
+                  Authorization: `Bearer ${session.token}`,
+                  "X-File-Name": encodeURIComponent(file.name),
+                },
+                body: file,
+              }).catch(() => null);
+              if (!response) return { ok: false, reason: "network" };
+              const data = (await response.json().catch(() => ({}))) as { asset?: MediaItem; error?: string };
+              if (!response.ok || !data.asset) {
+                const reason = (data.error ?? "network") as MediaRefusal;
+                return { ok: false, reason: response.status === 413 ? "too_large" : reason };
+              }
+              const item = data.asset;
+              setFacts((f) => (f ? { ...f, media: [item, ...f.media] } : f));
+              return { ok: true, item };
+            },
+            remove: async (id) => {
+              const response = await fetch("/api/v1/studio/media/delete", {
+                method: "POST",
+                headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.token}` },
+                body: JSON.stringify({ id }),
+              }).catch(() => null);
+              if (!response) return "network";
+              if (response.ok) {
+                setFacts((f) => (f ? { ...f, media: f.media.filter((m) => m.id !== id) } : f));
+                return "deleted";
+              }
+              return response.status === 409 ? "in_use" : response.status === 404 ? "not_found" : "network";
+            },
+          }
+        : undefined,
+    [session],
+  );
+
   const signOut = useCallback(() => {
     try {
       window.sessionStorage.removeItem(SESSION_KEY);
@@ -213,9 +256,10 @@ export function LiveStudioProvider({ locale, children }: { locale: Locale; child
             groupId,
             setGroupId,
             signOut,
+            media,
           }
         : null,
-    [facts, locale, act, groupId, setGroupId, signOut],
+    [facts, locale, act, groupId, setGroupId, signOut, media],
   );
   if (!api) return <div className="bg-background min-h-dvh" aria-busy="true"></div>;
   return (

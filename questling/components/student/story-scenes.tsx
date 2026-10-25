@@ -6,6 +6,8 @@ import { Icon } from "@/components/ui/icon";
 import { fill, type Dictionary } from "@/lib/i18n";
 import type { OptionIcon } from "@/lib/story/types";
 import { PronounceButton } from "./pronounce-button";
+import { LineAudioButton } from "./line-audio";
+import { useMediaLink } from "@/lib/client/student";
 import { BackHeader } from "./back-header";
 import { Parchment, SceneImage, StoryHeading } from "./story-player";
 
@@ -134,18 +136,39 @@ export function StoryReward({ label, title, text, xp, coins }: { label: string; 
   );
 }
 
+/** A teacher's recording of the whole scene, when there is one: the quick quests' listening button. */
+function SceneRecording({ text, audioId, label }: { text: string; audioId?: string; label: string }) {
+  const link = useMediaLink(audioId);
+  if (!link) return null;
+  return (
+    <div className="px-margin mb-space-md">
+      <LineAudioButton
+        text={text}
+        src={link}
+        action="listen-scene"
+        className="bg-surface-container-high hover:bg-surface-bright text-text-ivory font-label-md text-label-md flex h-11 w-full items-center justify-center gap-2 rounded-lg uppercase shadow-xs transition-colors active:scale-[0.98] disabled:opacity-50"
+      >
+        <Icon name="headphones" className="text-primary text-[18px]" />
+        <span>{label}</span>
+      </LineAudioButton>
+    </div>
+  );
+}
+
 export function NarrationScreen({
   text,
   translation,
   clue,
+  audio,
   onNext,
   ...common
-}: Common & { text: string; translation: string; clue: string | null; onNext: () => void }) {
+}: Common & { text: string; translation: string; clue: string | null; audio?: string; onNext: () => void }) {
   const { t, pending, error } = common;
   const [open, setOpen] = useState(false);
   return (
     <Page {...common} kind="narration">
       <Parchment text={text} />
+      <SceneRecording text={text} audioId={audio} label={t.player.listen} />
       {open ? (
         <p className="px-margin mb-space-md font-body-md text-body-md text-on-surface-variant -mt-2 text-center">{translation}</p>
       ) : null}
@@ -164,13 +187,20 @@ export function NarrationScreen({
 export function DialogueScreen({
   lines,
   clue,
+  audio,
   onNext,
   ...common
-}: Common & { lines: { speaker: string; text: string; translation: string }[]; clue: string | null; onNext: () => void }) {
+}: Common & {
+  lines: { speaker: string; text: string; translation: string }[];
+  clue: string | null;
+  audio?: string;
+  onNext: () => void;
+}) {
   const { t, pending, error } = common;
   const [open, setOpen] = useState(false);
   return (
     <Page {...common} kind="dialogue">
+      <SceneRecording text={lines.map((l) => l.text).join(" ")} audioId={audio} label={t.player.listenDialogue} />
       <div className="mb-space-lg gap-space-sm px-margin flex flex-col">
         {lines.map((line, i) => (
           <div key={i} className="bg-surface-container px-space-md py-space-sm relative flex w-full flex-col gap-1 rounded-xl shadow-md">

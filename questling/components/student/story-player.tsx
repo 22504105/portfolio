@@ -8,6 +8,7 @@ import { canCheck, initialState, reduce, type QuestionState } from "@/lib/story/
 import type { GradeResult, QuestionNode } from "@/lib/story/types";
 import { BackHeader } from "./back-header";
 import { useLineAudio } from "@/lib/client/audio";
+import { useMediaLink } from "@/lib/client/student";
 import { ExhaustedView, GrimoireSheet } from "./story-help";
 
 // The story player for a question or a piece of evidence. Ported from the Stitch story-player screens:
@@ -121,7 +122,7 @@ export function StoryPlayer({ t, node, grade, initial, backHref, profileHref, on
                 <span className="text-text-muted">{node.prompt.task || (node.evidence ? t.story.evidenceTask : "")}</span>
               </p>
             </div>
-            <Parchment text={node.clue.text} listen={node.listen && state.phase !== "correct"} t={t} />
+            <Parchment text={node.clue.text} listen={node.listen && state.phase !== "correct"} audio={node.audio} t={t} />
             {state.phase === "correct" ? (
               <CorrectOptions t={t} node={node} state={state} />
             ) : (
@@ -319,8 +320,8 @@ function StepWithRay({ children, ray, last }: { children: React.ReactNode; ray: 
 }
 
 /** The parchment with the scene's English line; for a listening riddle, a button that reads it aloud instead. */
-export function Parchment({ text, listen = false, t }: { text: string; listen?: boolean; t?: Dictionary }) {
-  if (listen && t) return <ListenParchment text={text} t={t} />;
+export function Parchment({ text, listen = false, audio, t }: { text: string; listen?: boolean; audio?: string; t?: Dictionary }) {
+  if (listen && t) return <ListenParchment text={text} audioId={audio} t={t} />;
   return (
     <div className="mb-space-lg px-margin">
       <div className="p-space-lg relative overflow-hidden rounded-xl bg-[#D9C49B] text-[#231D15] shadow-[0_12px_32px_rgba(0,0,0,0.7)]">
@@ -657,8 +658,8 @@ function HintText({ text }: { text: string }) {
 }
 
 /** A listening riddle's parchment: the line is heard, not read (a recording, else the device's voice). */
-function ListenParchment({ text, src, t }: { text: string; src?: string | null; t: Dictionary }) {
-  const { availability, state, play } = useLineAudio(text, src);
+function ListenParchment({ text, audioId, t }: { text: string; audioId?: string; t: Dictionary }) {
+  const { availability, state, play } = useLineAudio(text, useMediaLink(audioId));
   const supported = availability !== "none";
   return (
     <div className="mb-space-lg px-margin">

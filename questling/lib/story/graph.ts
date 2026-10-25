@@ -37,12 +37,16 @@ export type NarrationScene = SceneBase & {
   translation: Text;
   /** A piece of evidence found in this scene. */
   clue?: string;
+  /** A teacher's recording of the scene (its id; the student gets a link to it). */
+  audio?: string;
 };
 
 export type DialogueScene = SceneBase & {
   kind: "dialogue";
   lines: { speaker: Text; text: string; translation: Text }[];
   clue?: string;
+  /** A teacher's recording of the whole dialogue. */
+  audio?: string;
 };
 
 export type ChoiceScene = SceneBase & {
@@ -71,6 +75,8 @@ export type QuestionScene = SceneBase &
     translation: Text;
     /** A listening riddle: the line is heard (read aloud by the device), not shown, until answered. */
     listen?: boolean;
+    /** A teacher's recording of the line (else the built-in one, else the device's voice). */
+    audio?: string;
     prompt: { lead: Text; task: Text };
     options: { id: string; label: string; gloss: Text; icon: OptionIcon }[];
   };

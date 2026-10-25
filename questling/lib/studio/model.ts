@@ -51,7 +51,7 @@ export type Quest = {
 export type Assignment = { id: string; groupId: string; campaign: string; version: number | null; startsAt: string; dueAt: string | null };
 
 export type DailyContent = {
-  word: { text: string; ipa: string; translation: { ru: string; en: string }; example: string };
+  word: { text: string; ipa: string; translation: { ru: string; en: string }; example: string; audio?: string };
   fact: { title: string; text: string; explanation: { ru: string; en: string }; source: string };
   quiz: { question: string; options: { id: string; text: string }[]; correct: string };
 };
@@ -68,7 +68,11 @@ export type StudioFacts = {
   assignments: Assignment[];
   daily: DailyEntry[];
   messages: MentorMessage[];
+  /** The teacher's recordings (lib/server/media.ts), with links to play them; none in the demo. */
+  media: MediaItem[];
 };
+
+export type MediaItem = { id: string; name: string; mime: string; size: number; durationMs: number; createdAt: string; url: string };
 
 export type StudioEffect =
   | { type: "group.create"; group: Omit<Group, "createdAt" | "archivedAt"> }

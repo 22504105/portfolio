@@ -79,6 +79,7 @@ export function questionNode(
       hint,
       evidence: false,
       listen: !!scene.listen,
+      ...(scene.audio ? { audio: scene.audio } : {}),
     };
   // Evidence: only the offered clues the student has found can be shown.
   const found = scene.clues.filter((id) => run.clues.includes(id)).map((id) => campaign.clues.find((c) => c.id === id)!);

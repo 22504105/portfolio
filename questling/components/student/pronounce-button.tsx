@@ -5,10 +5,11 @@ import { LineAudioButton } from "./line-audio";
 // Says the word aloud: its built-in recording, else the device's English voice (lib/client/audio.ts).
 // Disabled where neither exists, rather than pretending to work.
 
-export function PronounceButton({ word, label }: { word: string; label: string }) {
+export function PronounceButton({ word, src, label }: { word: string; src?: string | null; label: string }) {
   return (
     <LineAudioButton
       text={word}
+      src={src}
       label={label}
       className="border-magicViolet/40 text-magicViolet flex h-6 w-6 items-center justify-center rounded-full border bg-[#272338] transition-colors hover:text-white disabled:opacity-40"
     >

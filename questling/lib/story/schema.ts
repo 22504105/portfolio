@@ -68,6 +68,8 @@ const grimoire = z.object({
 });
 
 const base = { id, location: text(80), image, next: next.optional() };
+/** A teacher's recording of the scene (its id in the teacher's media, lib/server/media.ts). */
+const audio = z.string().uuid().optional();
 const graded = {
   maxAttempts: z.number().int().min(1).max(5),
   xp: z.number().int().min(0).max(200),
@@ -77,7 +79,7 @@ const graded = {
 };
 
 const scene = z.discriminatedUnion("kind", [
-  z.object({ ...base, kind: z.literal("narration"), text: line(600), translation: text(600), clue: id.optional() }),
+  z.object({ ...base, kind: z.literal("narration"), text: line(600), translation: text(600), clue: id.optional(), audio }),
   z.object({
     ...base,
     kind: z.literal("dialogue"),
@@ -86,6 +88,7 @@ const scene = z.discriminatedUnion("kind", [
       .min(1)
       .max(8),
     clue: id.optional(),
+    audio,
   }),
   z.object({
     ...base,
@@ -105,6 +108,7 @@ const scene = z.discriminatedUnion("kind", [
     parchment: line(300),
     translation: text(300),
     listen: z.boolean().optional(),
+    audio,
     prompt: z.object({ lead: text(200), task: text(200) }),
     options: z
       .array(z.object({ id, label: line(80), gloss: text(120), icon: z.enum(OPTION_ICONS) }))

@@ -4,6 +4,7 @@
 import { Icon } from "@/components/ui/icon";
 import type { Text } from "@/lib/content/text";
 import { useStudio } from "@/lib/client/studio";
+import { AudioField } from "./audio-field";
 import { fill } from "@/lib/i18n";
 import type { Draft } from "@/lib/studio/builder";
 import { CEFR_LEVELS, type Cefr } from "@/lib/studio/model";
@@ -197,6 +198,7 @@ export function SceneInspector({
             onChange={(v) => edit((s) => s.kind === "narration" && (s.translation = v))}
           />
           <ClueSelect value={scene.clue} clues={clues} onChange={(v) => edit((s) => s.kind === "narration" && (s.clue = v))} />
+          <AudioField value={scene.audio} onChange={(v) => edit((s) => s.kind === "narration" && (v ? (s.audio = v) : delete s.audio))} />
         </>
       ) : null}
 
@@ -246,6 +248,7 @@ export function SceneInspector({
             ))}
           </div>
           <ClueSelect value={scene.clue} clues={clues} onChange={(v) => edit((s) => s.kind === "dialogue" && (s.clue = v))} />
+          <AudioField value={scene.audio} onChange={(v) => edit((s) => s.kind === "dialogue" && (v ? (s.audio = v) : delete s.audio))} />
         </>
       ) : null}
 
@@ -459,6 +462,7 @@ function QuestionForm({ scene, draft, edit }: { scene: Extract<Scene, { kind: "q
         <Icon name="hearing" className="text-secondary text-[18px]" />
         <span>{f.listen}</span>
       </label>
+      <AudioField value={scene.audio} onChange={(v) => q((s) => (v ? (s.audio = v) : delete s.audio))} />
       <Pair label={f.translation} value={scene.translation} onChange={(v) => q((s) => (s.translation = v))} />
       <Pair label={f.lead} value={scene.prompt.lead} onChange={(v) => q((s) => (s.prompt.lead = v))} />
       <Pair label={f.task} value={scene.prompt.task} onChange={(v) => q((s) => (s.prompt.task = v))} />

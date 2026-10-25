@@ -63,6 +63,11 @@ recovery (5/h); per-user limits on actions (600/h), studio actions (900/h), join
 deletion (5/h). Counted on a separate connection before the request's transaction. Bodies over 16 KB and
 non-JSON bodies are refused.
 
+**Recordings** — teachers' uploads are checked by content (signature and decoding, not the name),
+limited in size, length and per-teacher quota, stored in a table only the server reads, and served
+through per-viewer, per-recording signed links: a student gets links only to recordings in what is
+assigned to them (`docs/audio.md`). Tests: `tests/media.test.ts`, `tests/db/studio.test.ts`.
+
 **Headers** — `next.config.ts`: CSP (`default-src 'self'`, scripts from self and `telegram.org`,
 `frame-ancestors` only self and Telegram's web clients, `object-src 'none'`, `form-action 'self'`),
 `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`, HSTS; no `X-Powered-By`.

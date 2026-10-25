@@ -131,6 +131,7 @@ export function DiscoveryScreen() {
                 </div>
                 <LineAudioButton
                   text={entry.word.text}
+                  src={entry.word.audio}
                   label={t.home.pronounce}
                   action="pronounce-word"
                   className="bg-primary text-on-primary flex h-11 w-11 cursor-pointer items-center justify-center rounded-full shadow-[0_0_16px_rgba(228,194,133,0.35)] transition-transform active:scale-90 disabled:opacity-50"

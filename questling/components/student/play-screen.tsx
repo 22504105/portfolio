@@ -145,6 +145,7 @@ export function PlayScreen({ campaignId }: { campaignId?: string }) {
             text={scene.text}
             translation={tr(scene.translation, locale)}
             clue={clueTitle(scene.clue)}
+            audio={scene.audio}
             onNext={() => pass({ type: "advance", scene: scene.id })}
           />
         );
@@ -159,6 +160,7 @@ export function PlayScreen({ campaignId }: { campaignId?: string }) {
               translation: tr(line.translation, locale),
             }))}
             clue={clueTitle(scene.clue)}
+            audio={scene.audio}
             onNext={() => pass({ type: "advance", scene: scene.id })}
           />
         );

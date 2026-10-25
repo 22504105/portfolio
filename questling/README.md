@@ -65,20 +65,21 @@ from this folder; settings with `node scripts/vercel-env.mjs`. Release order, st
 
 ## Documents
 
-| File                                                       | About                                                      |
-| ---------------------------------------------------------- | ---------------------------------------------------------- |
-| [`docs/architecture.md`](docs/architecture.md)             | stack, identity, the student record, campaigns, the studio |
-| [`docs/design-screen-map.md`](docs/design-screen-map.md)   | every Stitch screen and state → route, owner's decisions   |
-| [`docs/visual-qa/README.md`](docs/visual-qa/README.md)     | screenshot comparison and every known visual difference    |
-| [`docs/ASSET_AUDIT.md`](docs/ASSET_AUDIT.md)               | images, equipment layers, what was made in Blender         |
-| [`docs/qa-report.md`](docs/qa-report.md)                   | the functional QA report, bugs fixed and left              |
-| [`docs/security.md`](docs/security.md)                     | the security review and its findings                       |
-| [`docs/telegram-checklist.md`](docs/telegram-checklist.md) | the manual check on phones (not done yet)                  |
-| [`docs/release.md`](docs/release.md)                       | release, staging, rollback, known limitations              |
-| [`docs/3d.md`](docs/3d.md)                                 | the first-pass 3D cat in Blender and its GLB files         |
+| File                                                       | About                                                          |
+| ---------------------------------------------------------- | -------------------------------------------------------------- |
+| [`docs/architecture.md`](docs/architecture.md)             | stack, identity, the student record, campaigns, the studio     |
+| [`docs/design-screen-map.md`](docs/design-screen-map.md)   | every Stitch screen and state → route, owner's decisions       |
+| [`docs/visual-qa/README.md`](docs/visual-qa/README.md)     | screenshot comparison and every known visual difference        |
+| [`docs/ASSET_AUDIT.md`](docs/ASSET_AUDIT.md)               | images, equipment layers, what was made in Blender             |
+| [`docs/qa-report.md`](docs/qa-report.md)                   | the functional QA report, bugs fixed and left                  |
+| [`docs/audio.md`](docs/audio.md)                           | recordings, playback order, teachers' uploads, what was tested |
+| [`docs/security.md`](docs/security.md)                     | the security review and its findings                           |
+| [`docs/telegram-checklist.md`](docs/telegram-checklist.md) | the manual check on phones (not done yet)                      |
+| [`docs/release.md`](docs/release.md)                       | release, staging, rollback, known limitations                  |
+| [`docs/3d.md`](docs/3d.md)                                 | the first-pass 3D cat in Blender and its GLB files             |
 
 ## Limitations
 
 Not yet tested on a physical Telegram client; teacher email needs the owner's SMTP for real teachers;
-pronunciation uses the device's speech synthesis (no uploaded audio). The full list:
+audio: built-in recordings and teachers' uploads, the device's voice as a fallback. The full list:
 [`docs/release.md`](docs/release.md#known-limitations-the-whole-product).

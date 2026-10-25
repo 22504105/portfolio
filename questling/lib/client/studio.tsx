@@ -3,7 +3,7 @@
 import { createContext, useContext } from "react";
 import type { StudioDictionary } from "@/lib/i18n/studio";
 import type { Locale } from "@/lib/i18n";
-import type { StudioFacts } from "@/lib/studio/model";
+import type { StudioFacts, MediaItem } from "@/lib/studio/model";
 import type { StudioAction, StudioOutcome, StudioRefusal } from "@/lib/studio/ops";
 
 // What every Teacher Studio screen reads: the teacher's facts, the group in view, and a way to act.
@@ -28,7 +28,14 @@ export type StudioApi = {
   groupId: string | null;
   setGroupId: (id: string) => void;
   signOut: () => void;
+  /** The teacher's recordings: only the signed-in studio has them (the demo has no server to keep files). */
+  media?: {
+    upload: (file: File) => Promise<{ ok: true; item: MediaItem } | { ok: false; reason: MediaRefusal }>;
+    remove: (id: string) => Promise<"deleted" | "in_use" | "not_found" | "network">;
+  };
 };
+
+export type MediaRefusal = "type" | "too_large" | "too_long" | "too_short" | "unreadable" | "quota" | "not_teacher" | "network";
 
 const StudioContext = createContext<StudioApi | null>(null);
 export const StudioProvider = StudioContext.Provider;

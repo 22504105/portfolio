@@ -41,7 +41,8 @@ export function readSession(token: unknown, secret: string, nowSeconds = Math.fl
   }
 }
 
-// A ticket: like a session, but for one purpose and five minutes, and it goes in a link's query. Telegram's
+// A ticket: like a session, but for one purpose and a short time (five minutes; a recording's link lives
+// as long as a session, since <audio> sends no headers either), and it goes in a link's query. Telegram's
 // own downloader (WebApp.downloadFile) fetches a plain address with no headers, so the student's data file
 // is fetched with a ticket the page asked for with its session. Signed with a separate key so that one
 // can never be read as the other.
@@ -49,8 +50,14 @@ export const TICKET_SECONDS = 5 * 60;
 
 const ticketKey = (secret: string) => createHmac("sha256", secret).update("questling-ticket").digest("base64url");
 
-export function issueTicket(userId: string, purpose: string, secret: string, nowSeconds = Math.floor(Date.now() / 1000)): string {
-  const payload = Buffer.from(JSON.stringify({ u: userId, e: nowSeconds + TICKET_SECONDS, p: purpose })).toString("base64url");
+export function issueTicket(
+  userId: string,
+  purpose: string,
+  secret: string,
+  nowSeconds = Math.floor(Date.now() / 1000),
+  seconds = TICKET_SECONDS,
+): string {
+  const payload = Buffer.from(JSON.stringify({ u: userId, e: nowSeconds + seconds, p: purpose })).toString("base64url");
   return `${payload}.${sign(payload, ticketKey(secret))}`;
 }
 

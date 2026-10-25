@@ -66,7 +66,7 @@ export function PreviewScreen({ questId }: { questId: string }) {
 type Version = NonNullable<ReturnType<typeof useStudio>["facts"]["quests"][number]["versions"][number]>;
 
 function Sandbox({ graph, keys, questId }: { graph: Version["graph"]; keys: Version["keys"]; questId: string }) {
-  const { locale, base } = useStudio();
+  const { locale, base, facts: studio } = useStudio();
   const [facts, setFacts] = useState<Facts>(() => {
     const fresh = emptyFacts(new Date().toISOString());
     return {
@@ -77,6 +77,8 @@ function Sandbox({ graph, keys, questId }: { graph: Version["graph"]; keys: Vers
         assignments: [{ groupId: "preview", campaign: graph.id, version: graph.version, dueAt: null }],
         campaigns: [graph],
         messages: [],
+        // The teacher's own recordings play in the preview as they will for a student.
+        media: Object.fromEntries(studio.media.map((m) => [m.id, m.url])),
       },
     };
   });

@@ -111,6 +111,7 @@ export const en: Dictionary = {
     listen: "Listen to the line",
     listenHint: "The line is spoken in English: listen and choose the answer.",
     listenLine: "Listen to {speaker}'s line",
+    listenDialogue: "Listen to the dialogue",
     listenNoVoice: "This device cannot read aloud: ask your mentor for the line.",
     title: "Quest",
     options: "Answer options",

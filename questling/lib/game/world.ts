@@ -17,6 +17,8 @@ export type World = {
   messages: { id: string; ref: string; body: string; mentor: string; createdAt: string }[];
   /** The groups' teachers' words of the day (lib/studio/daily.ts), by day; their quiz keys stay on the server. */
   daily?: { day: string; entry: DailyEntry }[];
+  /** Links to the teachers' recordings this student may hear, by recording id (scene.audio, word.audio). */
+  media?: Record<string, string>;
 };
 
 export const emptyWorld = (): World => ({ groups: [], assignments: [], campaigns: [], messages: [] });

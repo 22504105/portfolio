@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { Icon } from "@/components/ui/icon";
 import { useNow } from "@/lib/client/student";
 import { useStudio } from "@/lib/client/studio";
+import { AudioField } from "./audio-field";
 import { dayFromNumber, dayNumber, dayOf } from "@/lib/game/time";
 import { fill } from "@/lib/i18n";
 import type { DailyContent } from "@/lib/studio/model";
@@ -103,6 +104,7 @@ export function DailyEditor() {
           </div>
           {pair(a.translation, content.word.translation, (v) => edit((c) => (c.word.translation = v)))}
           {input(a.example, content.word.example, (v) => edit((c) => (c.word.example = v)))}
+          <AudioField value={content.word.audio} onChange={(v) => edit((c) => (v ? (c.word.audio = v) : delete c.word.audio))} />
         </section>
 
         <section className="p-space-md bg-surface-container-low gap-space-sm flex flex-col rounded-xl">

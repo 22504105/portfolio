@@ -10,7 +10,15 @@ import type { DailyContent } from "./model";
 
 export const teacherDailyId = (entryId: string) => `t-${entryId}`;
 
-export function studentDaily(entryId: string, day: string, content: DailyContent, cefr: string, mentor: string): StudentDaily {
+export function studentDaily(
+  entryId: string,
+  day: string,
+  content: DailyContent,
+  cefr: string,
+  mentor: string,
+  /** The link to the teacher's recording of the word, if they made one. */
+  audio: string | null = null,
+): StudentDaily {
   const english = `${content.fact.title} — ${content.fact.text}`;
   return {
     id: teacherDailyId(entryId),
@@ -22,6 +30,7 @@ export function studentDaily(entryId: string, day: string, content: DailyContent
       example: content.word.example,
       exampleTranslation: { ru: "", en: "" },
       cefr,
+      ...(audio ? { audio } : {}),
     },
     quiz: {
       phrase: content.quiz.question,

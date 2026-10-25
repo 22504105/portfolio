@@ -43,6 +43,12 @@ export function saveFile(name: string, text: string) {
 
 const StudentContext = createContext<StudentApi | null>(null);
 
+/** The link to a teacher's recording this student may hear (from their world), or null. */
+export function useMediaLink(id: string | undefined | null): string | null {
+  const { facts } = useStudent();
+  return id ? (facts.world?.media?.[id] ?? null) : null;
+}
+
 export const StudentProvider = StudentContext.Provider;
 
 export function useStudent(): StudentApi {

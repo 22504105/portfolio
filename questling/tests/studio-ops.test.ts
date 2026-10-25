@@ -25,6 +25,7 @@ function teacher() {
       assignments: [],
       daily: [],
       messages: [],
+      media: [],
     },
   };
   const act = (action: StudioAction) => {

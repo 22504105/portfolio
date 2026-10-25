@@ -5,6 +5,7 @@ import type { Cefr, Member, Quest, StudioEffect, StudioFacts } from "@/lib/studi
 import type { Campaign, CampaignKeys } from "@/lib/story/graph";
 import type { RunState } from "@/lib/story/run";
 import type { Db } from "./db";
+import { mediaUrl, teacherMedia } from "./media";
 
 // A teacher's facts as stored, and the effects of their actions written back (mirrors
 // applyStudioEffects in lib/studio/model.ts). Every query is scoped to the teacher: the members are
@@ -148,6 +149,7 @@ export async function loadStudio(db: Db, teacherId: string): Promise<StudioFacts
       dueAt: a.due_at && iso(a.due_at),
     })),
     daily: daily.rows.map((d) => ({ id: d.id, groupId: d.group_id, day: d.day, content: d.content })),
+    media: (await teacherMedia(db, teacherId)).map((m) => ({ ...m, url: mediaUrl(teacherId, m.id) })),
     messages: messages.rows.map((m) => ({
       id: m.id,
       userId: m.user_id,

@@ -235,7 +235,7 @@ export function HomeScreen() {
                     <Link href={word.href} className="font-cormorant text-parchment text-xl font-bold tracking-wide">
                       {word.word}
                     </Link>
-                    <PronounceButton word={word.word} label={t.home.pronounce} />
+                    <PronounceButton word={word.word} src={word.audio} label={t.home.pronounce} />
                   </div>
                   <p className="text-parchmentMuted -mt-0.5 text-xs font-medium">{word.translation}</p>
                 </div>

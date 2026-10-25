@@ -30,7 +30,7 @@ export type HomeView = {
     mapHref: string;
   };
   dailyQuests: { id: string; title: string; description: string; xp: number; image: string; tone: "gold" | "violet"; href: string }[];
-  word: { word: string; translation: string; example: string; href: string };
+  word: { word: string; translation: string; example: string; href: string; audio?: string };
   unreadNotifications: boolean;
 };
 
@@ -72,6 +72,7 @@ export function homeView(facts: Facts, locale: Locale, base: string, today: stri
       })),
     word: {
       word: entry.word.text,
+      ...(entry.word.audio ? { audio: entry.word.audio } : {}),
       translation: tr(entry.word.translation, locale),
       example: entry.word.example,
       href: `${base}/discovery`,

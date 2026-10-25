@@ -15,6 +15,8 @@ export type DailyEntry = {
     example: string;
     exampleTranslation: Text;
     cefr: string;
+    /** A teacher's recording of the word (its link); the built-in words have their own (lib/audio). */
+    audio?: string;
   };
   quiz: { phrase: string; options: { id: string; text: Text }[]; xp: number };
   fact: { text: Text; source: string; archive: number };

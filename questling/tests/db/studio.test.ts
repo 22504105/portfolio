@@ -4,6 +4,9 @@ import { runOf } from "@/lib/game/stats";
 import { dayOf } from "@/lib/game/time";
 import { handle } from "@/lib/server/api";
 import { resetPool } from "@/lib/server/db";
+import { issueSession } from "@/lib/server/session";
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import { act, join, signInWithTelegram, state } from "@/lib/server/service";
 import { signInTeacher, studioAct, studioState } from "@/lib/server/studio-service";
 import { loadStudio, persistStudio } from "@/lib/server/studio-store";
@@ -476,5 +479,111 @@ describe("the studio API", () => {
     const data = await response.json();
     expect(data.error).toBe("invalid_graph");
     expect(data.problems.join()).toMatch(/start leads to unknown scene missing/);
+  });
+});
+
+describe("teachers' recordings", () => {
+  const SECRET = "test-only-session-secret-of-at-least-32-characters";
+  const origin = "http://localhost:3000";
+  const fixture = (name: string) => readFileSync(path.join(import.meta.dirname, "..", "fixtures", "audio", name));
+  const upload = (token: string, bytes: Uint8Array, name = "line.mp3") =>
+    handle(
+      new Request(`${origin}/api/v1/studio/media`, {
+        method: "POST",
+        headers: { "Content-Type": "application/octet-stream", Authorization: `Bearer ${token}`, "X-File-Name": encodeURIComponent(name) },
+        body: new Uint8Array(bytes),
+      }),
+      ["studio", "media"],
+    );
+  const remove = (token: string, id: string) =>
+    handle(
+      new Request(`${origin}/api/v1/studio/media/delete`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ id }),
+      }),
+      ["studio", "media", "delete"],
+    );
+  const fetchMedia = (url: string, range?: string) =>
+    handle(new Request(`${origin}${url}`, { headers: range ? { Range: range } : {} }), url.split("?")[0].split("/").slice(3));
+  const token = (userId: string) => issueSession(userId, SECRET).token;
+
+  it("are uploaded by teachers only, checked by content, and removed only by their owner when unused", async () => {
+    const alice = await newTeacher(31);
+    const bob = await newTeacher(32);
+    const student = await newStudent(33);
+
+    const saved = await upload(token(alice), fixture("ok.m4a"), "Голос Алисы.m4a");
+    expect(saved.status).toBe(200);
+    const { asset } = await saved.json();
+    expect(asset).toMatchObject({ mime: "audio/mp4", name: "Голос Алисы.m4a" });
+    expect(asset.durationMs).toBeGreaterThan(1000);
+
+    // Not a teacher; not audio; a renamed picture; too long.
+    expect((await upload(token(student), fixture("ok.mp3"))).status).toBe(403);
+    expect((await (await upload(token(alice), fixture("notaudio.png"), "x.mp3")).json()).error).toBe("type");
+    expect((await (await upload(token(alice), fixture("fake.mp3"))).json()).error).toBe("unreadable");
+    expect((await (await upload(token(alice), fixture("long.mp3"))).json()).error).toBe("too_long");
+
+    // The teacher's own list, with a link that plays; not in another teacher's.
+    expect((await tx((db) => studioState(db, alice))).media.map((m) => m.id)).toEqual([asset.id]);
+    expect((await tx((db) => studioState(db, bob))).media).toEqual([]);
+    const played = await fetchMedia(asset.url);
+    expect(played.status).toBe(200);
+    expect(played.headers.get("content-type")).toBe("audio/mp4");
+
+    // Bob can neither delete it nor publish a campaign with it.
+    expect((await remove(token(bob), asset.id)).status).toBe(404);
+    const questId = idOf(await studio(bob, { type: "createQuest", title: "Чужой голос", cefr: "A2" }));
+    const draft = (await tx((db) => studioState(db, bob))).quests[0].versions[0];
+    const graph = structuredClone(draft.graph);
+    (graph.chapters[0].scenes[0] as { audio?: string }).audio = asset.id;
+    await studio(bob, { type: "saveDraft", questId, graph, keys: draft.keys });
+    const refused = await tx((db) => studioAct(db, bob, { action: { type: "publish", questId } })).catch((e) => e);
+    expect(refused.problems.join()).toMatch(/recording is not one of yours/);
+
+    // Alice can delete her own when nothing uses it.
+    expect((await remove(token(alice), asset.id)).status).toBe(200);
+    expect((await fetchMedia(asset.url)).status).toBe(404);
+  });
+
+  it("reach the students of the group the campaign is assigned to, and nobody else; in use, they stay", async () => {
+    const alice = await newTeacher(41);
+    const groupId = idOf(await studio(alice, { type: "createGroup", name: "Слушатели", cefr: "A2" }));
+    const code = (await tx((db) => studioState(db, alice))).groups[0].inviteCode;
+    const { asset } = await (await upload(token(alice), fixture("ok.mp3"), "intro.mp3")).json();
+
+    const questId = idOf(await studio(alice, { type: "createQuest", title: "Голоса", cefr: "A2" }));
+    const draft = (await tx((db) => studioState(db, alice))).quests[0].versions[0];
+    const graph = structuredClone(draft.graph);
+    (graph.chapters[0].scenes[0] as { audio?: string }).audio = asset.id;
+    await studio(alice, { type: "saveDraft", questId, graph, keys: draft.keys });
+    await studio(alice, { type: "publish", questId });
+    const slug = (await tx((db) => studioState(db, alice))).quests[0].slug;
+    await studio(alice, { type: "assign", groupId, campaign: slug });
+
+    const student = await newStudent(42);
+    const outsider = await newStudent(43);
+    await tx((db) => join(db, student, code));
+    const world = (await tx((db) => state(db, student))).facts.world!;
+    const url = world.media?.[asset.id];
+    expect(url).toMatch(/^\/api\/v1\/media\/.+\?ticket=/);
+    expect((await tx((db) => state(db, outsider))).facts.world?.media ?? {}).toEqual({});
+
+    // The file, whole and in ranges (Safari asks for ranges); a ticket for another id opens nothing.
+    const whole = await fetchMedia(url!);
+    expect(whole.status).toBe(200);
+    const size = Number(whole.headers.get("content-length"));
+    const part = await fetchMedia(url!, "bytes=0-99");
+    expect(part.status).toBe(206);
+    expect(part.headers.get("content-range")).toBe(`bytes 0-99/${size}`);
+    expect((await part.arrayBuffer()).byteLength).toBe(100);
+    expect((await fetchMedia(url!, `bytes=${size + 10}-`)).status).toBe(416);
+    const other = (await (await upload(token(alice), fixture("ok.wav"), "other.wav")).json()).asset.id;
+    expect((await fetchMedia(url!.replace(asset.id, other))).status).toBe(403);
+    expect((await fetchMedia(`/api/v1/media/${asset.id}?ticket=forged`)).status).toBe(403);
+
+    // Published and played: it cannot be deleted under the students.
+    expect((await remove(token(alice), asset.id)).status).toBe(409);
   });
 });

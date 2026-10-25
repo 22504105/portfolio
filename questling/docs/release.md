@@ -61,6 +61,13 @@ Deploying is the owner's decision (the repository's rules): nothing here is run 
 - **Bot**: the menu button and Main Mini App point at the production address and need no change on a
   rollback.
 
+## Audio on production (2026-10-25)
+
+Teachers' recordings need **migration 7** (`20261026000100_media_assets.sql`, adds one table, touches
+no existing row) applied with `npm run db:migrate` before the deploy; the owner decides. Rollback: the
+site as above; the table can stay (nothing else refers to it) or be dropped. Built-in recordings are
+static files (`public/audio`, 1.8 MB) and need nothing.
+
 ## Gate 5 on production
 
 Gate 5 adds no migration. Its server changes are three routes (`GET /api/v1/export`,
