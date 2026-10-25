@@ -61,10 +61,25 @@ Deploying is the owner's decision (the repository's rules): nothing here is run 
 - **Bot**: the menu button and Main Mini App point at the production address and need no change on a
   rollback.
 
+## Database backup and migration 7 (done 2026-10-25)
+
+The owner confirmed (2026-10-25) that the Questling database holds only development data and allowed
+testing on it. Before migration 7: a backup of the `questling` and `questling_meta` schemas (pg_dump 18.6,
+custom format, through the session pooler on port 5432) and of the teachers' `auth.users` /
+`auth.identities` rows, in `E:\Backups\questling\2026-10-25T18-31-43` (outside git: it holds an email
+and a Telegram id). It was restored into a throwaway local PostgreSQL and compared with the live database
+table by table, row by row (in UTC): all 20 tables identical. Migration 7 was first applied to that
+restored copy (no existing row changed; the new table has RLS and no API access), then with
+`npm run db:migrate`. The scripts: `.tmp/backup.mjs`, `.tmp/verify-backup.mjs`,
+`.tmp/dry-run-migration.mjs` (local, not in git; PostgreSQL tools in `E:\Tools\pgsql`).
+
+To restore: `pg_restore --no-owner --no-privileges --clean --if-exists -d <url> questling.dump` (session
+pooler URL), then the auth rows with `psql -f auth-users.sql` if those were lost.
+
 ## Audio on production (2026-10-25)
 
 Teachers' recordings need **migration 7** (`20261026000100_media_assets.sql`, adds one table, touches
-no existing row) applied with `npm run db:migrate` before the deploy; the owner decides. Rollback: the
+no existing row): **applied 2026-10-25** (above); the production site still runs older code, which ignores it. Rollback: the
 site as above; the table can stay (nothing else refers to it) or be dropped. Built-in recordings are
 static files (`public/audio`, 1.8 MB) and need nothing.
 

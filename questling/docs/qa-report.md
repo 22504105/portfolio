@@ -7,9 +7,20 @@ screens are walked in the demo by Playwright (`e2e/*`); the deployed site with t
 by `scripts/live-check.mjs` (31 points at Gate 4). A read-only coverage audit mapped every requirement to
 code and tests; its findings were then checked by hand, and the real ones fixed (below).
 
+**Live check on the real database** (2026-10-25, local build against the Questling database, which the
+owner confirmed holds only development data): `npx tsx scripts/live-check.mjs http://localhost:3100`
+**46 / 46** — Telegram sign-in and forgery, hero, daily quiz and reward once, the day's quick quests
+completed (+180 XP, +60 coins) and not replayable, a shop purchase (60 coins, once), the story run kept
+with its attempts, the locked campaign, teacher sign-in, groups and invites, publish v1 / v2, frozen
+versions, assignment, the teacher's word of the day, audio upload / content check / student-only
+access / ranges / forged links / in-use removal refused, mentor replies, data export and deletion. It
+removed its test student, outsider and teacher; the owner's rows are untouched.
+
 **Automated results** (local, Windows, Chrome): `npm run typecheck` ✓, `npx eslint .` ✓, `npm run
-format:check` ✓, `npx vitest run` **124 / 124**, `npx playwright test` **81 / 81**, `npm audit --omit=dev`
-0 vulnerabilities. The live check was not re-run: Gate 5 is not deployed to production.
+format:check` ✓, `npx vitest run` **132 / 132**, `npx playwright test` **89 / 89** (2026-10-25; in 2 of 5
+full runs one URL assertion of a navigation test timed out under the parallel load and passed on the next
+run; never in five repeats of those files alone), `npm audit --omit=dev` 0 vulnerabilities (after
+upgrading music-metadata, `docs/security.md`).
 
 ## By area
 

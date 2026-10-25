@@ -83,9 +83,9 @@ starts inside the tap itself (no wait before `play()`), which iOS and Telegram r
 - **No physical device has been used**: iOS Safari, Android Chrome, Telegram on Android and iOS are
   untested. `docs/telegram-checklist.md` lists what to check (row 17 and the audio rows below).
 - A real device without an English voice (simulated in the browser only).
-- Uploads against the real database: migration 7 is **not applied** to the production database (it needs
-  the owner's word), and staging has no database. Until it is applied, the studio's upload answers with
-  a server error on production.
+- Uploads on the deployed site: migration 7 is applied (2026-10-25) and the live check passed uploads,
+  access and playback against the real database **from a local build**; the deployed site still runs
+  the code before audio, so uploads there wait for the deploy.
 
 Manual audio checks to add to a device session: play the word of the day (recording); turn on airplane
 mode and play a line (device voice or the notice); play two lines quickly (only the second); leave the

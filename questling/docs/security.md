@@ -68,6 +68,10 @@ limited in size, length and per-teacher quota, stored in a table only the server
 through per-viewer, per-recording signed links: a student gets links only to recordings in what is
 assigned to them (`docs/audio.md`). Tests: `tests/media.test.ts`, `tests/db/studio.test.ts`.
 
+**Dependencies** — `npm audit --omit=dev` on 2026-10-25 found music-metadata 11.12.1 (used on teachers'
+uploads) open to denial of service by crafted files (an MP4 loop, unbounded ID3v2 and APEv2 allocation,
+among others); upgraded to 11.16.1, 0 vulnerabilities since.
+
 **Headers** — `next.config.ts`: CSP (`default-src 'self'`, scripts from self and `telegram.org`,
 `frame-ancestors` only self and Telegram's web clients, `object-src 'none'`, `form-action 'self'`),
 `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`, HSTS; no `X-Powered-By`.

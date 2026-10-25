@@ -2,7 +2,7 @@
 // (sign-in data signed with the bot's token from .env.local), plays a few actions, reads the state
 // back, then deletes the test student. Run against a local `next start` with .env.local, or a deployment:
 //
-//   node scripts/live-check.mjs [http://localhost:3100]
+//   npx tsx scripts/live-check.mjs [http://localhost:3100]   (tsx: it reads the answer keys from the sources)
 //
 // The test student is a made-up Telegram id (999 000 000 + random), never a real person.
 import { createHmac } from "node:crypto";
@@ -18,14 +18,16 @@ const env = Object.fromEntries(
 );
 
 const telegramId = 999_000_000 + Math.floor(Math.random() * 999_999);
+// A second made-up student, outside the check's group: what must stay closed to them.
+const outsiderId = telegramId + 1_000_000;
 // The studio part's teacher: a throwaway Supabase account, removed at the end.
 const teacherAuthId = crypto.randomUUID();
 const teacherEmail = `live-check-${telegramId}@questling.invalid`;
 const teacherPassword = `Live-${crypto.randomUUID()}`;
-function initData() {
+function initData(id = telegramId) {
   const params = new URLSearchParams({
     auth_date: String(Math.floor(Date.now() / 1000)),
-    user: JSON.stringify({ id: telegramId, first_name: "Live check", username: "questling_live_check", language_code: "ru" }),
+    user: JSON.stringify({ id, first_name: "Live check", username: "questling_live_check", language_code: "ru" }),
   });
   const check = [...params]
     .map(([k, v]) => `${k}=${v}`)
@@ -82,6 +84,74 @@ try {
 
   const poor = await call("POST", "actions", { action: { type: "buy", itemId: "ghost" } }, token);
   check(poor.status === 409, "an item out of reach is not sold");
+
+  // Today's quick quests, answered right: XP and coins once each, then a real purchase with the coins.
+  const { quickQuestKeys } = await import("../lib/content/quick-quest-keys.ts");
+  const { dailyQuests } = await import("../lib/game/stats.ts");
+  const { items } = await import("../lib/content/items.ts");
+  const right = (key) =>
+    key.kind === "choice"
+      ? { kind: "choice", option: key.correct }
+      : key.kind === "multi"
+        ? { kind: "multi", options: key.correct }
+        : key.kind === "fill"
+          ? { kind: "fill", word: key.correct }
+          : key.kind === "order"
+            ? { kind: "order", tiles: key.correct }
+            : { kind: "match", pairs: key.correct };
+  const day = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Moscow" }).format(new Date());
+  const balanceOf = (facts, currency) => (facts?.ledger ?? []).filter((e) => e.currency === currency).reduce((sum, e) => sum + e.amount, 0);
+  let facts = (await call("GET", "state", undefined, token)).data.facts;
+  const before = { xp: balanceOf(facts, "xp"), coins: balanceOf(facts, "coins") };
+  let finished = 0;
+  for (const quest of dailyQuests(day)) {
+    let last = null;
+    for (const [questionId, key] of Object.entries(quickQuestKeys[quest.id]))
+      last = await call(
+        "POST",
+        "actions",
+        { action: { type: "answerQuest", questId: quest.id, questionId, answer: right(key) }, locale: "ru" },
+        token,
+      );
+    if (last?.status === 200 && last.data.outcome?.finished) finished++;
+    facts = last?.data.facts ?? facts;
+  }
+  const earned = { xp: balanceOf(facts, "xp") - before.xp, coins: balanceOf(facts, "coins") - before.coins };
+  check(
+    finished === dailyQuests(day).length && earned.xp > 0 && earned.coins > 0,
+    `the day's quick quests are completed and rewarded (+${earned.xp} XP, +${earned.coins} coins)`,
+  );
+  const first = dailyQuests(day)[0];
+  const replay = await call(
+    "POST",
+    "actions",
+    {
+      action: {
+        type: "answerQuest",
+        questId: first.id,
+        questionId: Object.keys(quickQuestKeys[first.id])[0],
+        answer: right(Object.values(quickQuestKeys[first.id])[0]),
+      },
+    },
+    token,
+  );
+  check(replay.status === 409, "a finished quest cannot be played again for more");
+  const coins = balanceOf(facts, "coins");
+  const owned = new Set((facts.inventory ?? []).map((i) => i.item));
+  const affordable = items
+    .filter((i) => i.price > 0 && i.price <= coins && i.level <= 1 && !owned.has(i.id))
+    .sort((a, b) => a.price - b.price)[0];
+  if (affordable) {
+    const bought = await call("POST", "actions", { action: { type: "buy", itemId: affordable.id } }, token);
+    check(
+      bought.status === 200 &&
+        balanceOf(bought.data.facts, "coins") === coins - affordable.price &&
+        bought.data.facts.inventory.some((i) => i.item === affordable.id),
+      `a shop purchase takes ${affordable.price} coins once and adds the item`,
+    );
+    const twice = await call("POST", "actions", { action: { type: "buy", itemId: affordable.id } }, token);
+    check(twice.status === 409, "the same item is not sold twice");
+  } else check(false, `no level-1 item costs at most ${coins} coins: the purchase was not tested`);
 
   // Gate 3: the story is a run kept on the server; a wrong answer uses an attempt there.
   const story = (move) => call("POST", "actions", { action: { type: "story", campaign: "forgotten-academy", move }, locale: "ru" }, token);
@@ -196,6 +266,48 @@ try {
     "the student gets the teacher's word of the day",
   );
 
+  // Audio (2026-10-25): a teacher's recording, checked by content, heard only by the group's students.
+  const { readFileSync: readBytes } = await import("node:fs");
+  const upload = (bytes, sessionToken, name) =>
+    fetch(`${base}/api/v1/studio/media`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/octet-stream",
+        Authorization: `Bearer ${sessionToken}`,
+        "X-File-Name": encodeURIComponent(name),
+      },
+      body: bytes,
+    }).then(async (r) => ({ status: r.status, data: await r.json().catch(() => ({})) }));
+  const recording = await upload(readBytes("tests/fixtures/audio/ok.m4a"), tt, "live-check.m4a");
+  check(recording.status === 200 && recording.data.asset?.mime === "audio/mp4", "a teacher uploads an M4A recording");
+  const picture = await upload(readBytes("tests/fixtures/audio/notaudio.png"), tt, "picture.mp3");
+  check(picture.status === 422 && picture.data.error === "type", "a picture named .mp3 is refused by its content");
+  const byStudent = await upload(readBytes("tests/fixtures/audio/ok.mp3"), token, "student.mp3");
+  check(byStudent.status === 403, "a student cannot upload");
+  const assetId = recording.data.asset?.id;
+  const v1 = (await call("GET", "studio/state", undefined, tt)).data.facts?.quests
+    ?.find((q) => q.id === questId)
+    ?.versions?.find((v) => v.version === 1);
+  const voiced = structuredClone(v1.graph);
+  voiced.chapters[0].scenes[0].audio = assetId;
+  await studio({ type: "saveDraft", questId, graph: voiced, keys: v1.keys });
+  const v2 = await studio({ type: "publish", questId });
+  await studio({ type: "assign", groupId, campaign: own?.slug, version: 2, dueAt: null });
+  check(v2.status === 200, "a campaign with the recording is published as v2 and assigned");
+  const link = (await call("GET", "state", undefined, token)).data.facts?.world?.media?.[assetId];
+  const heard = link ? await fetch(`${base}${link}`) : null;
+  const part = link ? await fetch(`${base}${link}`, { headers: { Range: "bytes=0-99" } }) : null;
+  check(
+    heard?.status === 200 && heard.headers.get("content-type") === "audio/mp4" && part?.status === 206,
+    "the group's student plays it, whole and in ranges",
+  );
+  const outsider = await call("POST", "session", { initData: initData(outsiderId) });
+  check(outsider.status === 200 && !(outsider.data.facts?.world?.media ?? {})[assetId], "a student outside the group gets no link to it");
+  const forgedLink = await fetch(`${base}/api/v1/media/${assetId}?ticket=forged`);
+  check(forgedLink.status === 403, "a forged link opens nothing");
+  const inUse = await call("POST", "studio/media/delete", { id: assetId }, tt);
+  check(inUse.status === 409, "a recording a published version uses cannot be deleted");
+
   await db.query(
     "insert into questling.completions (user_id, kind, ref, at) select user_id, 'help_request', 'forgotten-academy/tower-2', now() from questling.auth_identities where provider = 'telegram' and subject = $1",
     [String(telegramId)],
@@ -222,8 +334,8 @@ try {
 } finally {
   // Remove the test student and everything of theirs.
   const removed = await db.query(
-    "delete from questling.users where id in (select user_id from questling.auth_identities where provider = 'telegram' and subject = $1)",
-    [String(telegramId)],
+    "delete from questling.users where id in (select user_id from questling.auth_identities where provider = 'telegram' and subject = any($1::text[]))",
+    [[String(telegramId), String(outsiderId)]],
   );
   console.log(`cleaned up ${removed.rowCount} test student`);
   // And the check's teacher: their groups, quests and replies go with their user; then the auth account.
