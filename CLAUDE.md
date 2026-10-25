@@ -538,8 +538,8 @@
     вторая база Supabase (активны два проекта — лимит бесплатного плана) и тестовый бот. `docs/release.md`.
   - **Звук (2026-10-25, `questling/docs/audio.md`)**: запись → голос устройства → честное сообщение
     (`lib/client/audio.ts`). Встроенная озвучка — Piper + голос `en_US-ljspeech-high` (общественное достояние),
-    `npx tsx scripts/build-audio.ts`; инструменты в `E:\Tools\piper`, `E:\Toolsfmpeg`, проверка речи Vosk в
-    `E:\Toolssr`. Записи учителя — таблица `questling.media_assets` (миграция 7, **в рабочую базу не применена**,
+    `npx tsx scripts/build-audio.ts`; инструменты в `E:\Tools\piper`, `E:\Tools\ffmpeg`, проверка речи Vosk в
+    `E:\Tools\asr`. Записи учителя — таблица `questling.media_assets` (миграция 7, **в рабочую базу не применена**,
     нужно слово владельца); бакет Storage потребовал бы ключ service_role. Ссылки на записи — с билетом на 6 ч.
   - Регулярки (`\d`, `\/`) в коде, вставляемом через Bash/Node-heredoc, теряют обратные слэши — такие
     строки править через Edit.
