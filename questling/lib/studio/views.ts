@@ -277,3 +277,70 @@ export function gradebook(facts: StudioFacts, groupId: string, locale: Locale) {
     .join("\n");
   return { campaigns: assigned.map(({ campaign }) => campaign), rows, csv };
 }
+
+/** The group page's four figures. */
+export function groupStats(facts: StudioFacts, group: Group, today: string, now: Date) {
+  const members = membersOf(facts, group.id);
+  const week = (back: number) => Array.from({ length: 7 }, (_, i) => dayFromNumber(dayNumber(today) - back - i));
+  const thisWeek = new Set(week(0));
+  const lastWeek = new Set(week(7));
+  const active = members.filter((m) => [...thisWeek].some((d) => activeDays(asFacts(m)).has(d))).length;
+  const rate = (days: Set<string> | null) => {
+    const answers = members.flatMap((m) => m.answers).filter((a) => !days || days.has(dayOf(a.at)));
+    return answers.length ? Math.round((answers.filter((a) => a.correct).length / answers.length) * 100) : null;
+  };
+  const score = rate(null) ?? 0;
+  const recent = rate(thisWeek);
+  const before = rate(lastWeek);
+  const done = weekActivity(facts, group.id, today).reduce((n, d) => n + d.count, 0);
+  const assignments = assignmentsOf(facts, group.id);
+  const soon = assignments.filter(
+    (a) => a.dueAt && Date.parse(a.dueAt) > now.getTime() && Date.parse(a.dueAt) - now.getTime() < 86_400_000,
+  ).length;
+  return {
+    members: members.length,
+    active,
+    activeShare: members.length ? Math.round((active / members.length) * 100) : 0,
+    score,
+    scoreDelta: recent !== null && before !== null ? recent - before : null,
+    done,
+    perStudent: members.length ? Math.round((done / members.length) * 10) / 10 : 0,
+    assignments: assignments.length,
+    soon,
+  };
+}
+
+/** How a group is doing in one assignment: who finished, the average progress, what it rewards. */
+export function assignmentReport(facts: StudioFacts, assignment: Assignment) {
+  const campaign = campaignFor(facts, assignment.campaign, assignment.version);
+  const members = membersOf(facts, assignment.groupId);
+  if (!campaign) return { campaign: null, finished: 0, total: members.length, progress: 0, xp: 0, behind: [] as Member[] };
+  const progress = members.map((m) => ({ m, p: progressIn(m, campaign) }));
+  const xp = campaign.chapters.reduce((n, c) => n + c.reward.xp + c.scenes.reduce((k, s) => k + (isGraded(s) ? s.xp : 0), 0), 0);
+  return {
+    campaign,
+    finished: progress.filter((x) => x.p === 100).length,
+    total: members.length,
+    progress: progress.length ? Math.round(progress.reduce((n, x) => n + x.p, 0) / progress.length) : 0,
+    xp,
+    behind: progress.filter((x) => x.p < 100).map((x) => x.m),
+  };
+}
+
+/** Campaigns a group could be given: the built-in ones and the teacher's published ones. */
+export function assignable(facts: StudioFacts, locale: Locale) {
+  const builtIn = [...campaignById.values()].map((c) => ({
+    id: c.id,
+    title: tr(c.title, locale),
+    cefr: c.cefr,
+    own: false,
+    version: null as number | null,
+  }));
+  const own = facts.quests
+    .filter((q) => !q.archivedAt)
+    .flatMap((q) => {
+      const latest = q.versions.filter((v) => v.status === "published").at(-1);
+      return latest ? [{ id: q.slug, title: q.title, cefr: q.cefr as string, own: true, version: latest.version as number | null }] : [];
+    });
+  return [...builtIn, ...own];
+}

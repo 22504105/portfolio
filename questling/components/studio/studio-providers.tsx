@@ -27,8 +27,8 @@ function rememberedGroup(): string | null {
 }
 
 function useGroup(facts: StudioFacts | null) {
-  const [wanted, setWanted] = useState<string | null>(null);
-  useEffect(() => setWanted(rememberedGroup()), []);
+  // Read once on the client; on the server the providers render nothing that depends on it.
+  const [wanted, setWanted] = useState<string | null>(() => (typeof window === "undefined" ? null : rememberedGroup()));
   const groupId = facts ? pickGroup(facts, wanted) : null;
   const setGroupId = useCallback((id: string) => {
     setWanted(id);
@@ -74,6 +74,7 @@ const subscribe = (listener: () => void) => {
 };
 
 export function DemoStudioProvider({ locale, children }: { locale: Locale; children: React.ReactNode }) {
+  const router = useRouter();
   const facts = useSyncExternalStore(subscribe, readDemo, () => null);
   const { groupId, setGroupId } = useGroup(facts);
   const act = useCallback(async (action: StudioAction): Promise<StudioActResult> => {
@@ -90,8 +91,8 @@ export function DemoStudioProvider({ locale, children }: { locale: Locale; child
       window.localStorage.removeItem(DEMO_KEY);
     } catch {}
     memory = null;
-    window.location.assign(`/${locale}/studio/login`);
-  }, [locale]);
+    router.push(`/${locale}/studio/login`);
+  }, [locale, router]);
   const api = useMemo<StudioApi | null>(
     () =>
       facts
@@ -195,8 +196,8 @@ export function LiveStudioProvider({ locale, children }: { locale: Locale; child
     try {
       window.sessionStorage.removeItem(SESSION_KEY);
     } catch {}
-    window.location.assign(login);
-  }, [login]);
+    router.push(login);
+  }, [login, router]);
 
   const api = useMemo<StudioApi | null>(
     () =>
