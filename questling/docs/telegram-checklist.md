@@ -42,9 +42,8 @@ Record the date, the Telegram app version and the device model with the results.
 
 - The bot: @QuestlingEnglish_bot, menu button "Играть" → `https://questling-dusky.vercel.app/ru/app`,
   Main Mini App on (checked through the Bot API).
-- **The deployed site runs the Gate 4 code.** Rows 11–13 (my data), 17 (audio), 20 (back button) and the
-  audio checks of `docs/audio.md` need the Gate 5 code deployed first: that is the owner's decision.
-  Everything else can be checked now.
+- **The deployed site runs the Gate 5 code** (deployed 2026-10-25, live check 46 / 46): every row,
+  including my data, audio and the back button, can be checked on a phone now.
 - The database is ready (migration 7 applied, backup taken); test accounts made on a phone are real rows
   of the development data: delete them in the app (Settings → My data) when done.
 - Teachers: signing up a new teacher needs confirmation off or SMTP (`docs/security.md`, finding 7);
