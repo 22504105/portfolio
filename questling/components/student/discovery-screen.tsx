@@ -7,7 +7,7 @@ import { DAILY_CLAIM_XP } from "@/lib/content/daily";
 import { tr } from "@/lib/content/text";
 import { speak, useSpeechSupported } from "@/lib/client/sound";
 import { useNow, useStudent } from "@/lib/client/student";
-import { balance, completed, dailyEntry, programDay, PROGRAM_DAYS } from "@/lib/game/stats";
+import { balance, completed, dailyFor, programDay, PROGRAM_DAYS } from "@/lib/game/stats";
 import { dayOf } from "@/lib/game/time";
 import { fill, LOCALES } from "@/lib/i18n";
 
@@ -24,7 +24,7 @@ export function DiscoveryScreen() {
   const { t, locale, base, facts, act } = useStudent();
   const speech = useSpeechSupported();
   const today = dayOf(useNow());
-  const entry = dailyEntry(today);
+  const entry = dailyFor(facts, today);
   const ref = `${entry.id}@${today}`;
   const answers = facts.answers.filter((a) => a.scope === "daily" && a.ref === ref);
   const solved = answers.some((a) => a.correct);
@@ -145,13 +145,17 @@ export function DiscoveryScreen() {
               <div className="gap-space-xs mb-1 flex flex-wrap items-center">
                 <span className="font-label-sm text-label-sm text-primary">{t.discovery.translation}</span>
                 <span className="font-body-md text-body-md text-text-ivory">{tr(entry.word.translation, locale)}</span>
-                <span className="font-caption text-caption text-text-muted italic">({tr(entry.word.partOfSpeech, locale)})</span>
+                {tr(entry.word.partOfSpeech, locale) ? (
+                  <span className="font-caption text-caption text-text-muted italic">({tr(entry.word.partOfSpeech, locale)})</span>
+                ) : null}
               </div>
               <div className="bg-surface-container-lowest/60 mt-2 rounded-sm p-2.5">
                 <p className="font-title-sm text-title-sm text-text-ivory italic" lang="en">
                   “{entry.word.example}”
                 </p>
-                <p className="font-caption text-caption text-text-muted mt-1">{tr(entry.word.exampleTranslation, locale)}</p>
+                {tr(entry.word.exampleTranslation, locale) ? (
+                  <p className="font-caption text-caption text-text-muted mt-1">{tr(entry.word.exampleTranslation, locale)}</p>
+                ) : null}
               </div>
             </div>
 

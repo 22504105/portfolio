@@ -28,6 +28,8 @@ export type Grader = (nodeId: string, optionId: string) => Promise<GradeResult>;
 export type Help = {
   group: string | null;
   asked: boolean;
+  /** The mentor's latest reply about this scene, if any. */
+  reply: { body: string; mentor: string } | null;
   onAsk: () => Promise<boolean>;
   /** The grimoire's word, checked by the rules: true when an attempt is back. */
   onStudy: (word: string) => Promise<boolean>;
@@ -83,6 +85,7 @@ export function StoryPlayer({ t, node, grade, initial, backHref, profileHref, on
             tried={node.options.filter((o) => state.eliminated.includes(o.id)).map((o) => o.label)}
             group={help.group}
             asked={help.asked}
+            reply={help.reply}
             onAsk={help.onAsk}
             onOpenGrimoire={() => dispatch({ type: "openGrimoire" })}
             mapHref={exitHref}

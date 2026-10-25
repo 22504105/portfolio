@@ -1,6 +1,7 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Facts } from "@/lib/game/facts";
 import { runOf } from "@/lib/game/stats";
+import { dayOf } from "@/lib/game/time";
 import { handle } from "@/lib/server/api";
 import { resetPool } from "@/lib/server/db";
 import { act, join, signInWithTelegram, state } from "@/lib/server/service";
@@ -131,6 +132,68 @@ describe("teachers", () => {
     const renewed = (await tx((db) => studioState(db, alice))).groups[0].inviteCode;
     await studio(alice, { type: "archiveGroup", groupId, archived: true });
     await expect(tx((db) => join(db, student, renewed))).rejects.toMatchObject({ code: "not_found" });
+  });
+});
+
+describe("help requests", () => {
+  it("the mentor's reply reaches the student who asked, and only them", async () => {
+    const alice = await newTeacher(1);
+    await studio(alice, { type: "createGroup", name: "Детективы A2", cefr: "A2" });
+    const code = (await tx((db) => studioState(db, alice))).groups[0].inviteCode;
+    const asking = await newStudent(5);
+    const other = await newStudent(6);
+    await tx((db) => join(db, asking, code));
+    await tx((db) => join(db, other, code));
+    // The request as the rules record it (askMentor, once the scene's attempts are used up).
+    const ref = "forgotten-academy/tower-2";
+    await tx((db) => db.query("insert into questling.completions (user_id, kind, ref, at) values ($1, 'help_request', $2, now())", [asking, ref]));
+    // Only someone who asked can be answered.
+    await expect(studio(alice, { type: "replyHelp", userId: other, ref, body: "x" })).rejects.toMatchObject({ code: "not_found" });
+    await studio(alice, { type: "replyHelp", userId: asking, ref, body: "Перечитай свиток." });
+
+    const seen = (await tx((db) => state(db, asking))).facts.world?.messages ?? [];
+    expect(seen).toMatchObject([{ ref, body: "Перечитай свиток.", mentor: "Учитель 1" }]);
+    expect((await tx((db) => state(db, other))).facts.world?.messages).toEqual([]);
+  });
+});
+
+describe("the teacher's word of the day", () => {
+  it("reaches the group's students on its day, graded on the server, its answer never in the student's state", async () => {
+    const alice = await newTeacher(1);
+    const groupId = idOf(await studio(alice, { type: "createGroup", name: "Детективы A2", cefr: "A2" }));
+    const code = (await tx((db) => studioState(db, alice))).groups[0].inviteCode;
+    const student = await newStudent(3);
+    const outsider = await newStudent(4);
+    await tx((db) => join(db, student, code));
+    const today = dayOf(new Date());
+    await studio(alice, {
+      type: "setDaily",
+      groupId,
+      day: today,
+      content: {
+        word: { text: "lantern", ipa: "ˈlæntən", translation: { ru: "фонарь", en: "lantern" }, example: "The lantern shines." },
+        fact: { title: "Lanterns", text: "Old lanterns burned oil.", explanation: { ru: "Старые фонари жгли масло.", en: "Old lanterns burned oil." }, source: "A history book" },
+        quiz: { question: "What did old lanterns burn?", options: [{ id: "a", text: "water" }, { id: "b", text: "oil" }], correct: "b" },
+      },
+    });
+
+    const seen = (await tx((db) => state(db, student))).facts;
+    const entry = seen.world?.daily?.find((d) => d.day === today)?.entry;
+    expect(entry?.word.text).toBe("lantern");
+    // The teacher's source note is not shown to students, nor is the answer anywhere in their state.
+    expect(entry?.fact.source).toBe("Учитель 1");
+    expect(JSON.stringify(seen)).not.toContain("A history book");
+    expect(JSON.stringify(seen.world?.daily)).not.toContain("correct");
+
+    const wrong = await tx((db) => act(db, student, { action: { type: "answerDailyQuiz", option: "a" } }));
+    expect(wrong.outcome).toMatchObject({ kind: "graded", correct: false });
+    const right = await tx((db) => act(db, student, { action: { type: "answerDailyQuiz", option: "b" } }));
+    expect(right.outcome).toMatchObject({ kind: "graded", correct: true });
+    expect(right.facts.answers.filter((a) => a.scope === "daily").map((a) => a.ref)).toEqual([`${entry!.id}@${today}`, `${entry!.id}@${today}`]);
+
+    // A student outside the group keeps the built-in word of the day.
+    const other = (await tx((db) => state(db, outsider))).facts;
+    expect(other.world?.daily ?? []).toEqual([]);
   });
 });
 

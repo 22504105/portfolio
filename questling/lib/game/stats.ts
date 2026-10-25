@@ -7,7 +7,7 @@ import type { Campaign, Chapter, Clue } from "@/lib/story/graph";
 import { chapterSolved, chapterState, locate, type ChapterState, type RunState as StoryRun } from "@/lib/story/run";
 import type { Facts } from "./facts";
 import { dayNumber, dayOf, weekOf } from "./time";
-import { findCampaign, isAssigned, studentCampaigns } from "./world";
+import { findCampaign, isAssigned, studentCampaigns, worldOf } from "./world";
 
 // Everything worked out from a student's facts: balances, level, streak, today's quests,
 // story progress, achievement progress. Pure functions; no answer keys, so the signed-in
@@ -141,6 +141,11 @@ export function dailyEntry(day: string): DailyEntry {
   return dailyEntries[((dayNumber(day) % dailyEntries.length) + dailyEntries.length) % dailyEntries.length];
 }
 
+/** The day's discovery for this student: their teacher's, if one is planned for the day, else the built-in one. */
+export function dailyFor(facts: Facts, day: string): DailyEntry {
+  return worldOf(facts).daily?.find((d) => d.day === day)?.entry ?? dailyEntry(day);
+}
+
 /** "День 14 из 30": the day of the student's 30-day cycle, counted from the day they joined. */
 export const PROGRAM_DAYS = 30;
 export function programDay(facts: Facts, day: string): number {
@@ -148,7 +153,7 @@ export function programDay(facts: Facts, day: string): number {
 }
 
 export function dailyQuizAnswer(facts: Facts, day: string) {
-  const entry = dailyEntry(day);
+  const entry = dailyFor(facts, day);
   return facts.answers.find((a) => a.scope === "daily" && a.ref === `${entry.id}@${day}`) ?? null;
 }
 

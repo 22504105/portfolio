@@ -126,7 +126,7 @@ export async function act(
   if (locked.rowCount === 0) throw new ServiceError("not_found", 404);
   const loaded = await loadFacts(db, userId);
   if (!loaded) throw new ServiceError("not_found", 404);
-  const { world, keys } = await loadWorld(db, userId, now);
+  const { world, keys, dailyKeys } = await loadWorld(db, userId, now);
   const facts: Facts = { ...loaded, world };
 
   const result = run(facts, parsed.data as Action, {
@@ -136,6 +136,7 @@ export async function act(
     random: () => randomInt(1_000_000) / 1_000_000,
     // A teacher's campaign has its keys in the database; the built-in ones have their own.
     keys: (campaign) => keys.get(`${campaign.id}@${campaign.version}`) ?? null,
+    dailyKeys: (id) => dailyKeys.get(id) ?? null,
   });
   if (!result.ok) throw new ServiceError(result.refusal, REFUSAL_STATUS[result.refusal]);
   await persist(db, userId, result.effects, now);

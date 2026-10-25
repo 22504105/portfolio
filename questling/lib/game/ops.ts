@@ -6,6 +6,7 @@ import { CHEST_COINS, CHEST_ITEMS, itemById, SLOTS, STARTER_ITEMS, type Slot } f
 import { quickQuestKeys } from "@/lib/content/quick-quest-keys";
 import { DAILY_BONUS, quickQuestById } from "@/lib/content/quick-quests";
 import { DAILY_CLAIM_XP } from "@/lib/content/daily";
+import type { Text } from "@/lib/content/text";
 import type { Locale } from "@/lib/i18n";
 import { gradeAnswer, validAnswer, type Graded } from "@/lib/learning/questions";
 import { isGraded, type Campaign, type CampaignKeys } from "@/lib/story/graph";
@@ -17,7 +18,7 @@ import {
   campaignOpen,
   chestReady,
   completed,
-  dailyEntry,
+  dailyFor,
   dailyQuests,
   dailyQuizAnswer,
   levelOf,
@@ -95,6 +96,8 @@ export type Context = {
   demo: boolean;
   random?: () => number;
   keys?: (campaign: Campaign) => CampaignKeys | null;
+  /** A teacher's word of the day's quiz key, by entry id (the server holds them). */
+  dailyKeys?: (entryId: string) => { correct: string; explanation: Text } | null;
 };
 
 export type OpResult = { ok: true; effects: Effect[]; outcome: Outcome } | { ok: false; refusal: Refusal };
@@ -194,11 +197,11 @@ function perform(facts: Facts, action: Action, ctx: Context): OpResult {
 
     case "answerDailyQuiz": {
       // Tries until the right answer is found, each option once; the XP is for a right first try.
-      const entry = dailyEntry(today);
+      const entry = dailyFor(facts, today);
       const ref = `${entry.id}@${today}`;
       const mine = facts.answers.filter((a) => a.scope === "daily" && a.ref === ref);
       if (mine.some((a) => a.correct)) return refuse("already_done");
-      const key = dailyQuizKeys[entry.id];
+      const key = ctx.dailyKeys?.(entry.id) ?? dailyQuizKeys[entry.id];
       if (!key || !entry.quiz.options.some((o) => o.id === action.option) || mine.some((a) => a.question === action.option))
         return refuse("invalid");
       const correct = action.option === key.correct;
@@ -223,12 +226,12 @@ function perform(facts: Facts, action: Action, ctx: Context): OpResult {
       return done([
         { type: "completion", kind: "daily_claim", ref: today },
         { type: "ledger", currency: "xp", amount: DAILY_CLAIM_XP, key: `daily_claim:${today}`, reason: "daily_claim" },
-        { type: "save", kind: "word", ref: dailyEntry(today).id },
+        { type: "save", kind: "word", ref: dailyFor(facts, today).id },
       ]);
     }
 
     case "toggleSavedFact": {
-      const id = dailyEntry(today).id;
+      const id = dailyFor(facts, today).id;
       const saved = facts.saved.some((s) => s.kind === "fact" && s.ref === id);
       return done([{ type: saved ? "unsave" : "save", kind: "fact", ref: id }]);
     }

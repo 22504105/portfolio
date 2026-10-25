@@ -140,9 +140,28 @@ export function LiveProvider({ locale, children }: { locale: Locale; children: R
     [session, locale, signIn],
   );
 
+  const join = useCallback(
+    async (code: string) => {
+      if (!session) return "network" as const;
+      const response = await fetch("/api/v1/join", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.token}` },
+        body: JSON.stringify({ code }),
+      }).catch(() => null);
+      if (!response) return "network" as const;
+      if (response.status === 429) return "limited" as const;
+      if (!response.ok) return response.status === 404 ? ("not_found" as const) : ("network" as const);
+      const data = (await response.json()) as { facts: Facts; account: Account };
+      setFacts(data.facts);
+      setAccount(data.account);
+      return "ok" as const;
+    },
+    [session],
+  );
+
   const api = useMemo(
-    () => (facts && account ? { mode: "live" as const, locale, t, base: `/${locale}/app`, facts, account, act } : null),
-    [facts, account, locale, t, act],
+    () => (facts && account ? { mode: "live" as const, locale, t, base: `/${locale}/app`, facts, account, act, join } : null),
+    [facts, account, locale, t, act, join],
   );
 
   if (status === "ready" && api)

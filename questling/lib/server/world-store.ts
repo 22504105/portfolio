@@ -1,5 +1,9 @@
 import "server-only";
+import type { Text } from "@/lib/content/text";
+import { dayFromNumber, dayNumber, dayOf } from "@/lib/game/time";
 import type { World } from "@/lib/game/world";
+import { studentDaily, teacherDailyId, teacherDailyKey } from "@/lib/studio/daily";
+import type { DailyContent } from "@/lib/studio/model";
 import type { Campaign, CampaignKeys } from "@/lib/story/graph";
 import type { Db } from "./db";
 
@@ -8,7 +12,11 @@ import type { Db } from "./db";
 // any version one of their runs is bound to), and the mentors' replies. The campaigns' answer keys
 // are returned beside, for the rules on the server; the page only ever gets the graphs.
 
-export async function loadWorld(db: Db, userId: string, now = new Date()): Promise<{ world: World; keys: Map<string, CampaignKeys> }> {
+export async function loadWorld(
+  db: Db,
+  userId: string,
+  now = new Date(),
+): Promise<{ world: World; keys: Map<string, CampaignKeys>; dailyKeys: Map<string, { correct: string; explanation: Text }> }> {
   const groups = await db.query<{ id: string; name: string; cefr: string; mentor: string }>(
     `select g.id, g.name, g.cefr, t.display_name as mentor
        from questling.group_members m join questling.groups g on g.id = m.group_id join questling.teachers t on t.user_id = g.teacher_id
@@ -34,6 +42,23 @@ export async function loadWorld(db: Db, userId: string, now = new Date()): Promi
        join questling.teachers t on t.user_id = m.teacher_id where m.user_id = $1 order by m.created_at desc limit 30`,
     [userId],
   );
+  // The groups' words of the day around today (the last weeks, for what the student answered then).
+  // With two groups planning the same day, the one joined first wins.
+  const today = dayOf(now);
+  const planned = await db.query<{ id: string; day: string; content: DailyContent; cefr: string; mentor: string; joined_at: Date }>(
+    `select d.id, d.day::text as day, d.content, g.cefr, t.display_name as mentor, m.joined_at
+       from questling.daily_entries d join questling.groups g on g.id = d.group_id
+       join questling.group_members m on m.group_id = g.id and m.user_id = $1 join questling.teachers t on t.user_id = g.teacher_id
+      where g.archived_at is null and d.day between $2::date and $3::date order by d.day, m.joined_at`,
+    [userId, dayFromNumber(dayNumber(today) - 45), today],
+  );
+  const daily: NonNullable<World["daily"]> = [];
+  const dailyKeys = new Map<string, { correct: string; explanation: Text }>();
+  for (const row of planned.rows) {
+    if (daily.some((d) => d.day === row.day)) continue;
+    daily.push({ day: row.day, entry: studentDaily(row.id, row.day, row.content, row.cefr, row.mentor) });
+    dailyKeys.set(teacherDailyId(row.id), teacherDailyKey(row.content));
+  }
   const keys = new Map(wanted.rows.map((row) => [`${row.graph.id}@${row.graph.version}`, row.keys]));
   return {
     world: {
@@ -46,8 +71,10 @@ export async function loadWorld(db: Db, userId: string, now = new Date()): Promi
       })),
       campaigns: wanted.rows.map((row) => row.graph),
       messages: messages.rows.map((m) => ({ id: m.id, ref: m.ref, body: m.body, mentor: m.mentor, createdAt: m.created_at.toISOString() })),
+      daily,
     },
     keys,
+    dailyKeys,
   };
 }
 

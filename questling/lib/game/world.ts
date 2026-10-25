@@ -1,4 +1,5 @@
 import { campaignById, campaigns, campaignVersion } from "@/lib/content/campaigns";
+import type { DailyEntry } from "@/lib/content/daily";
 import type { Campaign } from "@/lib/story/graph";
 import type { Facts } from "./facts";
 
@@ -14,6 +15,8 @@ export type World = {
   /** Teachers' campaigns (exact versions) this student may play or has a run on. */
   campaigns: Campaign[];
   messages: { id: string; ref: string; body: string; mentor: string; createdAt: string }[];
+  /** The groups' teachers' words of the day (lib/studio/daily.ts), by day; their quiz keys stay on the server. */
+  daily?: { day: string; entry: DailyEntry }[];
 };
 
 export const emptyWorld = (): World => ({ groups: [], assignments: [], campaigns: [], messages: [] });

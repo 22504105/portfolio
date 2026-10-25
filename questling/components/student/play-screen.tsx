@@ -7,7 +7,7 @@ import { useStudent } from "@/lib/client/student";
 import type { Facts } from "@/lib/game/facts";
 import type { Outcome } from "@/lib/game/ops";
 import { campaignFinished, campaignOpen, completed, currentChapter, playedCampaign, runOf } from "@/lib/game/stats";
-import { findCampaign, studentCampaigns } from "@/lib/game/world";
+import { findCampaign, studentCampaigns, worldOf } from "@/lib/game/world";
 import { isGraded, type Campaign } from "@/lib/story/graph";
 import { locate, sceneProgress, startRun, type Move } from "@/lib/story/run";
 import { puzzleNode, questHref, questionNode } from "@/lib/student/story";
@@ -105,9 +105,11 @@ export function PlayScreen({ campaignId }: { campaignId?: string }) {
     setShown(target);
   };
 
+  const reply = worldOf(facts).messages.find((m) => m.ref === `${campaign.id}/${scene.id}`) ?? null;
   const help: Help = {
     group: account.group?.name ?? null,
     asked: completed(facts, "help_request", `${campaign.id}/${scene.id}`),
+    reply: reply && { body: reply.body, mentor: reply.mentor },
     onAsk: async () => (await act({ type: "askMentor", campaign: campaign.id, scene: scene.id })).ok,
     onStudy: async (word) => Boolean((await send({ type: "grimoire", scene: scene.id, word })).grimoire?.correct),
   };

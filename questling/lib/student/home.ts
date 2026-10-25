@@ -3,7 +3,7 @@ import { tr } from "@/lib/content/text";
 import type { Facts } from "@/lib/game/facts";
 import { studentCampaigns } from "@/lib/game/world";
 import { questHref } from "./story";
-import { balance, chestReady, completed, currentChapter, currentStreak, dailyEntry, dailyQuests, levelOf, rankOf } from "@/lib/game/stats";
+import { balance, chestReady, completed, currentChapter, currentStreak, dailyFor, dailyQuests, levelOf, rankOf } from "@/lib/game/stats";
 import type { Locale } from "@/lib/i18n";
 
 // What the Home screen shows, worked out from the student's facts. The screen renders this
@@ -40,7 +40,7 @@ export function homeView(facts: Facts, locale: Locale, base: string, today: stri
   // Once every campaign is finished, the last chapter played stays featured.
   const current = currentChapter(facts);
   const chapter = current?.chapter ?? studentCampaigns(facts).at(-1)!.chapters.at(-1)!;
-  const entry = dailyEntry(today);
+  const entry = dailyFor(facts, today);
   return {
     hero: {
       name: facts.profile.heroName ?? tr(character.name, locale),

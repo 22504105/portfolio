@@ -23,6 +23,8 @@ export type StudentApi = {
   /** The Telegram account and group, for the profile and settings. */
   account: Account;
   act: (action: Action) => Promise<ActResult>;
+  /** Joins a teacher's group by its invite code (signed-in app only; the demo has no teachers). */
+  join?: (code: string) => Promise<"ok" | "not_found" | "limited" | "network">;
 };
 
 const StudentContext = createContext<StudentApi | null>(null);

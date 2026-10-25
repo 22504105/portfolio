@@ -27,12 +27,14 @@ type ExhaustedProps = {
   /** The student's group, if they have one: whose mentor is asked. */
   group: string | null;
   asked: boolean;
+  /** The mentor's reply about this scene, shown on the mentor card. */
+  reply: { body: string; mentor: string } | null;
   onAsk: () => Promise<boolean>;
   onOpenGrimoire: () => void;
   mapHref: string;
 };
 
-export function ExhaustedView({ t, node, attemptsUsed, tried, group, asked, onAsk, onOpenGrimoire, mapHref }: ExhaustedProps) {
+export function ExhaustedView({ t, node, attemptsUsed, tried, group, asked, reply, onAsk, onOpenGrimoire, mapHref }: ExhaustedProps) {
   const [pending, startTransition] = useTransition();
   const [toast, setToast] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -202,7 +204,16 @@ export function ExhaustedView({ t, node, attemptsUsed, tried, group, asked, onAs
                   </span>
                   <span className="text-caption font-caption text-text-muted">{group ?? t.story.noGroup}</span>
                 </div>
-                <p className="font-body-md text-body-md text-text-muted leading-relaxed">{t.story.mentorText}</p>
+                {reply ? (
+                  <div className="flex flex-col gap-1" data-mentor-reply>
+                    <span className="font-caption text-caption text-primary">{fill(t.story.mentorReply, { mentor: reply.mentor })}</span>
+                    <p className="font-body-md text-body-md text-text-ivory leading-relaxed">«{reply.body}»</p>
+                  </div>
+                ) : (
+                  <p className="font-body-md text-body-md text-text-muted leading-relaxed">
+                    {group ? t.story.mentorText : t.story.mentorTextNoGroup}
+                  </p>
+                )}
               </div>
             </div>
             <div className="text-primary text-label-sm font-label-sm mt-3 flex items-center justify-between pt-2.5 font-semibold">

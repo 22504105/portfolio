@@ -96,6 +96,7 @@ export function PuzzleScreen({ node, attemptsUsed, grade, onNext, help }: Props)
           tried={[]}
           group={help.group}
           asked={help.asked}
+          reply={help.reply}
           onAsk={help.onAsk}
           onOpenGrimoire={() => setGrimoire(true)}
           mapHref={`${base}/map`}
