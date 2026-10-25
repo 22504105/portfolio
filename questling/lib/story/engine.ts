@@ -31,8 +31,18 @@ export type QuestionAction =
   | { type: "grimoirePassed" }
   | { type: "closeGrimoire" };
 
-export function initialState(node: QuestionNode): QuestionState {
-  return { nodeId: node.id, phase: "answering", selected: null, attemptsUsed: 0, eliminated: [], last: null, xpGranted: 0 };
+/** Where a scene opens: fresh, or as the student's run left it (attempts used, options ruled out). */
+export function initialState(node: QuestionNode, from?: { attemptsUsed: number; eliminated: string[] }): QuestionState {
+  const attemptsUsed = from?.attemptsUsed ?? 0;
+  return {
+    nodeId: node.id,
+    phase: attemptsUsed >= node.maxAttempts ? "exhausted" : "answering",
+    selected: null,
+    attemptsUsed,
+    eliminated: from?.eliminated ?? [],
+    last: null,
+    xpGranted: 0,
+  };
 }
 
 export function attemptsLeft(node: QuestionNode, state: QuestionState): number {

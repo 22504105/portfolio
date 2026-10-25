@@ -41,6 +41,10 @@ for (const dir of ["app", "components", "lib"]) {
     for (const property of code.matchAll(/\bicon:\s*([^,\n}]+)/g)) {
       for (const literal of property[1].matchAll(/"([a-z0-9_]+)"/g)) wanted.add(literal[1]);
     }
+    // Maps named *_ICON / *_ICONS: const KIND_ICON: Record<Kind, string> = { narration: "castle", ... }
+    for (const map of code.matchAll(/\b[A-Z_]*ICONS?\b[^=\n]*=\s*\{([^}]*)\}/g)) {
+      for (const literal of map[1].matchAll(/"([a-z0-9_]+)"/g)) wanted.add(literal[1]);
+    }
     for (const union of code.matchAll(/type\s+\w*Icon\s*=\s*([^;]+);/g)) {
       for (const name of union[1].matchAll(/"([a-z0-9_]+)"/g)) wanted.add(name[1]);
     }
@@ -48,7 +52,9 @@ for (const dir of ["app", "components", "lib"]) {
 }
 
 const names = [...wanted].sort();
-const previous = await readFile(listFile, "utf8").then(JSON.parse).catch(() => null);
+const previous = await readFile(listFile, "utf8")
+  .then(JSON.parse)
+  .catch(() => null);
 if (previous && JSON.stringify(previous.names) === JSON.stringify(names)) {
   console.log(`${names.length} icons, font up to date`);
   process.exit(0);
@@ -59,7 +65,11 @@ if (previous && JSON.stringify(previous.names) === JSON.stringify(names)) {
 const css = await fetch(
   `https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,0&icon_names=${names.join(",")}&display=block`,
   // A modern browser's user agent, so the answer is WOFF2.
-  { headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0 Safari/537.36" } },
+  {
+    headers: {
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0 Safari/537.36",
+    },
+  },
 ).then((r) => {
   if (!r.ok) throw new Error(`Google Fonts answered ${r.status}`);
   return r.text();
@@ -70,5 +80,9 @@ const font = Buffer.from(await (await fetch(url)).arrayBuffer());
 
 await mkdir(fontDir, { recursive: true });
 await writeFile(fontFile, font);
-await writeFile(listFile, JSON.stringify({ source: "Material Symbols Outlined (Apache-2.0), opsz 20..48, wght 100..700, FILL 0..1, GRAD 0", names }, null, 2) + "\n");
+await writeFile(
+  listFile,
+  JSON.stringify({ source: "Material Symbols Outlined (Apache-2.0), opsz 20..48, wght 100..700, FILL 0..1, GRAD 0", names }, null, 2) +
+    "\n",
+);
 console.log(`${names.length} icons -> public/fonts/material-symbols.woff2 (${font.length} bytes)`);

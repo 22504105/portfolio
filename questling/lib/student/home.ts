@@ -1,8 +1,9 @@
 import { characters } from "@/lib/content/characters";
-import { chapters } from "@/lib/content/campaign";
 import { tr } from "@/lib/content/text";
 import type { Facts } from "@/lib/game/facts";
-import { balance, chestReady, completed, currentChapter, currentStreak, dailyEntry, dailyQuests, levelOf, rankOf } from "@/lib/game/stats";
+import { studentCampaigns } from "@/lib/game/world";
+import { questHref } from "./story";
+import { balance, chestReady, completed, currentChapter, currentStreak, dailyFor, dailyQuests, levelOf, rankOf } from "@/lib/game/stats";
 import type { Locale } from "@/lib/i18n";
 
 // What the Home screen shows, worked out from the student's facts. The screen renders this
@@ -29,15 +30,17 @@ export type HomeView = {
     mapHref: string;
   };
   dailyQuests: { id: string; title: string; description: string; xp: number; image: string; tone: "gold" | "violet"; href: string }[];
-  word: { word: string; translation: string; example: string; href: string };
+  word: { word: string; translation: string; example: string; href: string; audio?: string };
   unreadNotifications: boolean;
 };
 
 export function homeView(facts: Facts, locale: Locale, base: string, today: string): HomeView {
   const character = characters[facts.profile.characterId ?? "cat"];
   const { level, into, next } = levelOf(balance(facts, "xp"));
-  const chapter = currentChapter(facts) ?? chapters.at(-1)!;
-  const entry = dailyEntry(today);
+  // Once every campaign is finished, the last chapter played stays featured.
+  const current = currentChapter(facts);
+  const chapter = current?.chapter ?? studentCampaigns(facts).at(-1)!.chapters.at(-1)!;
+  const entry = dailyFor(facts, today);
   return {
     hero: {
       name: facts.profile.heroName ?? tr(character.name, locale),
@@ -53,7 +56,7 @@ export function homeView(facts: Facts, locale: Locale, base: string, today: stri
       cefr: chapter.cefr,
       title: tr(chapter.title, locale),
       image: chapter.image,
-      continueHref: `${base}/quest/${chapter.id}`,
+      continueHref: questHref(base, current?.campaign ?? studentCampaigns(facts).at(-1)!, chapter),
       mapHref: `${base}/map`,
     },
     dailyQuests: dailyQuests(today)
@@ -69,6 +72,7 @@ export function homeView(facts: Facts, locale: Locale, base: string, today: stri
       })),
     word: {
       word: entry.word.text,
+      ...(entry.word.audio ? { audio: entry.word.audio } : {}),
       translation: tr(entry.word.translation, locale),
       example: entry.word.example,
       href: `${base}/discovery`,

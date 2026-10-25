@@ -1,14 +1,13 @@
 import { notFound } from "next/navigation";
 import { QuestDetailsScreen } from "@/components/student/quest-details-screen";
-import { chapterById } from "@/lib/content/campaign";
 import { pageMetadata } from "@/lib/i18n/metadata";
 
 export const generateMetadata = pageMetadata("demo", (t) => t.details.title);
 
-export default async function Page({ params }: PageProps<"/[locale]/demo/quest/[chapter]">) {
+// The chapter is found among the student's campaigns on the screen; ?c= names a teacher's campaign.
+export default async function Page({ params, searchParams }: PageProps<"/[locale]/demo/quest/[chapter]">) {
   const { chapter } = await params;
-  const found = chapterById.get(chapter);
-  // A chapter whose story is not written yet (Gate 3) has no details to show.
-  if (!found || found.nodes.length === 0) notFound();
-  return <QuestDetailsScreen chapterId={found.id} />;
+  const { c } = await searchParams;
+  if (!/^[a-z0-9][a-z0-9-]{0,39}$/.test(chapter)) notFound();
+  return <QuestDetailsScreen chapterId={chapter} campaignId={typeof c === "string" ? c : undefined} />;
 }

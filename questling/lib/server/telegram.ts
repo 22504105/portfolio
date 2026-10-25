@@ -21,7 +21,8 @@ export type TelegramUser = {
 };
 
 export type Verified =
-  { ok: true; user: TelegramUser; authDate: number } | { ok: false; reason: "malformed" | "signature" | "expired" | "no_user" };
+  | { ok: true; user: TelegramUser; authDate: number; startParam: string | null }
+  | { ok: false; reason: "malformed" | "signature" | "expired" | "no_user" };
 
 /** How old a sign-in may be. Long enough for a slow start, short enough that a captured one is soon useless. */
 export const MAX_AGE_SECONDS = 60 * 60;
@@ -76,9 +77,12 @@ export function verifyInitData(initData: unknown, botToken: string, nowSeconds =
   if (!user || typeof user.id !== "number" || !Number.isSafeInteger(user.id) || user.id <= 0) return { ok: false, reason: "no_user" };
 
   const text = (value: unknown, max: number) => (typeof value === "string" && value.trim() ? value.trim().slice(0, max) : null);
+  // The Mini App's start parameter (t.me/<bot>?startapp=…), signed with the rest: a group's invite code.
+  const start = params.get("start_param");
   return {
     ok: true,
     authDate,
+    startParam: start && /^[A-Za-z0-9_-]{1,64}$/.test(start) ? start : null,
     user: {
       id: user.id,
       firstName: text(user.first_name, 64) ?? "Telegram user",

@@ -20,7 +20,7 @@ const stitch = (kind, n) => {
   return path.join(root, "design-source", "stitch-assets", `${folders[kind]}${n}`, "screen.png");
 };
 
-// name -> [source, width in px at 2x]
+// name -> [source, width in px at 2x, optional crop of the source first]
 const images = {
   "hero-cat-wizard": [remote("7fcd196e09a2"), 512],
   "forgotten-tower": [remote("316ce7a1a59b"), 1376],
@@ -31,6 +31,11 @@ const images = {
   "rune-chest": [remote("d34d9e5f738a"), 1408],
   "glowing-chest": [remote("f31dae9d1f10"), 400],
   "crystal-casket": [remote("52bfe43014ee"), 256],
+  // Gate 3 story scenes: the clean illustrations of the story library and group management screens.
+  forest: [remote("3c813b951c2c"), 1408],
+  "forest-spirit": [remote("b8c20053a68a"), 1408],
+  // Cropped: the export has a window title bar and frame painted around the picture.
+  "archive-mage": [remote("7da39dcc0e1f"), 1376, { left: 16, top: 30, width: 1376, height: 722 }],
 
   // The six starting characters: plain base models, full body, on the studio background.
   "characters/boy": [stitch("base", 1), 640],
@@ -67,9 +72,10 @@ const images = {
   "items/ghost": [stitch("companion", 6), 320],
 };
 
-for (const [name, [file, width]] of Object.entries(images)) {
+for (const [name, [file, width, crop]] of Object.entries(images)) {
   const out = path.join(root, "public", "images", `${name}.webp`);
   await mkdir(path.dirname(out), { recursive: true });
-  await sharp(file).resize({ width, withoutEnlargement: true }).webp({ quality: 82 }).toFile(out);
+  const source = crop ? sharp(file).extract(crop) : sharp(file);
+  await source.resize({ width, withoutEnlargement: true }).webp({ quality: 82 }).toFile(out);
   console.log(`${name}.webp  ${(await stat(out)).size} bytes  <- ${path.relative(root, file)}`);
 }

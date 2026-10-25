@@ -1,19 +1,23 @@
 "use client";
 
 /* eslint-disable @next/next/no-img-element -- illustrations are pre-sized WebP in public/images (scripts/import-images.mjs) */
-import Link from "next/link";
 import { useReducer, useState, useTransition } from "react";
 import { Icon } from "@/components/ui/icon";
 import { fill, type Dictionary } from "@/lib/i18n";
 import { canCheck, initialState, reduce, type QuestionState } from "@/lib/story/engine";
 import type { GradeResult, QuestionNode } from "@/lib/story/types";
 import { BackHeader } from "./back-header";
+import { useLineAudio } from "@/lib/client/audio";
+import { useMediaLink } from "@/lib/client/student";
+import { ExhaustedView, GrimoireSheet } from "./story-help";
 
-// The story player for a question node. Ported from the Stitch story-player screens:
+// The story player for a question or a piece of evidence. Ported from the Stitch story-player screens:
 //   answering — 01_APPROVED_SCREENS/05_story_player_2
 //   correct   — 02_STORY_STATES/05_story_player_50_xp
 //   incorrect — 02_STORY_STATES/05_story_player_3
-// "exhausted" and "grimoire" (05_story_player_4, _never_2) arrive in Gate 3.
+//   exhausted — 02_STORY_STATES/05_story_player_4      (story-help.tsx)
+//   grimoire  — 02_STORY_STATES/05_story_player_never_2 (story-help.tsx)
+// Evidence uses the same screens, its options being the clues found (each with its picture).
 // Grading is passed in: the demo grades in the browser, a real run asks the server.
 //
 // Font note: the export's class order makes the parchment texts fall back to ui-serif;
@@ -21,21 +25,38 @@ import { BackHeader } from "./back-header";
 
 export type Grader = (nodeId: string, optionId: string) => Promise<GradeResult>;
 
+/** The ways on from a scene with no attempts left (05_story_player_4). */
+export type Help = {
+  group: string | null;
+  asked: boolean;
+  /** The mentor's latest reply about this scene, if any. */
+  reply: { body: string; mentor: string } | null;
+  onAsk: () => Promise<boolean>;
+  /** The grimoire's word, checked by the rules: true when an attempt is back. */
+  onStudy: (word: string) => Promise<boolean>;
+};
+
 type Props = {
   t: Dictionary;
   node: QuestionNode;
   grade: Grader;
+  /** Where the run left this scene: attempts used and options ruled out. */
+  initial?: { attemptsUsed: number; eliminated: string[] };
   backHref: string;
   profileHref: string;
-  /** "К следующей улике": a link, or (for a player that stays on its page) a callback. */
-  nextHref: string;
-  onNext?: () => void;
-  /** Where a student goes once every attempt at this node is used up. */
+  /** "К следующей улике": the story moves on. */
+  onNext: () => void;
+  /** The story map: where a student with no attempts left can go back to. */
   exitHref: string;
+  help: Help;
 };
 
-export function StoryPlayer({ t, node, grade, backHref, profileHref, nextHref, onNext, exitHref }: Props) {
-  const [state, dispatch] = useReducer((s: QuestionState, a: Parameters<typeof reduce>[2]) => reduce(node, s, a), node, initialState);
+export function StoryPlayer({ t, node, grade, initial, backHref, profileHref, onNext, exitHref, help }: Props) {
+  const [state, dispatch] = useReducer(
+    (s: QuestionState, a: Parameters<typeof reduce>[2]) => reduce(node, s, a),
+    null,
+    () => initialState(node, initial),
+  );
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
@@ -56,31 +77,52 @@ export function StoryPlayer({ t, node, grade, backHref, profileHref, nextHref, o
     <div className="bg-background font-body-md text-body-md text-on-surface flex min-h-dvh flex-col antialiased" data-phase={state.phase}>
       {/* The approved screens say "Quest Details" here; the owner chose real screen names (conflict 1). */}
       <BackHeader title={t.player.title} backHref={backHref} profileHref={profileHref} t={t} />
-      {/* "exhausted" and "grimoire" get their own screens (05_story_player_4, _never_2) in Gate 3;
-          until then a node with no attempts left shows the wrong-answer view, leading back to the map. */}
-      {state.phase === "incorrect" || state.phase === "exhausted" || state.phase === "grimoire" ? (
+      {state.phase === "exhausted" || state.phase === "grimoire" ? (
+        <>
+          <ExhaustedView
+            t={t}
+            node={node}
+            attemptsUsed={state.attemptsUsed}
+            tried={node.options.filter((o) => state.eliminated.includes(o.id)).map((o) => o.label)}
+            group={help.group}
+            asked={help.asked}
+            reply={help.reply}
+            onAsk={help.onAsk}
+            onOpenGrimoire={() => dispatch({ type: "openGrimoire" })}
+            mapHref={exitHref}
+          />
+          {state.phase === "grimoire" ? (
+            <GrimoireSheet
+              t={t}
+              node={node}
+              onStudy={help.onStudy}
+              onClose={() => dispatch({ type: "closeGrimoire" })}
+              onApply={() => dispatch({ type: "grimoirePassed" })}
+            />
+          ) : null}
+        </>
+      ) : state.phase === "incorrect" ? (
         <IncorrectView
           t={t}
           node={node}
           state={state}
-          exitHref={state.phase === "incorrect" ? null : exitHref}
           onSelect={(optionId) => dispatch({ type: "select", optionId })}
           onRetry={() => dispatch({ type: "retry" })}
         />
       ) : (
         <main className="bg-background pb-safe mx-auto w-full max-w-[420px] flex-1 pt-16">
           <div className="flex w-full flex-col">
-            <StoryHeading node={node} />
-            <Scene node={node} />
+            <StoryHeading chapter={node.chapter} cefr={node.cefr} title={node.storyTitle} />
+            <SceneImage image={node.image} location={node.location} />
             <Stepper t={t} node={node} solved={state.phase === "correct"} />
             <div className="mb-space-sm px-margin text-center">
               <p className="font-body-md text-body-md text-text-ivory leading-relaxed">
                 {node.prompt.lead}
                 <br />
-                <span className="text-text-muted">{node.prompt.task}</span>
+                <span className="text-text-muted">{node.prompt.task || (node.evidence ? t.story.evidenceTask : "")}</span>
               </p>
             </div>
-            <Parchment text={node.clue.text} />
+            <Parchment text={node.clue.text} listen={node.listen && state.phase !== "correct"} audio={node.audio} t={t} />
             {state.phase === "correct" ? (
               <CorrectOptions t={t} node={node} state={state} />
             ) : (
@@ -107,7 +149,7 @@ export function StoryPlayer({ t, node, grade, backHref, profileHref, nextHref, o
                             selected ? "bg-surface-container-high text-primary" : "bg-surface-container-low text-text-muted"
                           }`}
                         >
-                          <Icon name={option.icon} className="text-[22px]" />
+                          <OptionPicture option={option} size="text-[22px]" />
                         </div>
                         <div className="flex flex-col text-left">
                           <span className="font-title-sm text-title-sm text-text-ivory tracking-wide">{option.label}</span>
@@ -127,25 +169,15 @@ export function StoryPlayer({ t, node, grade, backHref, profileHref, nextHref, o
             {state.phase === "correct" ? <RewardCard t={t} node={node} xp={state.xpGranted} /> : null}
             <div className="px-margin pb-space-lg flex flex-col items-center">
               {state.phase === "correct" ? (
-                onNext ? (
-                  <button
-                    type="button"
-                    data-action="next"
-                    onClick={onNext}
-                    className="font-label-md text-label-md flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-b from-[#e4c285] to-[#b99a61] font-semibold tracking-wider text-[#271900] uppercase shadow-[0_6px_24px_rgba(185,154,97,0.45)] transition-all hover:brightness-105 active:scale-[0.98] motion-safe:animate-pulse"
-                  >
-                    <span>{t.player.nextClue}</span>
-                    <Icon name="arrow_forward" className="text-[20px]" />
-                  </button>
-                ) : (
-                  <Link
-                    href={nextHref}
-                    className="font-label-md text-label-md flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-b from-[#e4c285] to-[#b99a61] font-semibold tracking-wider text-[#271900] uppercase shadow-[0_6px_24px_rgba(185,154,97,0.45)] transition-all hover:brightness-105 active:scale-[0.98] motion-safe:animate-pulse"
-                  >
-                    <span>{t.player.nextClue}</span>
-                    <Icon name="arrow_forward" className="text-[20px]" />
-                  </Link>
-                )
+                <button
+                  type="button"
+                  data-action="next"
+                  onClick={onNext}
+                  className="font-label-md text-label-md flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-b from-[#e4c285] to-[#b99a61] font-semibold tracking-wider text-[#271900] uppercase shadow-[0_6px_24px_rgba(185,154,97,0.45)] transition-all hover:brightness-105 active:scale-[0.98] motion-safe:animate-pulse"
+                >
+                  <span>{t.player.nextClue}</span>
+                  <Icon name="arrow_forward" className="text-[20px]" />
+                </button>
               ) : (
                 <>
                   <button
@@ -180,34 +212,36 @@ export function StoryPlayer({ t, node, grade, backHref, profileHref, nextHref, o
   );
 }
 
-function StoryHeading({ node }: { node: QuestionNode }) {
+/** The chapter, its CEFR level and the story's title, above the scene (05_story_player_2). */
+export function StoryHeading({ chapter, cefr, title }: { chapter: string; cefr: string; title: string }) {
   return (
     <div className="px-margin pt-space-xs pb-space-sm flex flex-col items-center">
       <div className="flex w-full items-center justify-between">
         <div className="gap-space-xs flex items-center">
           <span className="text-primary text-[10px]">✦</span>
-          <span className="font-label-sm text-label-sm text-primary tracking-widest uppercase">{node.chapter}</span>
+          <span className="font-label-sm text-label-sm text-primary tracking-widest uppercase">{chapter}</span>
           <span className="text-primary text-[10px]">✦</span>
         </div>
         <div className="bg-secondary-container/40 px-space-sm rounded-full py-[2px]">
-          <span className="font-label-sm text-label-sm text-secondary font-medium tracking-wider">{node.cefr}</span>
+          <span className="font-label-sm text-label-sm text-secondary font-medium tracking-wider">{cefr}</span>
         </div>
       </div>
       {/* The export's `font-headline-lg-mobile` is undefined, so the title renders as body text; kept as approved. */}
-      <h2 className="mt-space-xs font-body-md text-body-md text-text-ivory text-center tracking-tight">{node.storyTitle}</h2>
+      <h2 className="mt-space-xs font-body-md text-body-md text-text-ivory text-center tracking-tight">{title}</h2>
     </div>
   );
 }
 
-function Scene({ node }: { node: QuestionNode }) {
+/** The scene's picture with its place, as the approved player shows it. */
+export function SceneImage({ image, location }: { image: string; location: string }) {
   return (
     <div className="mb-space-md px-margin">
       <div className="bg-surface-container relative h-[178px] w-full overflow-hidden rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.6)]">
-        <img className="h-full w-full object-cover" alt={node.location} src={node.image} />
+        <img className="h-full w-full object-cover" alt={location} src={image} />
         <div className="from-background pointer-events-none absolute inset-0 bg-gradient-to-t via-transparent to-black/30"></div>
         <div className="bg-surface-dim/80 absolute bottom-3 left-3 flex items-center gap-1.5 rounded-full px-2.5 py-1 backdrop-blur-md">
           <span className="bg-primary h-1.5 w-1.5 rounded-full shadow-[0_0_8px_#e4c285] motion-safe:animate-pulse"></span>
-          <span className="font-caption text-caption text-text-muted">{node.location}</span>
+          <span className="font-caption text-caption text-text-muted">{location}</span>
         </div>
       </div>
     </div>
@@ -285,7 +319,9 @@ function StepWithRay({ children, ray, last }: { children: React.ReactNode; ray: 
   );
 }
 
-function Parchment({ text }: { text: string }) {
+/** The parchment with the scene's English line; for a listening riddle, a button that reads it aloud instead. */
+export function Parchment({ text, listen = false, audio, t }: { text: string; listen?: boolean; audio?: string; t?: Dictionary }) {
+  if (listen && t) return <ListenParchment text={text} audioId={audio} t={t} />;
   return (
     <div className="mb-space-lg px-margin">
       <div className="p-space-lg relative overflow-hidden rounded-xl bg-[#D9C49B] text-[#231D15] shadow-[0_12px_32px_rgba(0,0,0,0.7)]">
@@ -316,8 +352,8 @@ function CorrectOptions({ t, node, state }: { t: Dictionary; node: QuestionNode;
           >
             <div className="flex items-center justify-between">
               <div className="gap-space-md flex items-center">
-                <div className="text-status-success flex h-11 w-11 items-center justify-center rounded-lg border border-[#63BA9E]/40 bg-[#63BA9E]/20">
-                  <Icon name={option.icon} className="text-[24px]" />
+                <div className="text-status-success flex h-11 w-11 items-center justify-center overflow-hidden rounded-lg border border-[#63BA9E]/40 bg-[#63BA9E]/20">
+                  <OptionPicture option={option} size="text-[24px]" />
                 </div>
                 <div className="flex flex-col text-left">
                   <div className="flex items-center gap-2">
@@ -355,8 +391,8 @@ function RuledOutOption({ option }: { option: QuestionNode["options"][number] })
       className="bg-surface-container px-space-md py-space-sm pointer-events-none relative flex min-h-[54px] w-full items-center justify-between rounded-xl opacity-40"
     >
       <div className="gap-space-md flex items-center">
-        <div className="bg-surface-container-low text-text-muted flex h-9 w-9 items-center justify-center rounded-lg">
-          <Icon name={option.icon} className="text-[22px]" />
+        <div className="bg-surface-container-low text-text-muted flex h-9 w-9 items-center justify-center overflow-hidden rounded-lg">
+          <OptionPicture option={option} size="text-[22px]" />
         </div>
         <div className="flex flex-col text-left">
           <span className="font-title-sm text-title-sm text-text-muted tracking-wide line-through">{option.label}</span>
@@ -381,7 +417,9 @@ function RewardCard({ t, node, xp }: { t: Dictionary; node: QuestionNode; xp: nu
         <div className="mb-2 flex items-center justify-between">
           <div className="flex items-center gap-1.5">
             <span className="text-primary text-[10px]">✦</span>
-            <span className="font-label-sm text-label-sm text-primary font-semibold tracking-widest uppercase">{t.player.solved}</span>
+            <span className="font-label-sm text-label-sm text-primary font-semibold tracking-widest uppercase">
+              {node.clue.title ? t.player.solved : t.story.proofTitle}
+            </span>
             <span className="text-primary text-[10px]">✦</span>
           </div>
           <div className="border-status-success/40 bg-status-success/20 flex items-center gap-1 rounded-full border px-2.5 py-0.5">
@@ -394,8 +432,12 @@ function RewardCard({ t, node, xp }: { t: Dictionary; node: QuestionNode; xp: nu
             <Icon name="menu_book" className="text-[20px]" />
           </div>
           <div className="flex flex-col">
-            <span className="font-title-sm text-title-sm text-text-ivory">{t.player.journalTitle}</span>
-            <p className="font-caption text-caption text-text-muted mt-0.5">{fill(t.player.journalText, { title: node.clue.title })}</p>
+            <span className="font-title-sm text-title-sm text-text-ivory">
+              {node.clue.title ? t.player.journalTitle : t.story.proofTitle}
+            </span>
+            <p className="font-caption text-caption text-text-muted mt-0.5">
+              {node.clue.title ? fill(t.player.journalText, { title: node.clue.title }) : t.story.proofText}
+            </p>
           </div>
         </div>
       </div>
@@ -407,15 +449,12 @@ function IncorrectView({
   t,
   node,
   state,
-  exitHref,
   onSelect,
   onRetry,
 }: {
   t: Dictionary;
   node: QuestionNode;
   state: QuestionState;
-  /** Set once the node's attempts are used up: the retry button becomes a way back. */
-  exitHref: string | null;
   onSelect: (optionId: string) => void;
   onRetry: () => void;
 }) {
@@ -575,24 +614,14 @@ function IncorrectView({
         </div>
 
         <div className="gap-space-sm flex flex-col pt-2">
-          {exitHref ? (
-            <Link
-              href={exitHref}
-              className="from-primary-fixed-dim to-primary-container font-label-md text-label-md text-surface-container-lowest flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-b font-bold tracking-wider uppercase shadow-[0_4px_16px_rgba(185,154,97,0.35)] transition-transform active:scale-[0.98]"
-            >
-              <span>{t.player.backToMap}</span>
-              <Icon name="map" className="text-[18px]" />
-            </Link>
-          ) : (
-            <button
-              type="button"
-              onClick={onRetry}
-              className="from-primary-fixed-dim to-primary-container font-label-md text-label-md text-surface-container-lowest flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-b font-bold tracking-wider uppercase shadow-[0_4px_16px_rgba(185,154,97,0.35)] transition-transform active:scale-[0.98]"
-            >
-              <span>{t.player.retry}</span>
-              <Icon name="cached" className="text-[18px]" />
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={onRetry}
+            className="from-primary-fixed-dim to-primary-container font-label-md text-label-md text-surface-container-lowest flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-b font-bold tracking-wider uppercase shadow-[0_4px_16px_rgba(185,154,97,0.35)] transition-transform active:scale-[0.98]"
+          >
+            <span>{t.player.retry}</span>
+            <Icon name="cached" className="text-[18px]" />
+          </button>
           <button
             type="button"
             aria-expanded={showTranslation}
@@ -608,6 +637,12 @@ function IncorrectView({
   );
 }
 
+/** An option's picture: a clue's own illustration for evidence, else its icon. */
+function OptionPicture({ option, size }: { option: QuestionNode["options"][number]; size: string }) {
+  if (option.image) return <img alt="" className="h-full w-full object-cover" src={option.image} />;
+  return <Icon name={option.icon} className={size} />;
+}
+
 /** Highlights «quoted» English words in a hint, as the approved screen does with «never». */
 function HintText({ text }: { text: string }) {
   const parts = text.split(/(«[A-Za-z' -]+»)/);
@@ -619,5 +654,33 @@ function HintText({ text }: { text: string }) {
     ) : (
       part
     ),
+  );
+}
+
+/** A listening riddle's parchment: the line is heard, not read (a recording, else the device's voice). */
+function ListenParchment({ text, audioId, t }: { text: string; audioId?: string; t: Dictionary }) {
+  const { availability, state, play } = useLineAudio(text, useMediaLink(audioId));
+  const supported = availability !== "none";
+  return (
+    <div className="mb-space-lg px-margin">
+      <div className="p-space-lg relative flex flex-col items-center overflow-hidden rounded-xl bg-[#D9C49B] text-center text-[#231D15] shadow-[0_12px_32px_rgba(0,0,0,0.7)]">
+        <div className="mb-1 text-xs whitespace-pre text-[#6E5A3A] opacity-70">✦ ✤ ✦</div>
+        <button
+          type="button"
+          onClick={play}
+          disabled={!supported}
+          aria-busy={state === "loading" || undefined}
+          aria-pressed={state === "playing" || state === "loading"}
+          data-audio={availability}
+          data-audio-state={state}
+          data-action="listen"
+          className="font-label-md text-label-md flex items-center gap-2 rounded-full bg-[#231D15] px-5 py-2.5 text-[#E8E1D5] shadow-md transition-transform active:scale-95 disabled:opacity-50"
+        >
+          <Icon name="volume_up" className={`text-[20px] ${state === "playing" || state === "loading" ? "animate-pulse" : ""}`} />
+          <span>{t.player.listen}</span>
+        </button>
+        <p className="font-caption text-caption mt-2 text-[#534525]">{supported ? t.player.listenHint : t.player.listenNoVoice}</p>
+      </div>
+    </div>
   );
 }

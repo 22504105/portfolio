@@ -5,12 +5,12 @@ import { useState, useTransition } from "react";
 import { Icon } from "@/components/ui/icon";
 import { quickQuestById, type QuickQuest } from "@/lib/content/quick-quests";
 import { tr } from "@/lib/content/text";
-import { speak, useSpeechSupported } from "@/lib/client/sound";
 import { useNow, useStudent } from "@/lib/client/student";
 import { completed, passed, QUESTION_ATTEMPTS, questRef, runState } from "@/lib/game/stats";
 import { dayOf } from "@/lib/game/time";
 import { fill } from "@/lib/i18n";
 import type { Answer, Question } from "@/lib/learning/questions";
+import { LineAudioButton } from "./line-audio";
 import { BackHeader } from "./back-header";
 import { TileBoard } from "./tile-board";
 
@@ -201,7 +201,6 @@ function QuestionView({
   onSubmit: (answer: Answer) => void;
 }) {
   const { t, locale } = useStudent();
-  const speech = useSpeechSupported();
   const [choice, setChoice] = useState<string | null>(null);
   const [many, setMany] = useState<string[]>([]);
   const tiles =
@@ -257,15 +256,18 @@ function QuestionView({
       </div>
 
       {audio ? (
-        <button
-          type="button"
-          disabled={!speech}
-          onClick={() => speak(audio)}
+        <LineAudioButton
+          text={audio}
+          action="listen-quest"
           className="bg-surface-container-high hover:bg-surface-bright text-text-ivory font-label-md text-label-md flex h-11 w-full items-center justify-center gap-2 rounded-lg uppercase shadow-xs transition-colors active:scale-[0.98] disabled:opacity-50"
         >
-          <Icon name="headphones" className="text-primary text-[18px]" />
-          <span>{speech ? t.quests.listen : t.quests.noSpeech}</span>
-        </button>
+          {({ availability }) => (
+            <>
+              <Icon name="headphones" className="text-primary text-[18px]" />
+              <span>{availability === "none" ? t.quests.noSpeech : t.quests.listen}</span>
+            </>
+          )}
+        </LineAudioButton>
       ) : null}
 
       {passage ? (

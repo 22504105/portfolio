@@ -4,18 +4,21 @@
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { characters } from "@/lib/content/characters";
+import { figureOf } from "@/lib/content/figure";
 import { itemById, items, RARITY_LABEL, SLOT_GROUPS, SLOT_LABEL, SLOTS, type Item, type Slot } from "@/lib/content/items";
 import { tr } from "@/lib/content/text";
 import { useStudent } from "@/lib/client/student";
 import { balance, levelOf, owns, priceOf, rankOf } from "@/lib/game/stats";
 import { dayOf } from "@/lib/game/time";
 import { fill } from "@/lib/i18n";
+import { HeroFigure } from "./hero-figure";
 
 // Ported from design-source/questling-v2/01_APPROVED_SCREENS/13_wardrobe_2/code.html.
 // Equipping is real: the look is edited here and stored with "Сохранить образ" (server-checked:
-// only owned items, in their own slot, from the right level). The figure is the hero's plain
-// base model: layered garments need alpha art, which is Gate 4 (NEEDS_ART_ASSET), so the worn
-// items are shown on the slot markers and the chips below, not drawn onto the figure. The
+// only owned items, in their own slot, from the right level, for this hero, without a slot conflict).
+// Gate 4: the figure is drawn in layers (HeroFigure) where fitted art exists — the cat's witch hat,
+// ceremonial cape and star amulet; any other worn item is named under the figure as not drawn yet
+// (NEEDS_ART_ASSET), and still shows on the slot markers and the chips. The
 // export's "3D ВИД" badge is left out: there is no 3D model (the brief forbids claiming one).
 // Item emoji are replaced by each item's own picture.
 // Tailwind v3 → v4: shadow-sm → shadow-xs, shadow → shadow-sm, rounded → rounded-sm, backdrop-blur-sm → backdrop-blur-xs.
@@ -42,13 +45,26 @@ export function WardrobeScreen() {
   const worn = SLOTS.filter((slot) => slot !== "outfit")
     .map((slot) => (look[slot] ? itemById.get(look[slot]!) : undefined))
     .filter((item): item is Item => !!item);
+  // Worn items the figure cannot draw (no fitted art: docs/ASSET_AUDIT.md, NEEDS_ART_ASSET), outfits
+  // included: the academy tunic is violet, the hero's drawn base clothes are not.
+  const notDrawn = figureOf(hero.id, look).pending.map((id) => itemById.get(id)!);
   const changed = SLOTS.some((slot) => (look[slot] ?? null) !== (facts.equipped[slot] ?? null));
   const slots = SLOT_GROUPS.find((g) => g.id === group)?.slots ?? [];
   const shown = items.filter((item) => slots.includes(item.slot)).sort((a, b) => Number(owns(facts, b.id)) - Number(owns(facts, a.id)));
 
   function toggle(item: Item) {
     setMessage(null);
-    setLook((current) => ({ ...current, [item.slot]: current[item.slot] === item.id ? null : item.id }));
+    setLook((current) => {
+      if (current[item.slot] === item.id) return { ...current, [item.slot]: null };
+      const next: Look = { ...current, [item.slot]: item.id };
+      // Putting it on takes off what it cannot be worn with, either way round.
+      for (const slot of item.conflicts) next[slot] = null;
+      for (const slot of SLOTS) {
+        const other = next[slot] ? itemById.get(next[slot]!) : undefined;
+        if (other && other.id !== item.id && other.conflicts.includes(item.slot)) next[slot] = null;
+      }
+      return next;
+    });
   }
 
   function save() {
@@ -149,10 +165,12 @@ export function WardrobeScreen() {
                 );
               })}
 
-              <img
+              <HeroFigure
+                species={hero.id}
+                equipped={look}
                 alt={tr(hero.species, locale)}
-                className="relative z-10 h-[300px] w-auto max-w-[280px] object-contain contrast-105 drop-shadow-[0_16px_28px_rgba(0,0,0,0.9)] filter transition-transform duration-300 select-none"
-                src={hero.image}
+                className="z-10 h-[330px] w-auto drop-shadow-[0_16px_28px_rgba(0,0,0,0.9)]"
+                plainClassName="relative z-10 h-[300px] w-auto max-w-[280px] object-contain contrast-105 drop-shadow-[0_16px_28px_rgba(0,0,0,0.9)] filter transition-transform duration-300 select-none"
               />
             </div>
             <div aria-label={t.wardrobe.worn} className="mt-2 flex w-full flex-wrap items-center justify-center gap-1.5">
@@ -167,6 +185,11 @@ export function WardrobeScreen() {
                 </span>
               ))}
             </div>
+            {notDrawn.length ? (
+              <p className="text-arcana-ivoryMuted mt-1 text-center text-[11px]" data-not-drawn>
+                {fill(t.wardrobe.notDrawn, { items: notDrawn.map((item) => tr(item.name, locale)).join(", ") })}
+              </p>
+            ) : null}
           </section>
 
           <section aria-label={t.wardrobe.categories} className="mt-2.5 px-3">

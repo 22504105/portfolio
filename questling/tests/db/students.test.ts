@@ -7,6 +7,11 @@ import { handle } from "@/lib/server/api";
 import { resetPool } from "@/lib/server/db";
 import { act, ServiceError, signInWithTelegram } from "@/lib/server/service";
 import { loadFacts } from "@/lib/server/store";
+import { campaignById } from "@/lib/content/campaigns";
+import { keysOf } from "@/lib/content/campaigns/keys";
+import { runOf } from "@/lib/game/stats";
+import { rightMove } from "@/lib/story/autoplay";
+import { startRun } from "@/lib/story/run";
 import { sign, TOKEN } from "../telegram-fixture";
 import { codeOf, startTestDatabase, type TestDatabase } from "./harness";
 
@@ -98,7 +103,8 @@ describe("the schema", () => {
   it("gives Supabase's public API roles nothing", async () => {
     await newStudent();
     for (const role of ["anon", "authenticated"] as const) {
-      expect(await codeOf(() => pg.asApiRole(role, (db) => db.query("select * from questling.users")))).toBe("42501");
+      for (const table of ["users", "story_runs"])
+        expect(await codeOf(() => pg.asApiRole(role, (db) => db.query(`select * from questling.${table}`)))).toBe("42501");
     }
   });
 });
@@ -183,6 +189,102 @@ describe("the service", () => {
   });
 });
 
+describe("story runs", () => {
+  const academy = campaignById.get("forgotten-academy")!;
+  /** Plays right moves on the server until `until` or an ending; returns the facts the last move left. */
+  async function playUntil(userId: string, until: string | null, choices: Record<string, string> = {}): Promise<Facts> {
+    let facts = (await loadFacts(pg.db, userId))!;
+    for (let step = 0; step < 100; step++) {
+      const current = runOf(facts, academy.id) ?? startRun(academy);
+      if (current.ending || current.scene === until) return facts;
+      const move = rightMove(academy, keysOf(academy), current, choices)!;
+      facts = (await tx((db) => act(db, userId, { action: { type: "story", campaign: academy.id, move } }))).facts;
+    }
+    throw new Error("story never ended");
+  }
+
+  it("keeps the run between sessions: the scene, the attempts used, the clues", async () => {
+    const userId = await newStudent();
+    await playUntil(userId, "tower-2");
+    await tx((db) =>
+      act(db, userId, { action: { type: "story", campaign: academy.id, move: { type: "answer", scene: "tower-2", answer: "garden" } } }),
+    );
+    const stored = (await loadFacts(pg.db, userId))!;
+    const run = runOf(stored, academy.id)!;
+    expect(run).toMatchObject({
+      campaign: "forgotten-academy",
+      version: 1,
+      scene: "tower-2",
+      chapters: ["prologue"],
+      clues: ["prologue-tome", "seal"],
+    });
+    expect(run.progress["tower-2"]).toEqual({ used: 1, restored: 0, eliminated: ["garden"], solved: false });
+    const row = await pg.db.query("select campaign, version from questling.story_runs where user_id = $1", [userId]);
+    expect(row.rows).toEqual([{ campaign: "forgotten-academy", version: 1 }]);
+  });
+
+  it("stores the grimoire's attempt, the help request, and the ending's reward once", async () => {
+    const userId = await newStudent();
+    await playUntil(userId, "prologue-1");
+    const move = (m: object) => tx((db) => act(db, userId, { action: { type: "story", campaign: academy.id, move: m } }));
+    await move({ type: "answer", scene: "prologue-1", answer: "eat" });
+    await move({ type: "answer", scene: "prologue-1", answer: "sleep" });
+    await expect(move({ type: "answer", scene: "prologue-1", answer: "whisper" })).rejects.toMatchObject({
+      code: "exhausted",
+      status: 409,
+    });
+    await tx((db) => act(db, userId, { action: { type: "askMentor", campaign: academy.id, scene: "prologue-1" } }));
+    const studied = await move({ type: "grimoire", scene: "prologue-1", word: "must" });
+    expect(studied.outcome).toMatchObject({ kind: "story", grimoire: { correct: true } });
+    await move({ type: "answer", scene: "prologue-1", answer: "whisper" });
+
+    const facts = await playUntil(userId, null, { "t-choice": "reread", "f-choice": "give" });
+    expect(runOf(facts, academy.id)?.ending).toBe("end-true");
+    const rows = await pg.db.query(
+      "select kind, ref from questling.completions where user_id = $1 and kind in ('help_request', 'ending') order by kind",
+      [userId],
+    );
+    expect(rows.rows).toEqual([
+      { kind: "ending", ref: "forgotten-academy" },
+      { kind: "help_request", ref: "forgotten-academy/prologue-1" },
+    ]);
+    const ending = await pg.db.query(
+      "select currency, amount from questling.ledger where user_id = $1 and reason = 'ending' order by currency",
+      [userId],
+    );
+    expect(ending.rows).toEqual([
+      { currency: "coins", amount: 70 },
+      { currency: "xp", amount: 250 },
+    ]);
+    // The story is over: no move is taken, and the reward cannot be granted again.
+    await expect(move({ type: "advance", scene: "end-true" })).rejects.toMatchObject({ code: "not_available" });
+    expect(
+      await codeOf(() =>
+        pg.db.query(
+          "insert into questling.ledger (user_id, currency, amount, key, reason) values ($1, 'xp', 1, 'story:forgotten-academy:ending', 'ending')",
+          [userId],
+        ),
+      ),
+    ).toBe("23505");
+  });
+
+  it("refuses a move that is not shaped like one", async () => {
+    const userId = await newStudent();
+    for (const move of [
+      { type: "teleport", scene: "end-true" },
+      { type: "answer", scene: "prologue-1" },
+      { type: "grimoire", scene: "x", word: "" },
+    ])
+      await expect(tx((db) => act(db, userId, { action: { type: "story", campaign: academy.id, move } }))).rejects.toMatchObject({
+        code: "invalid",
+        status: 422,
+      });
+    await expect(
+      tx((db) => act(db, userId, { action: { type: "story", campaign: "echo-tower", move: { type: "advance", scene: "e-bell" } } })),
+    ).rejects.toMatchObject({ code: "not_available" });
+  });
+});
+
 describe("the API", () => {
   const origin = "http://localhost:3000";
   const request = (method: string, path: string, init: { body?: unknown; token?: string; origin?: string } = {}) =>
@@ -246,5 +348,76 @@ describe("the API", () => {
     expect(again.facts.profile.characterId).toBe("girl");
     const viaState = await (await handle(request("GET", "state", { token: again.token }), ["state"])).json();
     expect(viaState.facts.inventory).toHaveLength(3);
+  });
+
+  it("hands a student everything stored about them, and nobody else's", async () => {
+    const mine = await (await handle(request("POST", "session", { body: { initData: initData(801) } }), ["session"])).json();
+    await handle(request("POST", "actions", { token: mine.token, body: { action: { type: "chooseCharacter", characterId: "fox" } } }), [
+      "actions",
+    ]);
+    const theirs = await (await handle(request("POST", "session", { body: { initData: initData(802) } }), ["session"])).json();
+
+    expect((await handle(request("GET", "export"), ["export"])).status).toBe(401);
+    const exported = await handle(request("GET", "export", { token: mine.token }), ["export"]);
+    expect(exported.status).toBe(200);
+    expect(exported.headers.get("cache-control")).toBe("no-store");
+    const data = await exported.json();
+    expect(data.format).toBe("questling-export-1");
+    expect(data.identities).toEqual([expect.objectContaining({ provider: "telegram", subject: "801", username: "s801" })]);
+    expect(data.users[0].character_id).toBe("fox");
+    expect(data.inventory.length).toBeGreaterThan(0);
+    // Every row is the student's own.
+    for (const [table, rows] of Object.entries(data))
+      if (Array.isArray(rows) && table !== "users")
+        for (const row of rows as { user_id?: string }[]) expect(row.user_id, table).toBe(data.users[0].id);
+    expect(JSON.stringify(data)).not.toContain("s802");
+    expect(exported.headers.get("content-disposition")).toContain("attachment");
+
+    // Telegram's downloader sends no headers: a ticket in the link stands for the session, for this only.
+    const { url } = await (await handle(request("POST", "export/ticket", { token: mine.token, body: {} }), ["export", "ticket"])).json();
+    const viaTicket = await handle(new Request(`${origin}${url}`), ["export"]);
+    expect(viaTicket.status).toBe(200);
+    expect((await viaTicket.json()).users[0].id).toBe(data.users[0].id);
+    const ticket = new URL(url, origin).searchParams.get("ticket")!;
+    expect((await handle(request("GET", "state", { token: ticket }), ["state"])).status).toBe(401);
+    expect((await handle(new Request(`${origin}/api/v1/export?ticket=${ticket}x`), ["export"])).status).toBe(401);
+    expect((await handle(request("POST", "export/ticket", { token: theirs.token, body: {} }), ["export", "ticket"])).status).toBe(200);
+  });
+
+  it("deletes a student and everything about them, only when asked plainly, and keeps others", async () => {
+    const mine = await (await handle(request("POST", "session", { body: { initData: initData(901) } }), ["session"])).json();
+    await handle(request("POST", "actions", { token: mine.token, body: { action: { type: "chooseCharacter", characterId: "cat" } } }), [
+      "actions",
+    ]);
+    const theirs = await (await handle(request("POST", "session", { body: { initData: initData(902) } }), ["session"])).json();
+
+    // Not without the confirmation, not from another site, not without a session.
+    expect((await handle(request("POST", "account/delete", { token: mine.token, body: {} }), ["account", "delete"])).status).toBe(422);
+    expect(
+      (
+        await handle(
+          request("POST", "account/delete", { token: mine.token, origin: "https://evil.example", body: { confirm: "delete" } }),
+          ["account", "delete"],
+        )
+      ).status,
+    ).toBe(403);
+    expect((await handle(request("POST", "account/delete", { body: { confirm: "delete" } }), ["account", "delete"])).status).toBe(401);
+
+    const deleted = await handle(request("POST", "account/delete", { token: mine.token, body: { confirm: "delete" } }), [
+      "account",
+      "delete",
+    ]);
+    expect(deleted.status).toBe(200);
+    const left = await pg.db.query<{ n: number }>(
+      `select (select count(*) from questling.auth_identities where subject = '901')::int
+            + (select count(*) from questling.ledger l join questling.auth_identities i on i.user_id = l.user_id where i.subject = '901')::int as n`,
+    );
+    expect(left.rows[0].n).toBe(0);
+    // The old session now opens nothing; signing in again starts afresh.
+    expect((await handle(request("GET", "state", { token: mine.token }), ["state"])).status).toBe(404);
+    const fresh = await (await handle(request("POST", "session", { body: { initData: initData(901) } }), ["session"])).json();
+    expect(fresh.facts.profile.characterId).toBeNull();
+    // The other student is untouched.
+    expect((await handle(request("GET", "state", { token: theirs.token }), ["state"])).status).toBe(200);
   });
 });

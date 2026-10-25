@@ -1,10 +1,13 @@
+import { CHARACTER_IDS, type CharacterId } from "./characters";
 import type { Text } from "./text";
 
 // The cosmetic catalogue: the 12 accessories, 6 outfits and 6 companions of the standalone
 // exports. Names follow the wardrobe, shop and inventory screens where they name an item.
 // Items are cosmetic only: no item changes XP, grading or anything else in learning
 // (the brief; the screens' "+15% опыта" lines are not implemented, see design-screen-map.md).
-// Pictures are cards, not equip layers: layered preview arrives with alpha art (Gate 4).
+// Pictures are cards. Drawing an item on the hero needs its own alpha layers fitted per species
+// (lib/content/figure.ts, rig.json): all 24 have them on all six heroes (docs/ASSET_AUDIT.md); an item
+// without them would be named under the figure as not drawn, never faked.
 
 export const SLOTS = ["headwear", "face", "neck", "outerwear", "outfit", "back", "handheld", "companion"] as const;
 export type Slot = (typeof SLOTS)[number];
@@ -22,7 +25,18 @@ export type Item = {
   /** The level from which the item can be bought or worn. */
   level: number;
   image: string;
+  /** The heroes who may wear it. */
+  species: readonly CharacterId[];
+  /** Slots it cannot be worn with: wearing it takes off what is there. */
+  conflicts: readonly Slot[];
+  /** Its layered art (lib/content/layers.json); drawn on a hero only where rig.json has a fit for it. */
+  art: string;
 };
+
+// The layer set of an item is named after it, but for the first slice's three, named after their art.
+const ART: Record<string, string> = { "wizard-hat": "witch-hat", "sunset-cloak": "ceremonial-cape" };
+// The ceremonial cape's back part covers the back, so nothing is carried there with it.
+const CONFLICTS: Record<string, Slot[]> = { "sunset-cloak": ["back"] };
 
 const item = (id: string, slot: Slot, rarity: Rarity, price: number, name: Text, note: Text, level = 1): Item => ({
   id,
@@ -33,6 +47,10 @@ const item = (id: string, slot: Slot, rarity: Rarity, price: number, name: Text,
   price,
   level,
   image: `/images/items/${id}.webp`,
+  // No item's art rules out a hero yet; the check is the server's either way.
+  species: CHARACTER_IDS,
+  conflicts: CONFLICTS[id] ?? [],
+  art: ART[id] ?? id,
 });
 
 export const items: Item[] = [

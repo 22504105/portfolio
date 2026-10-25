@@ -4,13 +4,14 @@
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { Icon } from "@/components/ui/icon";
-import { chapters, clueById } from "@/lib/content/campaign";
 import { characters } from "@/lib/content/characters";
 import { itemById, items, RARITY_LABEL, SLOT_LABEL, type Item, type Rarity, type Slot } from "@/lib/content/items";
 import { tr } from "@/lib/content/text";
 import { useStudent } from "@/lib/client/student";
-import { balance, levelOf, owns, solvedNodes } from "@/lib/game/stats";
+import { balance, foundClues, levelOf, owns } from "@/lib/game/stats";
+import { clueChapter } from "@/lib/student/story";
 import { fill } from "@/lib/i18n";
+import { HeroFigure } from "./hero-figure";
 
 // Ported from design-source/questling-v2/01_APPROVED_SCREENS/15_inventory/code.html.
 // The bag holds the student's own items and the story artefacts (clues) they have found;
@@ -43,10 +44,7 @@ export function InventoryScreen() {
   const order: Record<Rarity, number> = { epic: 0, rare: 1, common: 2 };
   const owned = items.filter((item) => owns(facts, item.id)).sort((a, b) => order[a.rarity] - order[b.rarity]);
   const locked = items.filter((item) => !owns(facts, item.id) && item.level > level).slice(0, 1);
-  const solved = solvedNodes(facts);
-  const clues = chapters.flatMap((chapter) =>
-    chapter.nodes.filter((node) => solved.has(node.id)).map((node) => ({ chapter, clue: clueById.get(node.clue)! })),
-  );
+  const clues = foundClues(facts).map(({ campaign, clue }) => ({ chapter: clueChapter(campaign, clue.id), clue }));
   const equippedSlots = SHOWN_SLOTS.filter((slot) => facts.equipped[slot]);
   const emptySlot = SHOWN_SLOTS.find((slot) => !facts.equipped[slot]);
 
@@ -124,10 +122,12 @@ export function InventoryScreen() {
             <div className="gap-space-sm relative z-10 grid grid-cols-12 items-center">
               <div className="relative col-span-5 flex flex-col items-center justify-center">
                 <div className="from-surface-container to-surface-container-lowest relative flex h-32 w-32 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-b p-1 shadow-[0_0_24px_rgba(185,154,97,0.18)]">
-                  <img
+                  <HeroFigure
+                    species={hero.id}
+                    equipped={facts.equipped}
                     alt={heroName}
-                    className="h-full w-full scale-105 transform rounded-lg object-cover transition-transform duration-300"
-                    src={hero.image}
+                    className="h-full w-auto"
+                    plainClassName="h-full w-full scale-105 transform rounded-lg object-cover transition-transform duration-300"
                   />
                   <div className="bg-surface-container-lowest/80 absolute bottom-1 rounded-full px-2 py-0.5 text-center backdrop-blur-xs">
                     <span className="font-caption text-caption text-primary tracking-wide">
@@ -278,7 +278,7 @@ export function InventoryScreen() {
                     <div
                       key={item.id}
                       data-item={item.id}
-                      className="bg-surface-container-lowest/80 p-space-sm relative flex flex-col justify-between overflow-hidden rounded-xl opacity-75"
+                      className="bg-surface-container-lowest/80 p-space-sm relative flex flex-col justify-between overflow-hidden rounded-xl opacity-85"
                     >
                       <div className="mb-2 flex items-start justify-between">
                         <div className="bg-surface-container text-text-muted flex h-10 w-10 items-center justify-center rounded-lg">
@@ -290,9 +290,9 @@ export function InventoryScreen() {
                       </div>
                       <div>
                         <h4 className="font-body-md text-body-md text-text-muted truncate font-medium">{tr(item.name, locale)}</h4>
-                        <p className="font-caption text-caption text-outline truncate">{tr(item.note, locale)}</p>
+                        <p className="font-caption text-caption text-text-muted truncate">{tr(item.note, locale)}</p>
                       </div>
-                      <div className="bg-surface-container text-outline font-label-sm text-label-sm mt-2.5 flex w-full cursor-not-allowed items-center justify-center gap-1 rounded-lg py-1.5">
+                      <div className="bg-surface-container text-text-muted font-label-sm text-label-sm mt-2.5 flex w-full cursor-not-allowed items-center justify-center gap-1 rounded-lg py-1.5">
                         <Icon name="lock" className="text-[14px]" />
                         <span>{t.inventory.locked}</span>
                       </div>

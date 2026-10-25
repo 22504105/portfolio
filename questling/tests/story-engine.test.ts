@@ -1,11 +1,19 @@
 import { describe, expect, it } from "vitest";
-import { storyNode } from "@/lib/content/campaign";
-import { gradeStoryAnswer } from "@/lib/content/campaign-keys";
+import { forgottenAcademy } from "@/lib/content/campaigns/forgotten-academy";
+import { forgottenAcademyKeys } from "@/lib/content/campaigns/forgotten-academy-keys";
 import { attemptsLeft, canCheck, initialState, reduce, type QuestionAction, type QuestionState } from "@/lib/story/engine";
-import type { QuestionNode } from "@/lib/story/types";
+import type { QuestionScene } from "@/lib/story/graph";
+import { locate, startRun } from "@/lib/story/run";
+import type { GradeResult, QuestionNode } from "@/lib/story/types";
+import { questionNode } from "@/lib/student/story";
 
-const node = storyNode("tower-2", "ru") as QuestionNode;
-const grade = (_key: unknown, optionId: string) => gradeStoryAnswer(node.id, optionId, "ru")!;
+const { chapter, scene } = locate(forgottenAcademy, "tower-2")!;
+const node = questionNode(forgottenAcademy, chapter, scene as QuestionScene, startRun(forgottenAcademy), "ru");
+const grade = (_key: unknown, optionId: string): GradeResult => {
+  const key = forgottenAcademyKeys["tower-2"];
+  if (key.kind !== "question") throw new Error("tower-2 is a question");
+  return { optionId, correct: optionId === key.correct, explanation: key.explanations[optionId].ru };
+};
 const key = null;
 
 const run = (...actions: QuestionAction[]) => actions.reduce<QuestionState>((s, a) => reduce(node, s, a), initialState(node));
@@ -82,17 +90,29 @@ describe("question node", () => {
 
 describe("the story in both languages", () => {
   it("is the same question: only the interface-language texts differ", () => {
-    const ru = storyNode("tower-2", "ru") as QuestionNode;
-    const en = storyNode("tower-2", "en") as QuestionNode;
+    const en = questionNode(forgottenAcademy, chapter, scene as QuestionScene, startRun(forgottenAcademy), "en");
     const shape = (n: QuestionNode) => ({
       clue: n.clue.text,
       options: n.options.map((o) => [o.id, o.label, o.icon]),
       attempts: n.maxAttempts,
       xp: n.reward.xp,
+      quiz: n.grimoire.quiz,
     });
-    expect(shape(en)).toEqual(shape(ru));
-    expect(en.prompt.lead).not.toEqual(ru.prompt.lead);
-    expect(gradeStoryAnswer("tower-2", "cellar", "en")?.correct).toBe(true);
-    expect(gradeStoryAnswer("tower-2", "garden", "en")?.correct).toBe(false);
+    expect(shape(en)).toEqual(shape(node));
+    expect(en.prompt.lead).not.toEqual(node.prompt.lead);
+    expect(en.grimoire.title).not.toEqual(node.grimoire.title);
+  });
+});
+
+describe("question node resumed from a run", () => {
+  it("opens with the attempts and ruled-out options the run recorded", () => {
+    const s = initialState(node, { attemptsUsed: 1, eliminated: ["garden"] });
+    expect(s.phase).toBe("answering");
+    expect(attemptsLeft(node, s)).toBe(1);
+    expect(reduce(node, s, { type: "select", optionId: "garden" }).selected).toBeNull();
+  });
+
+  it("opens paused when no attempts are left", () => {
+    expect(initialState(node, { attemptsUsed: 2, eliminated: ["garden", "tower"] }).phase).toBe("exhausted");
   });
 });

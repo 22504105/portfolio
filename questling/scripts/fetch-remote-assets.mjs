@@ -32,7 +32,10 @@ function imageInfo(buf) {
   }
   let i = 2;
   while (i + 9 < buf.length) {
-    if (buf[i] !== 0xff) { i++; continue; }
+    if (buf[i] !== 0xff) {
+      i++;
+      continue;
+    }
     const marker = buf[i + 1];
     if (marker >= 0xc0 && marker <= 0xc3) return { width: buf.readUInt16BE(i + 7), height: buf.readUInt16BE(i + 5), alpha: false };
     i += 2 + buf.readUInt16BE(i + 2);
@@ -64,7 +67,19 @@ await mkdir(outDir, { recursive: true });
 const index = [];
 for (const [url, screens] of usage) {
   const id = sha(url).slice(0, 12);
-  const entry = { id, url, screens: [...screens].sort(), file: null, contentType: null, bytes: 0, width: null, height: null, alpha: null, sameAsArchive: null, error: null };
+  const entry = {
+    id,
+    url,
+    screens: [...screens].sort(),
+    file: null,
+    contentType: null,
+    bytes: 0,
+    width: null,
+    height: null,
+    alpha: null,
+    sameAsArchive: null,
+    error: null,
+  };
   try {
     const res = await fetch(`${url}=s0`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -80,7 +95,11 @@ for (const [url, screens] of usage) {
     entry.error = String(err.message ?? err);
   }
   index.push(entry);
-  console.log(`${entry.error ? "FAIL" : "ok  "} ${id} ${entry.width}x${entry.height} alpha=${entry.alpha} ${entry.sameAsArchive ? `= ${entry.sameAsArchive}` : "(not in archives)"}`);
+  console.log(
+    `${entry.error ? "FAIL" : "ok  "} ${id} ${entry.width}x${entry.height} alpha=${entry.alpha} ${entry.sameAsArchive ? `= ${entry.sameAsArchive}` : "(not in archives)"}`,
+  );
 }
 await writeFile(path.join(outDir, "index.json"), JSON.stringify(index, null, 2));
-console.log(`\n${index.length} unique URLs, ${index.filter((e) => e.error).length} failed, ${index.filter((e) => e.sameAsArchive).length} already in the archives`);
+console.log(
+  `\n${index.length} unique URLs, ${index.filter((e) => e.error).length} failed, ${index.filter((e) => e.sameAsArchive).length} already in the archives`,
+);

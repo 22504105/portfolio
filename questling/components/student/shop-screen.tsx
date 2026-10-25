@@ -11,6 +11,7 @@ import { balance, DEAL_DISCOUNT, dealOfTheDay, levelOf, owns, priceOf } from "@/
 import { dayOf } from "@/lib/game/time";
 import { fill, plural } from "@/lib/i18n";
 import { BottomNav } from "./bottom-nav";
+import { HeroFigure } from "./hero-figure";
 
 // Ported from design-source/questling-v2/01_APPROVED_SCREENS/14_arcane_shop_2/code.html.
 // Purchases are real and checked by the server: enough coins, not owned yet, the item's level
@@ -159,7 +160,7 @@ export function ShopScreen({ focus }: { focus?: string }) {
                 <span className="text-xs text-[#DFC082]">✨</span>
                 <span className="font-cinzel text-xs font-bold tracking-wider text-[#DFC082] uppercase">{t.shop.fitting}</span>
               </div>
-              <span className="inline-flex items-center gap-1 rounded-full border border-[#8D75C9]/35 bg-[#8D75C9]/15 px-2 py-0.5 font-sans text-[10px] font-semibold text-[#8D75C9]">
+              <span className="inline-flex items-center gap-1 rounded-full border border-[#8D75C9]/35 bg-[#8D75C9]/15 px-2 py-0.5 font-sans text-[10px] font-semibold text-[#B3A3E6]">
                 <span className="h-1.5 w-1.5 rounded-full bg-[#8D75C9] motion-safe:animate-pulse"></span>
                 {t.shop.live}
               </span>
@@ -168,10 +169,13 @@ export function ShopScreen({ focus }: { focus?: string }) {
               <div className="rotate-slow absolute bottom-1 h-12 w-48 rounded-full border border-[#8D75C9]/40 bg-[#8D75C9]/10 blur-[0.5px]"></div>
               <div className="absolute bottom-2 h-9 w-36 rounded-full border border-[#DFC082]/50 bg-[#DFC082]/10 shadow-[0_0_18px_rgba(223,192,130,0.3)]"></div>
               <div className="relative z-10 flex h-44 w-44 items-center justify-center">
-                <img
+                {/* Gate 4: the try-on is drawn on the figure where the item has fitted layers. */}
+                <HeroFigure
+                  species={hero.id}
+                  equipped={{ ...facts.equipped, ...Object.fromEntries(tryOn.map((id) => [itemById.get(id)!.slot, id])) }}
                   alt={tr(hero.species, locale)}
-                  className="h-full w-full object-contain drop-shadow-[0_8px_16px_rgba(0,0,0,0.7)] filter"
-                  src={hero.image}
+                  className="h-full w-auto drop-shadow-[0_8px_16px_rgba(0,0,0,0.7)]"
+                  plainClassName="h-full w-full object-contain drop-shadow-[0_8px_16px_rgba(0,0,0,0.7)] filter"
                 />
               </div>
               <div className="absolute top-2 left-2 z-10 flex flex-col gap-1" aria-label={t.shop.tryingOn}>
@@ -324,7 +328,7 @@ export function ShopScreen({ focus }: { focus?: string }) {
                         className="relative z-10 h-full w-auto object-contain drop-shadow-[0_4px_8px_rgba(141,117,201,0.5)]"
                       />
                       <span
-                        className={`absolute top-1.5 left-1.5 rounded-sm border px-1.5 py-[1px] font-sans text-[9px] font-medium ${RARITY_TAG[item.rarity]}`}
+                        className={`absolute top-1.5 left-1.5 z-20 rounded-sm border px-1.5 py-[1px] font-sans text-[9px] font-medium ${RARITY_TAG[item.rarity]}`}
                       >
                         {tr(RARITY_LABEL[item.rarity], locale)}
                       </span>

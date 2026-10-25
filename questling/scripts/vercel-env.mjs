@@ -1,5 +1,5 @@
-// Gives the Vercel project "questling" the server's three secrets from .env.local
-// (DATABASE_URL, TELEGRAM_BOT_TOKEN, SESSION_SECRET), for Production. Values go to Vercel on
+// Gives the Vercel project "questling" the server's settings from .env.local
+// (DATABASE_URL, TELEGRAM_BOT_TOKEN, SESSION_SECRET; SUPABASE_URL, SUPABASE_ANON_KEY for teachers' sign-in), for Production. Values go to Vercel on
 // standard input; none is printed. Run from questling/ after `vercel link`:
 //
 //   node scripts/vercel-env.mjs
@@ -7,7 +7,7 @@ import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 
 const SCOPE = "riddle6";
-const NAMES = ["DATABASE_URL", "TELEGRAM_BOT_TOKEN", "SESSION_SECRET"];
+const NAMES = ["DATABASE_URL", "TELEGRAM_BOT_TOKEN", "SESSION_SECRET", "SUPABASE_URL", "SUPABASE_ANON_KEY"];
 
 const local = Object.fromEntries(
   readFileSync(".env.local", "utf8")

@@ -1,11 +1,13 @@
 import { achievements, WEEKLY_CHEST_GOAL, type Achievement } from "@/lib/content/achievements";
-import { chapters, type Chapter } from "@/lib/content/campaign";
 import { dailyEntries, type DailyEntry } from "@/lib/content/daily";
 import { items, type Item } from "@/lib/content/items";
 import { DAILY_QUEST_COUNT, quickQuestById, quickQuests, type QuickQuest, type Skill } from "@/lib/content/quick-quests";
 import type { Text } from "@/lib/content/text";
+import type { Campaign, Chapter, Clue } from "@/lib/story/graph";
+import { chapterSolved, chapterState, locate, type ChapterState, type RunState as StoryRun } from "@/lib/story/run";
 import type { Facts } from "./facts";
 import { dayNumber, dayOf, weekOf } from "./time";
+import { findCampaign, isAssigned, studentCampaigns, worldOf } from "./world";
 
 // Everything worked out from a student's facts: balances, level, streak, today's quests,
 // story progress, achievement progress. Pure functions; no answer keys, so the signed-in
@@ -139,6 +141,11 @@ export function dailyEntry(day: string): DailyEntry {
   return dailyEntries[((dayNumber(day) % dailyEntries.length) + dailyEntries.length) % dailyEntries.length];
 }
 
+/** The day's discovery for this student: their teacher's, if one is planned for the day, else the built-in one. */
+export function dailyFor(facts: Facts, day: string): DailyEntry {
+  return worldOf(facts).daily?.find((d) => d.day === day)?.entry ?? dailyEntry(day);
+}
+
 /** "День 14 из 30": the day of the student's 30-day cycle, counted from the day they joined. */
 export const PROGRAM_DAYS = 30;
 export function programDay(facts: Facts, day: string): number {
@@ -146,39 +153,55 @@ export function programDay(facts: Facts, day: string): number {
 }
 
 export function dailyQuizAnswer(facts: Facts, day: string) {
-  const entry = dailyEntry(day);
+  const entry = dailyFor(facts, day);
   return facts.answers.find((a) => a.scope === "daily" && a.ref === `${entry.id}@${day}`) ?? null;
 }
 
 // ——— Story ———
 
-export function solvedNodes(facts: Facts): Set<string> {
-  return new Set(facts.completions.filter((c) => c.kind === "story_node").map((c) => c.ref));
+export const runOf = (facts: Facts, campaignId: string): StoryRun | null => facts.runs.find((run) => run.campaign === campaignId) ?? null;
+
+/** The version of a campaign the student plays: the one their run started on, else the latest. */
+export function playedCampaign(facts: Facts, campaign: Campaign): Campaign {
+  const run = runOf(facts, campaign.id);
+  return (run && findCampaign(facts, run.campaign, run.version)) ?? campaign;
 }
 
-export type ChapterStatus = "done" | "current" | "locked" | "unwritten";
+export const campaignFinished = (facts: Facts, campaignId: string) => Boolean(runOf(facts, campaignId)?.ending);
 
-export function chapterStatus(facts: Facts, chapter: Chapter): ChapterStatus {
-  if (completed(facts, "chapter", chapter.id)) return "done";
-  const required = chapter.requires ? chapters.find((c) => c.id === chapter.requires) : null;
-  if (required && !completed(facts, "chapter", required.id)) return "locked";
-  return chapter.nodes.length === 0 ? "unwritten" : "current";
+/** A campaign opens once the one it requires is finished, whichever ending; one a teacher assigned is open at once. */
+export const campaignOpen = (facts: Facts, campaign: Campaign) =>
+  isAssigned(facts, campaign.id) || !campaign.requires || campaignFinished(facts, campaign.requires);
+
+/** The campaign being played: the first open one not finished yet; the last one once all are. */
+export function currentCampaign(facts: Facts): Campaign {
+  const list = studentCampaigns(facts);
+  return list.find((c) => campaignOpen(facts, c) && !campaignFinished(facts, c.id)) ?? list[list.length - 1];
 }
 
-/** The chapter being played: the first one neither done nor locked. */
-export function currentChapter(facts: Facts): Chapter | null {
-  return chapters.find((chapter) => chapterStatus(facts, chapter) === "current") ?? null;
+export function chapterStatus(facts: Facts, campaign: Campaign, chapter: Chapter): ChapterState {
+  return chapterState(playedCampaign(facts, campaign), runOf(facts, campaign.id), chapter, campaignOpen(facts, campaign));
 }
 
-/** The next node to play in a chapter, or null once all are solved. */
-export function nextNode(facts: Facts, chapter: Chapter) {
-  const solved = solvedNodes(facts);
-  return chapter.nodes.find((node) => !solved.has(node.id)) ?? null;
+/** The chapter to play next: where the current run is, or the current campaign's first. Null once every campaign is finished. */
+export function currentChapter(facts: Facts): { campaign: Campaign; chapter: Chapter } | null {
+  const campaign = playedCampaign(facts, currentCampaign(facts));
+  const run = runOf(facts, campaign.id);
+  if (run?.ending) return null;
+  const chapter = run ? locate(campaign, run.scene)?.chapter : campaign.chapters[0];
+  return chapter ? { campaign, chapter } : null;
 }
 
-export function chapterProgress(facts: Facts, chapter: Chapter): { solved: number; total: number } {
-  const solved = solvedNodes(facts);
-  return { solved: chapter.nodes.filter((node) => solved.has(node.id)).length, total: chapter.nodes.length };
+export function chapterProgress(facts: Facts, campaign: Campaign, chapter: Chapter): { solved: number; total: number } {
+  return chapterSolved(chapter, runOf(facts, campaign.id));
+}
+
+/** Every clue found, newest last, with the campaign it belongs to. */
+export function foundClues(facts: Facts): { campaign: Campaign; clue: Clue }[] {
+  return facts.runs.flatMap((run) => {
+    const campaign = findCampaign(facts, run.campaign, run.version);
+    return campaign ? run.clues.flatMap((id) => campaign.clues.filter((clue) => clue.id === id).map((clue) => ({ campaign, clue }))) : [];
+  });
 }
 
 // ——— Weekly chest and achievements ———
@@ -198,7 +221,7 @@ const firstTry = (facts: Facts, skills: Skill[]) =>
 export function metric(facts: Facts, name: Achievement["metric"]): number {
   switch (name) {
     case "clues":
-      return solvedNodes(facts).size;
+      return facts.runs.reduce((sum, run) => sum + run.clues.length, 0);
     case "bestStreak":
       return bestStreak(facts);
     case "readingFirstTry":

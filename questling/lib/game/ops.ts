@@ -1,35 +1,38 @@
 import { achievements } from "@/lib/content/achievements";
-import { gradeStoryAnswer } from "@/lib/content/campaign-keys";
-import { nodeById, STORY_NODE_XP } from "@/lib/content/campaign";
+import { keysOf } from "@/lib/content/campaigns/keys";
 import { isCharacterId } from "@/lib/content/characters";
 import { dailyQuizKeys } from "@/lib/content/daily-keys";
 import { CHEST_COINS, CHEST_ITEMS, itemById, SLOTS, STARTER_ITEMS, type Slot } from "@/lib/content/items";
 import { quickQuestKeys } from "@/lib/content/quick-quest-keys";
 import { DAILY_BONUS, quickQuestById } from "@/lib/content/quick-quests";
 import { DAILY_CLAIM_XP } from "@/lib/content/daily";
+import type { Text } from "@/lib/content/text";
 import type { Locale } from "@/lib/i18n";
 import { gradeAnswer, validAnswer, type Graded } from "@/lib/learning/questions";
-import type { GradeResult } from "@/lib/story/types";
+import { isGraded, type Campaign, type CampaignKeys } from "@/lib/story/graph";
+import { isExhausted, locate, move, sceneProgress, startRun, type Move } from "@/lib/story/run";
 import { applyEffects, type Effect, type Facts } from "./facts";
 import {
   assignedQuests,
   balance,
-  chapterStatus,
+  campaignOpen,
   chestReady,
   completed,
-  dailyEntry,
+  dailyFor,
   dailyQuests,
   dailyQuizAnswer,
   levelOf,
   metric,
-  nextNode,
   owns,
   passed,
+  playedCampaign,
   priceOf,
   questRef,
+  runOf,
   runState,
 } from "./stats";
 import { dayOf, weekOf } from "./time";
+import { findCampaign } from "./world";
 
 // What a student can do, as pure functions: (facts, input) → effects, or a refusal.
 // The server runs these on the facts it holds, under a lock on the student, and stores
@@ -43,7 +46,10 @@ export type Action =
   | { type: "answerDailyQuiz"; option: string }
   | { type: "claimDaily" }
   | { type: "toggleSavedFact" }
-  | { type: "answerStory"; nodeId: string; answer: string | string[] }
+  /** A move in a campaign's story; the first one starts the run. */
+  | { type: "story"; campaign: string; move: Move }
+  /** From a scene with no attempts left: ask the mentor for help. */
+  | { type: "askMentor"; campaign: string; scene: string }
   | { type: "buy"; itemId: string }
   | { type: "saveLook"; equipped: Partial<Record<Slot, string | null>> }
   | { type: "openChest" };
@@ -57,17 +63,42 @@ export type Refusal =
   | "already_owned"
   | "not_enough_coins"
   | "level_too_low"
-  | "not_ready";
+  | "not_ready"
+  | "exhausted"
+  | "not_exhausted"
+  | "wrong_species"
+  | "conflict";
 
 /** What the page is told besides the new facts: the grade of an answer, the item a chest gave. */
 export type Outcome =
   | { kind: "graded"; correct: boolean; explanation: string; finished?: boolean; rewarded?: { xp: number; coins: number } }
-  | { kind: "story"; result: GradeResult; solved: boolean; chapterDone: boolean }
+  | {
+      kind: "story";
+      /** For an answer: whether it was right, and why. */
+      answer?: { correct: boolean; explanation: string };
+      /** For the grimoire's quiz: whether the word was right (an attempt is back if so). */
+      grimoire?: { correct: boolean };
+      /** The chapter this move finished, and the ending it reached. */
+      chapterDone: string | null;
+      ending: string | null;
+      rewarded: { xp: number; coins: number };
+    }
   | { kind: "chest"; item: string | null; coins: number }
   | { kind: "ok" };
 
-/** `random` draws the weekly chest's prize: a number in [0, 1). The server uses a cryptographic source. */
-export type Context = { now: Date; locale: Locale; demo: boolean; random?: () => number };
+/**
+ * `random` draws the weekly chest's prize: a number in [0, 1). The server uses a cryptographic source.
+ * `keys` gives a teacher's campaign its answer keys (the server holds them); built-in ones have their own.
+ */
+export type Context = {
+  now: Date;
+  locale: Locale;
+  demo: boolean;
+  random?: () => number;
+  keys?: (campaign: Campaign) => CampaignKeys | null;
+  /** A teacher's word of the day's quiz key, by entry id (the server holds them). */
+  dailyKeys?: (entryId: string) => { correct: string; explanation: Text } | null;
+};
 
 export type OpResult = { ok: true; effects: Effect[]; outcome: Outcome } | { ok: false; refusal: Refusal };
 
@@ -166,18 +197,21 @@ function perform(facts: Facts, action: Action, ctx: Context): OpResult {
 
     case "answerDailyQuiz": {
       // Tries until the right answer is found, each option once; the XP is for a right first try.
-      const entry = dailyEntry(today);
+      const entry = dailyFor(facts, today);
       const ref = `${entry.id}@${today}`;
       const mine = facts.answers.filter((a) => a.scope === "daily" && a.ref === ref);
       if (mine.some((a) => a.correct)) return refuse("already_done");
-      const key = dailyQuizKeys[entry.id];
+      const key = ctx.dailyKeys?.(entry.id) ?? dailyQuizKeys[entry.id];
       if (!key || !entry.quiz.options.some((o) => o.id === action.option) || mine.some((a) => a.question === action.option))
         return refuse("invalid");
       const correct = action.option === key.correct;
       const attempt = mine.length + 1;
       const effects: Effect[] = [{ type: "answer", scope: "daily", ref, question: action.option, attempt, correct, skill: "vocabulary" }];
-      if (attempt === 1) effects.push({ type: "completion", kind: "daily_quiz", ref: today });
-      const rewarded = correct && attempt === 1;
+      // One quiz mark and one quiz reward a day: a teacher may plan the day's word after the student
+      // has already answered the built-in one, and the new quiz is then answered without a second of either.
+      if (attempt === 1 && !completed(facts, "daily_quiz", today)) effects.push({ type: "completion", kind: "daily_quiz", ref: today });
+      const rewardedToday = facts.ledger.some((l) => l.currency === "xp" && l.key === `daily_quiz:${today}`);
+      const rewarded = correct && attempt === 1 && !rewardedToday;
       if (rewarded)
         effects.push({ type: "ledger", currency: "xp", amount: entry.quiz.xp, key: `daily_quiz:${today}`, reason: "daily_quiz" });
       return done(effects, {
@@ -195,57 +229,68 @@ function perform(facts: Facts, action: Action, ctx: Context): OpResult {
       return done([
         { type: "completion", kind: "daily_claim", ref: today },
         { type: "ledger", currency: "xp", amount: DAILY_CLAIM_XP, key: `daily_claim:${today}`, reason: "daily_claim" },
-        { type: "save", kind: "word", ref: dailyEntry(today).id },
+        { type: "save", kind: "word", ref: dailyFor(facts, today).id },
       ]);
     }
 
     case "toggleSavedFact": {
-      const id = dailyEntry(today).id;
+      const id = dailyFor(facts, today).id;
       const saved = facts.saved.some((s) => s.kind === "fact" && s.ref === id);
       return done([{ type: saved ? "unsave" : "save", kind: "fact", ref: id }]);
     }
 
-    case "answerStory": {
-      const found = nodeById.get(action.nodeId);
-      if (!found) return refuse("not_available");
-      const { chapter, node } = found;
-      // Only the next node of a chapter that is open may be answered.
-      if (chapterStatus(facts, chapter) !== "current" || nextNode(facts, chapter)?.id !== node.id) return refuse("not_available");
-      const result = gradeStoryAnswer(node.id, action.answer, ctx.locale);
-      if (!result) return refuse("invalid");
-      if (node.kind === "puzzle" && (!Array.isArray(action.answer) || [...action.answer].sort().join() !== [...node.tiles].sort().join()))
-        return refuse("invalid");
-      const attempt = facts.answers.filter((a) => a.scope === "story" && a.ref === node.id).length + 1;
-      const effects: Effect[] = [
-        {
+    case "story": {
+      const latest = findCampaign(facts, action.campaign);
+      if (!latest) return refuse("not_available");
+      const existing = runOf(facts, latest.id);
+      if (!existing && !campaignOpen(facts, latest)) return refuse("not_available");
+      const campaign = playedCampaign(facts, latest);
+      const before = existing ?? startRun(campaign);
+      const keys = ctx.keys?.(campaign) ?? keysOf(campaign);
+      const result = move(campaign, keys, before, action.move);
+      if (!result.ok) return refuse(result.refusal);
+
+      const after = result.run;
+      const effects: Effect[] = [{ type: "run", state: after }];
+      const scene = locate(campaign, action.move.scene)!.scene;
+      if (result.answer && isGraded(scene)) {
+        effects.push({
           type: "answer",
           scope: "story",
-          ref: node.id,
-          question: node.id,
-          attempt,
-          correct: result.correct,
-          skill: node.kind === "puzzle" ? "cipher" : "reading",
-        },
-      ];
-      let chapterDone = false;
-      if (result.correct) {
-        effects.push({ type: "completion", kind: "story_node", ref: node.id });
-        effects.push({ type: "ledger", currency: "xp", amount: STORY_NODE_XP, key: `story_node:${node.id}`, reason: "story_node" });
-        const rest = chapter.nodes.filter((n) => n.id !== node.id && !completed(facts, "story_node", n.id));
-        if (rest.length === 0) {
-          chapterDone = true;
-          effects.push({ type: "completion", kind: "chapter", ref: chapter.id });
-          effects.push({ type: "ledger", currency: "xp", amount: chapter.reward.xp, key: `chapter:${chapter.id}`, reason: "chapter" });
-          effects.push({
-            type: "ledger",
-            currency: "coins",
-            amount: chapter.reward.coins,
-            key: `chapter:${chapter.id}`,
-            reason: "chapter",
-          });
-        }
+          ref: campaign.id,
+          question: scene.id,
+          attempt: result.answer.attempt,
+          correct: result.answer.correct,
+          skill: scene.kind === "puzzle" ? "cipher" : scene.kind === "question" && scene.listen ? "listening" : "reading",
+        });
+        if (result.answer.correct) effects.push({ type: "completion", kind: "story_node", ref: `${campaign.id}/${scene.id}` });
       }
-      return done(effects, { kind: "story", result, solved: result.correct, chapterDone });
+      for (const chapter of after.chapters.filter((id) => !before.chapters.includes(id)))
+        effects.push({ type: "completion", kind: "chapter", ref: `${campaign.id}/${chapter}` });
+      if (after.ending && !before.ending) effects.push({ type: "completion", kind: "ending", ref: campaign.id });
+      for (const grant of result.grants) effects.push({ type: "ledger", ...grant });
+
+      const sum = (currency: "xp" | "coins") => result.grants.filter((g) => g.currency === currency).reduce((n, g) => n + g.amount, 0);
+      return done(effects, {
+        kind: "story",
+        answer: result.answer && { correct: result.answer.correct, explanation: result.answer.explanation[ctx.locale] },
+        grimoire: result.grimoire,
+        chapterDone: result.chapterDone,
+        ending: after.ending && !before.ending ? after.ending : null,
+        rewarded: { xp: sum("xp"), coins: sum("coins") },
+      });
+    }
+
+    case "askMentor": {
+      const latest = findCampaign(facts, action.campaign);
+      const run = latest ? runOf(facts, latest.id) : null;
+      if (!latest || !run || run.scene !== action.scene) return refuse("not_available");
+      const scene = locate(playedCampaign(facts, latest), run.scene)?.scene;
+      if (!scene || !isGraded(scene) || !isExhausted(scene, sceneProgress(run, scene.id))) return refuse("not_exhausted");
+      const ref = `${latest.id}/${scene.id}`;
+      if (completed(facts, "help_request", ref)) return refuse("already_done");
+      // Kept for the mentor: Teacher Studio (Gate 4) shows a group's requests.
+      return done([{ type: "completion", kind: "help_request", ref }]);
     }
 
     case "buy": {
@@ -276,7 +321,14 @@ function perform(facts: Facts, action: Action, ctx: Context): OpResult {
         if (!item || item.slot !== slot) return refuse("invalid");
         if (!owns(facts, item.id)) return refuse("not_owned");
         if (level < item.level) return refuse("level_too_low");
+        if (!item.species.includes(facts.profile.characterId!)) return refuse("wrong_species");
         if (facts.equipped[item.slot] !== item.id) effects.push({ type: "equip", slot: item.slot, item: item.id });
+      }
+      // The look as it would be: no worn item may share it with a slot it rules out.
+      const look: Partial<Record<Slot, string | null>> = { ...facts.equipped, ...wanted };
+      for (const id of Object.values(look)) {
+        const item = id ? itemById.get(id) : undefined;
+        if (item?.conflicts.some((slot) => look[slot])) return refuse("conflict");
       }
       return done(effects);
     }
@@ -310,6 +362,16 @@ export function settleAchievements(facts: Facts): Effect[] {
         reason: "achievement",
       });
     else if (!owns(facts, achievement.reward.item)) effects.push({ type: "own", item: achievement.reward.item, source: "achievement" });
+    // Already bought: the reward is paid as the item's price, so earning it is never worth nothing
+    // (a free item has no price to pay, and the ledger takes no zero rows).
+    else if (itemById.get(achievement.reward.item)?.price)
+      effects.push({
+        type: "ledger",
+        currency: "coins",
+        amount: itemById.get(achievement.reward.item)!.price,
+        key: `achievement:${achievement.id}`,
+        reason: "achievement",
+      });
   }
   return effects;
 }

@@ -7,6 +7,7 @@ import { dayOf } from "@/lib/game/time";
 import { plural } from "@/lib/i18n";
 import { homeView, xpPercent } from "@/lib/student/home";
 import { BottomNav } from "./bottom-nav";
+import { HeroFigure } from "./hero-figure";
 import { PronounceButton } from "./pronounce-button";
 
 // Ported from design-source/questling-v2/01_APPROVED_SCREENS/02_home_2/code.html.
@@ -55,10 +56,13 @@ export function HomeScreen() {
             <div className="relative z-10 flex items-center justify-between gap-3">
               <div className="relative flex h-36 w-32 flex-shrink-0 items-end justify-center">
                 <div className="absolute bottom-1 h-4 w-24 rounded-full bg-black/40 blur-[3px]"></div>
-                <img
+                {/* The same hero as on the profile and in the wardrobe: base and worn items in layers. */}
+                <HeroFigure
+                  species={facts.profile.characterId ?? "cat"}
+                  equipped={facts.equipped}
                   alt={hero.name}
-                  className="relative z-10 h-36 w-32 object-contain drop-shadow-[0_10px_16px_rgba(0,0,0,0.65)] transition-transform duration-300 hover:scale-105"
-                  src={hero.image}
+                  className="z-10 h-36 drop-shadow-[0_10px_16px_rgba(0,0,0,0.65)] transition-transform duration-300 hover:scale-105"
+                  plainClassName="relative z-10 h-36 w-32 object-contain drop-shadow-[0_10px_16px_rgba(0,0,0,0.65)] transition-transform duration-300 hover:scale-105"
                 />
                 <span className="font-cinzel absolute bottom-0 left-2 z-20 flex items-center gap-1 rounded-full border border-[#8B6F3E] bg-[#14131D] px-2 py-0.5 text-[10px] font-bold text-[#CFAC6E] shadow-md">
                   <span>{t.home.levelShort}</span> {hero.level}
@@ -231,7 +235,7 @@ export function HomeScreen() {
                     <Link href={word.href} className="font-cormorant text-parchment text-xl font-bold tracking-wide">
                       {word.word}
                     </Link>
-                    <PronounceButton word={word.word} label={t.home.pronounce} />
+                    <PronounceButton word={word.word} src={word.audio} label={t.home.pronounce} />
                   </div>
                   <p className="text-parchmentMuted -mt-0.5 text-xs font-medium">{word.translation}</p>
                 </div>

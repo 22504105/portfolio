@@ -1,6 +1,8 @@
 import type { CharacterId } from "@/lib/content/characters";
 import type { Slot } from "@/lib/content/items";
 import type { Skill } from "@/lib/content/quick-quests";
+import type { RunState } from "@/lib/story/run";
+import type { World } from "./world";
 
 // A student's record: everything the game knows about them, as plain facts. Balances,
 // levels, streaks and achievement progress are never stored: they are worked out from
@@ -14,13 +16,23 @@ import type { Skill } from "@/lib/content/quick-quests";
 export type Currency = "xp" | "coins";
 
 export type LedgerReason =
-  "quest" | "daily_bonus" | "daily_quiz" | "daily_claim" | "story_node" | "chapter" | "achievement" | "chest" | "purchase" | "demo";
+  | "quest"
+  | "daily_bonus"
+  | "daily_quiz"
+  | "daily_claim"
+  | "story_node"
+  | "chapter"
+  | "ending"
+  | "achievement"
+  | "chest"
+  | "purchase"
+  | "demo";
 
 export type LedgerEntry = { currency: Currency; amount: number; key: string; reason: LedgerReason; at: string };
 
 export type AnswerScope = "quest" | "story" | "daily";
 
-/** One graded answer. `ref` names the run it belongs to: "letter@2026-10-24", "tower-2", "whisper@2026-10-24". */
+/** One graded answer. `ref` names the run it belongs to: "letter@2026-10-24", "forgotten-academy", "whisper@2026-10-24". */
 export type AnswerRecord = {
   scope: AnswerScope;
   ref: string;
@@ -32,7 +44,8 @@ export type AnswerRecord = {
   at: string;
 };
 
-export type CompletionKind = "quest" | "daily_quiz" | "daily_claim" | "daily_bonus" | "story_node" | "chapter" | "achievement" | "chest";
+export type CompletionKind =
+  "quest" | "daily_quiz" | "daily_claim" | "daily_bonus" | "story_node" | "chapter" | "ending" | "help_request" | "achievement" | "chest";
 
 export type Completion = { kind: CompletionKind; ref: string; at: string };
 
@@ -48,6 +61,10 @@ export type Facts = {
   saved: Saved[];
   inventory: Owned[];
   equipped: Partial<Record<Slot, string>>;
+  /** One run per campaign started: where the student is in its story (lib/story/run.ts). */
+  runs: RunState[];
+  /** Groups, assignments, teachers' campaigns and replies (lib/game/world.ts): loaded, never changed by effects. */
+  world?: World;
 };
 
 export type Effect =
@@ -58,7 +75,8 @@ export type Effect =
   | { type: "save"; kind: Saved["kind"]; ref: string }
   | { type: "unsave"; kind: Saved["kind"]; ref: string }
   | { type: "own"; item: string; source: Owned["source"] }
-  | { type: "equip"; slot: Slot; item: string | null };
+  | { type: "equip"; slot: Slot; item: string | null }
+  | { type: "run"; state: RunState };
 
 export function emptyFacts(joinedAt: string): Facts {
   return {
@@ -69,6 +87,7 @@ export function emptyFacts(joinedAt: string): Facts {
     saved: [],
     inventory: [],
     equipped: {},
+    runs: [],
   };
 }
 
@@ -82,6 +101,8 @@ export function applyEffects(facts: Facts, effects: Effect[], at: string): Facts
     saved: [...facts.saved],
     inventory: [...facts.inventory],
     equipped: { ...facts.equipped },
+    runs: [...facts.runs],
+    world: facts.world,
   };
   for (const effect of effects) {
     switch (effect.type) {
@@ -119,6 +140,9 @@ export function applyEffects(facts: Facts, effects: Effect[], at: string): Facts
       case "equip":
         if (effect.item === null) delete next.equipped[effect.slot];
         else next.equipped[effect.slot] = effect.item;
+        break;
+      case "run":
+        next.runs = [...next.runs.filter((r) => r.campaign !== effect.state.campaign), effect.state];
         break;
     }
   }

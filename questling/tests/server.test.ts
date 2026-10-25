@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { issueSession, readSession, SESSION_SECONDS } from "@/lib/server/session";
+import { issueSession, issueTicket, readSession, readTicket, SESSION_SECONDS, TICKET_SECONDS } from "@/lib/server/session";
 import { MAX_AGE_SECONDS, telegramPhoto, verifyInitData } from "@/lib/server/telegram";
 import { sign, TOKEN } from "./telegram-fixture";
 
@@ -15,8 +15,20 @@ describe("verifying Telegram sign-in data", () => {
     expect(result).toEqual({
       ok: true,
       authDate: NOW - 30,
+      startParam: null,
       user: { id: 42, firstName: "Ayşe", lastName: "Yılmaz", username: "ayse", languageCode: "tr", photoUrl: null },
     });
+  });
+
+  it("reads a group's invite code from the signed start parameter, and nothing that is not a code", () => {
+    const opened = verifyInitData(sign({ auth_date: String(NOW), user: USER, start_param: "DETA2XYZ" }), TOKEN, NOW);
+    expect(opened.ok && opened.startParam).toBe("DETA2XYZ");
+    const odd = verifyInitData(sign({ auth_date: String(NOW), user: USER, start_param: "<script>" }), TOKEN, NOW);
+    expect(odd.ok && odd.startParam).toBeNull();
+    // Added after signing: the signature breaks, so a code cannot be slipped in.
+    const params = new URLSearchParams(sign({ auth_date: String(NOW), user: USER }));
+    params.set("start_param", "DETA2XYZ");
+    expect(verifyInitData(params.toString(), TOKEN, NOW)).toEqual({ ok: false, reason: "signature" });
   });
 
   it("covers every field, including ones added later: changing or adding any breaks the signature", () => {
@@ -110,5 +122,15 @@ describe("sessions", () => {
       expect(readSession(bad, SECRET, NOW)).toBeNull();
     }
     expect(readSession(token, "another-secret-entirely-of-32-characters!!", NOW)).toBeNull();
+  });
+
+  it("issues short download tickets that open one thing and are never a session", () => {
+    const ticket = issueTicket(USER_ID, "export", SECRET, NOW);
+    expect(readTicket(ticket, "export", SECRET, NOW)).toBe(USER_ID);
+    expect(readTicket(ticket, "export", SECRET, NOW + TICKET_SECONDS)).toBeNull();
+    expect(readTicket(ticket, "other", SECRET, NOW)).toBeNull();
+    // A ticket in the Authorization header opens nothing, and a session is not a ticket.
+    expect(readSession(ticket, SECRET, NOW)).toBeNull();
+    expect(readTicket(issueSession(USER_ID, SECRET, NOW).token, "export", SECRET, NOW)).toBeNull();
   });
 });

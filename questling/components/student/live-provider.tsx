@@ -2,6 +2,7 @@
 
 /* eslint-disable @next/next/no-img-element -- illustrations are pre-sized WebP in public/images (scripts/import-images.mjs) */
 import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Icon } from "@/components/ui/icon";
 import { StudentProvider, type ActResult } from "@/lib/client/student";
@@ -9,13 +10,46 @@ import type { Facts } from "@/lib/game/facts";
 import type { Action, Outcome, Refusal } from "@/lib/game/ops";
 import { getDictionary, type Locale } from "@/lib/i18n";
 import type { Account } from "@/lib/student/profile";
+import { AudioNotice } from "./line-audio";
 
 // The signed-in student inside Telegram. Telegram hands the Mini App signed sign-in data
 // (initData); the server checks its signature and answers with a session and the student's
 // record. The page never decides who the student is: initDataUnsafe is not read at all.
 // The session lives in this tab only (sessionStorage) and goes in the Authorization header.
 
-type TelegramWebApp = { initData: string; ready: () => void; expand: () => void };
+type TelegramWebApp = {
+  initData: string;
+  ready: () => void;
+  expand: () => void;
+  /** Bot API 8.0+: Telegram downloads the file itself (a page inside Telegram cannot save one). */
+  downloadFile?: (params: { url: string; file_name: string }) => void;
+  /** Telegram's own back button (in its header; Android's hardware back presses it too). */
+  BackButton?: { show: () => void; hide: () => void; onClick: (cb: () => void) => void; offClick: (cb: () => void) => void };
+};
+
+/**
+ * Telegram's back button follows the app's screens: shown everywhere but the home and welcome
+ * screens, it steps back. Without it, Android's hardware back would close the whole app.
+ */
+function TelegramBack({ home }: { home: string }) {
+  const path = usePathname();
+  const router = useRouter();
+  useEffect(() => {
+    const button = window.Telegram?.WebApp?.BackButton;
+    if (!button) return;
+    const root = path === home || path === `${home}/home` || path === `${home}/welcome`;
+    // Opened straight onto an inner screen (a link), there is no history to go back to: go home.
+    const back = () => (window.history.length > 1 ? router.back() : router.push(`${home}/home`));
+    if (root) {
+      button.hide();
+      return;
+    }
+    button.onClick(back);
+    button.show();
+    return () => button.offClick(back);
+  }, [path, home, router]);
+  return null;
+}
 declare global {
   interface Window {
     Telegram?: { WebApp?: TelegramWebApp };
@@ -26,7 +60,7 @@ const SESSION_KEY = "questling-session";
 const SCRIPT = "https://telegram.org/js/telegram-web-app.js";
 
 type Session = { token: string; expiresAt: number };
-type Status = "loading" | "outside" | "unconfigured" | "failed" | "ready";
+type Status = "loading" | "outside" | "unconfigured" | "failed" | "deleted" | "ready";
 
 function loadScript(): Promise<TelegramWebApp | null> {
   if (window.Telegram?.WebApp) return Promise.resolve(window.Telegram.WebApp);
@@ -140,15 +174,73 @@ export function LiveProvider({ locale, children }: { locale: Locale; children: R
     [session, locale, signIn],
   );
 
+  const join = useCallback(
+    async (code: string) => {
+      if (!session) return "network" as const;
+      const response = await fetch("/api/v1/join", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.token}` },
+        body: JSON.stringify({ code }),
+      }).catch(() => null);
+      if (!response) return "network" as const;
+      if (response.status === 429) return "limited" as const;
+      if (!response.ok) return response.status === 404 ? ("not_found" as const) : ("network" as const);
+      const data = (await response.json()) as { facts: Facts; account: Account };
+      setFacts(data.facts);
+      setAccount(data.account);
+      return "ok" as const;
+    },
+    [session],
+  );
+
+  // The file comes from the server through a five-minute ticket link: Telegram's downloader sends no headers.
+  const downloadData = useCallback(async () => {
+    if (!session) return "network" as const;
+    const response = await fetch("/api/v1/export/ticket", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.token}` },
+      body: "{}",
+    }).catch(() => null);
+    if (response?.status === 429) return "limited" as const;
+    if (!response?.ok) return "network" as const;
+    const { url } = (await response.json()) as { url: string };
+    const absolute = new URL(url, window.location.origin).toString();
+    const webApp = window.Telegram?.WebApp;
+    if (webApp?.downloadFile) webApp.downloadFile({ url: absolute, file_name: "questling-my-data.json" });
+    else window.location.assign(absolute);
+    return "ok" as const;
+  }, [session]);
+
+  const deleteData = useCallback(async () => {
+    if (!session) return "network" as const;
+    const response = await fetch("/api/v1/account/delete", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.token}` },
+      body: JSON.stringify({ confirm: "delete" }),
+    }).catch(() => null);
+    if (!response?.ok) return "network" as const;
+    try {
+      window.sessionStorage.removeItem(SESSION_KEY);
+    } catch {}
+    setSession(null);
+    setStatus("deleted");
+    return "ok" as const;
+  }, [session]);
+
   const api = useMemo(
-    () => (facts && account ? { mode: "live" as const, locale, t, base: `/${locale}/app`, facts, account, act } : null),
-    [facts, account, locale, t, act],
+    () =>
+      facts && account
+        ? { mode: "live" as const, locale, t, base: `/${locale}/app`, facts, account, act, join, downloadData, deleteData }
+        : null,
+    [facts, account, locale, t, act, join, downloadData, deleteData],
   );
 
   if (status === "ready" && api)
     return (
       <StudentProvider value={api}>
+        <TelegramBack home={`/${locale}/app`} />
         <div data-student-ready>{children}</div>
+        <AudioNotice />
       </StudentProvider>
     );
   if (status === "loading" || status === "ready") return <div className="bg-background min-h-dvh" aria-busy="true"></div>;
@@ -158,7 +250,14 @@ export function LiveProvider({ locale, children }: { locale: Locale; children: R
 /** Why the app cannot open here, on the welcome screen's backdrop, with the way to the demo. */
 function Gate({ status, locale }: { status: Exclude<Status, "loading" | "ready">; locale: Locale }) {
   const t = getDictionary(locale);
-  const message = status === "outside" ? t.live.outside : status === "unconfigured" ? t.live.unconfigured : t.live.failed;
+  const message =
+    status === "outside"
+      ? t.live.outside
+      : status === "unconfigured"
+        ? t.live.unconfigured
+        : status === "deleted"
+          ? t.live.deleted
+          : t.live.failed;
   return (
     <div className="bg-background font-body-md text-body-md text-on-surface flex min-h-dvh flex-col antialiased" data-live-gate={status}>
       <main className="pt-safe pb-safe px-margin mx-auto flex w-full max-w-[420px] flex-1 flex-col">
@@ -171,7 +270,7 @@ function Gate({ status, locale }: { status: Exclude<Status, "loading" | "ready">
           <p className="font-headline-md text-headline-md text-primary-fixed-dim -mt-1 italic">Learn English Through Adventure</p>
           <div className="via-primary-container my-space-sm h-[1px] w-24 bg-gradient-to-r from-transparent to-transparent"></div>
           <p
-            role={status === "outside" ? undefined : "alert"}
+            role={status === "outside" ? undefined : status === "deleted" ? "status" : "alert"}
             className="font-body-md text-body-md text-text-muted max-w-[320px] leading-relaxed"
           >
             {message}

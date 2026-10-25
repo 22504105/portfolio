@@ -1,6 +1,7 @@
 import "server-only";
 import { isCharacterId } from "@/lib/content/characters";
 import type { Effect, Facts } from "@/lib/game/facts";
+import type { RunState } from "@/lib/story/run";
 import type { Db } from "./db";
 
 // A student's facts as stored: loading them all (a student's record is small: a few hundred
@@ -25,6 +26,9 @@ export async function loadFacts(db: Db, userId: string): Promise<Facts | null> {
   const saved = await db.query("select kind, ref, at from questling.saved where user_id = $1 order by at", [userId]);
   const inventory = await db.query("select item, source, at from questling.inventory where user_id = $1 order by at", [userId]);
   const equipped = await db.query("select slot, item from questling.equipped where user_id = $1", [userId]);
+  const runs = await db.query<{ state: RunState }>("select state from questling.story_runs where user_id = $1 order by started_at", [
+    userId,
+  ]);
   const profile = user.rows[0];
   return {
     profile: {
@@ -46,6 +50,7 @@ export async function loadFacts(db: Db, userId: string): Promise<Facts | null> {
     saved: saved.rows.map((r) => ({ kind: r.kind, ref: r.ref, at: iso(r.at) })),
     inventory: inventory.rows.map((r) => ({ item: r.item, source: r.source, at: iso(r.at) })),
     equipped: Object.fromEntries(equipped.rows.map((r) => [r.slot, r.item])),
+    runs: runs.rows.map((r) => r.state),
   };
 }
 
@@ -109,6 +114,13 @@ export async function persist(db: Db, userId: string, effects: Effect[], at: Dat
             "insert into questling.equipped (user_id, slot, item) values ($1, $2, $3) on conflict (user_id, slot) do update set item = excluded.item",
             [userId, effect.slot, effect.item],
           );
+        break;
+      case "run":
+        await db.query(
+          `insert into questling.story_runs (user_id, campaign, version, state, started_at, updated_at) values ($1, $2, $3, $4, $5, $5)
+           on conflict (user_id, campaign) do update set state = excluded.state, updated_at = excluded.updated_at`,
+          [userId, effect.state.campaign, effect.state.version, JSON.stringify(effect.state), at],
+        );
         break;
     }
   }

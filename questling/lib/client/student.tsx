@@ -23,9 +23,31 @@ export type StudentApi = {
   /** The Telegram account and group, for the profile and settings. */
   account: Account;
   act: (action: Action) => Promise<ActResult>;
+  /** Joins a teacher's group by its invite code (signed-in app only; the demo has no teachers). */
+  join?: (code: string) => Promise<"ok" | "not_found" | "limited" | "network">;
+  /** Hands the student a file of everything kept about them (live: the server's; demo: this browser's). */
+  downloadData?: () => Promise<"ok" | "limited" | "network">;
+  /** Deletes the student and everything about them (live: on the server; demo: starts the demo afresh). */
+  deleteData?: () => Promise<"ok" | "network">;
 };
 
+/** Saves text as a file through the browser (outside Telegram, and for the demo). */
+export function saveFile(name: string, text: string) {
+  const url = URL.createObjectURL(new Blob([text], { type: "application/json" }));
+  const link = Object.assign(document.createElement("a"), { href: url, download: name });
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 10_000);
+}
+
 const StudentContext = createContext<StudentApi | null>(null);
+
+/** The link to a teacher's recording this student may hear (from their world), or null. */
+export function useMediaLink(id: string | undefined | null): string | null {
+  const { facts } = useStudent();
+  return id ? (facts.world?.media?.[id] ?? null) : null;
+}
 
 export const StudentProvider = StudentContext.Provider;
 

@@ -1,6 +1,5 @@
 "use client";
 
-/* eslint-disable @next/next/no-img-element -- illustrations are pre-sized WebP in public/images (scripts/import-images.mjs) */
 import Link from "next/link";
 import { Icon } from "@/components/ui/icon";
 import { useNow, useStudent } from "@/lib/client/student";
@@ -9,6 +8,7 @@ import { fill, plural } from "@/lib/i18n";
 import { xpPercent } from "@/lib/student/home";
 import { profileView } from "@/lib/student/profile";
 import { BottomNav } from "./bottom-nav";
+import { HeroFigure } from "./hero-figure";
 
 // Ported from design-source/questling-v2/01_APPROVED_SCREENS/11_profile_2/code.html.
 // Owner's decisions (2026-10-24): the header names the screen in the interface language
@@ -97,10 +97,12 @@ export function ProfileScreen() {
             <div className="relative z-10 my-2 flex flex-col items-center justify-center">
               <div className="relative flex h-72 w-64 items-center justify-center">
                 <div className="absolute inset-4 rounded-full bg-gradient-to-b from-[#8D75C9]/25 via-[#B99A61]/20 to-transparent blur-xl"></div>
-                <img
+                <HeroFigure
+                  species={facts.profile.characterId ?? "cat"}
+                  equipped={facts.equipped}
                   alt={view.name}
-                  className="relative z-10 h-full w-auto object-contain drop-shadow-[0_0_20px_rgba(141,117,201,0.35)] drop-shadow-[0_12px_24px_rgba(0,0,0,0.8)] filter"
-                  src={view.image}
+                  className="z-10 h-full w-auto drop-shadow-[0_0_20px_rgba(141,117,201,0.35)] drop-shadow-[0_12px_24px_rgba(0,0,0,0.8)]"
+                  plainClassName="relative z-10 h-full w-auto object-contain drop-shadow-[0_0_20px_rgba(141,117,201,0.35)] drop-shadow-[0_12px_24px_rgba(0,0,0,0.8)] filter"
                 />
                 <div className="pointer-events-none absolute -bottom-2 flex h-9 w-52 items-center justify-center rounded-[50%] border-t-2 border-[#e4c285] bg-gradient-to-r from-transparent via-[#8D75C9]/60 to-transparent shadow-[0_0_25px_rgba(228,194,133,0.5)]">
                   <div className="h-5 w-40 rounded-[50%] bg-[#B99A61]/25 blur-xs"></div>
@@ -167,7 +169,7 @@ export function ProfileScreen() {
                 <Icon name="auto_stories" className="text-primary text-[18px]" />
                 <h2 className="font-headline-md text-headline-md text-text-ivory">{t.profile.progress}</h2>
               </div>
-              <span className="font-label-sm text-caption bg-secondary-container/40 text-secondary rounded-full border border-[#8D75C9]/30 px-2.5 py-0.5 font-semibold tracking-wider uppercase">
+              <span className="font-label-sm text-caption bg-secondary-container/40 rounded-full border border-[#8D75C9]/30 px-2.5 py-0.5 font-semibold tracking-wider text-[#A18DDB] uppercase">
                 CEFR {view.cefr}
               </span>
             </div>

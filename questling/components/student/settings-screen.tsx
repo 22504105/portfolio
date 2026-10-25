@@ -2,8 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState, useTransition } from "react";
 import { Icon } from "@/components/ui/icon";
 import { useStudent } from "@/lib/client/student";
+import { worldOf } from "@/lib/game/world";
 import { fill, LOCALES, switchLocalePath, type Locale } from "@/lib/i18n";
 import { BackHeader } from "./back-header";
 import { BottomNav } from "./bottom-nav";
@@ -14,6 +16,215 @@ import { BottomNav } from "./bottom-nav";
 // and the story player's radio dot for the chosen language.
 
 const nativeNames: Record<Locale, string> = { ru: "Русский", en: "English" };
+
+/** The student's groups and mentors, joining one by its code, and the mentors' replies. */
+function GroupSection() {
+  const { t, locale, facts, account, join } = useStudent();
+  const world = worldOf(facts);
+  // The groups joined; the demo has none in its world, only the account's made-up group.
+  const groups = world.groups.length ? world.groups : account.group ? [{ id: "account", cefr: null, ...account.group }] : [];
+  const [code, setCode] = useState("");
+  const [result, setResult] = useState<string | null>(null);
+  const [joined, setJoined] = useState(false);
+  const [pending, start] = useTransition();
+  const s = t.settings;
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!join || code.trim().length < 8) return;
+    start(async () => {
+      const outcome = await join(code.trim());
+      setResult(outcome === "ok" ? null : outcome === "not_found" ? s.notFound : outcome === "limited" ? s.limited : s.failed);
+      if (outcome === "ok") {
+        setCode("");
+        setJoined(true);
+      }
+    });
+  };
+  return (
+    <>
+      <section className="gap-space-sm flex flex-col" data-settings-group>
+        <div className="flex items-center gap-1.5 px-1">
+          <Icon name="school" className="text-primary text-[18px]" />
+          <h2 className="font-headline-md text-headline-md text-text-ivory">{s.group}</h2>
+        </div>
+        {groups.length === 0 ? <p className="font-body-md text-body-md text-text-muted px-1">{s.noGroup}</p> : null}
+        {groups.map((g) => (
+          <div
+            key={g.id}
+            className="p-space-md bg-surface flex items-center justify-between rounded-xl border border-[#6E5A3A]/20 shadow-md"
+          >
+            <div className="gap-space-md flex min-w-0 items-center">
+              <div className="bg-secondary-container/50 text-secondary flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg">
+                <Icon name="groups" className="text-[22px]" />
+              </div>
+              <div className="flex min-w-0 flex-col">
+                <span className="font-label-md text-label-md text-text-ivory truncate">{g.name}</span>
+                <span className="font-caption text-caption text-text-muted truncate">{fill(s.mentor, { name: g.mentor })}</span>
+              </div>
+            </div>
+            {g.cefr ? (
+              <span className="bg-primary/15 text-primary font-caption text-caption rounded-full px-2 py-0.5">{g.cefr}</span>
+            ) : null}
+          </div>
+        ))}
+        <form onSubmit={submit} className="p-space-md bg-surface flex flex-col gap-2 rounded-xl border border-[#6E5A3A]/20 shadow-md">
+          <label className="font-label-md text-label-md text-text-ivory" htmlFor="group-code">
+            {s.code}
+          </label>
+          <div className="flex gap-2">
+            <input
+              id="group-code"
+              value={code}
+              onChange={(e) => (
+                setCode(
+                  e.target.value
+                    .toUpperCase()
+                    .replace(/[^A-Z0-9]/g, "")
+                    .slice(0, 8),
+                ),
+                setResult(null)
+              )}
+              disabled={!join}
+              autoComplete="off"
+              inputMode="text"
+              placeholder="ABCD2345"
+              className="bg-surface-container-lowest text-text-ivory font-label-md text-label-md focus:ring-primary min-w-0 flex-1 rounded-lg px-3 py-2 tracking-[0.2em] uppercase focus:ring-1 focus:outline-none disabled:opacity-50"
+            />
+            <button
+              type="submit"
+              disabled={!join || pending || code.length < 8}
+              data-action="join-group"
+              className="from-primary to-primary-container text-on-primary font-label-md text-label-md rounded-lg bg-gradient-to-b px-4 py-2 shadow-md disabled:opacity-50"
+            >
+              {s.join}
+            </button>
+          </div>
+          {!join ? <p className="font-caption text-caption text-text-muted">{s.demoJoin}</p> : null}
+          {result ? (
+            <p role="alert" className="font-caption text-caption text-status-error">
+              {result}
+            </p>
+          ) : joined && world.groups.length ? (
+            <p role="status" className="font-caption text-caption text-status-success">
+              {fill(s.joined, { name: world.groups.at(-1)!.name })}
+            </p>
+          ) : null}
+        </form>
+      </section>
+
+      <section className="gap-space-sm flex flex-col" data-settings-replies>
+        <div className="flex items-center gap-1.5 px-1">
+          <Icon name="forum" className="text-primary text-[18px]" />
+          <h2 className="font-headline-md text-headline-md text-text-ivory">{s.replies}</h2>
+        </div>
+        {world.messages.length === 0 ? <p className="font-body-md text-body-md text-text-muted px-1">{s.noReplies}</p> : null}
+        {world.messages.map((m) => (
+          <div key={m.id} className="p-space-md bg-surface flex flex-col gap-1 rounded-xl border border-[#6E5A3A]/20 shadow-md">
+            <div className="flex items-center justify-between gap-2">
+              <span className="font-label-md text-label-md text-primary truncate">{m.mentor}</span>
+              <span className="font-caption text-caption text-text-muted shrink-0">
+                {new Date(m.createdAt).toLocaleDateString(locale, { day: "numeric", month: "short" })}
+              </span>
+            </div>
+            <p className="font-body-md text-body-md text-text-ivory">{m.body}</p>
+          </div>
+        ))}
+      </section>
+    </>
+  );
+}
+
+/** Everything kept about the student: a file to keep, or all of it deleted (asked twice). */
+function DataSection() {
+  const { t, mode, downloadData, deleteData } = useStudent();
+  const s = t.settings;
+  const [message, setMessage] = useState<{ text: string; error: boolean } | null>(null);
+  const [confirming, setConfirming] = useState(false);
+  const [pending, start] = useTransition();
+  // A teacher's preview-as-student has no data of its own to hand over.
+  if (!downloadData || !deleteData) return null;
+  const download = () =>
+    start(async () => {
+      const outcome = await downloadData();
+      setMessage(
+        outcome === "ok" ? { text: s.downloadStarted, error: false } : { text: outcome === "limited" ? s.limited : s.failed, error: true },
+      );
+    });
+  const remove = () =>
+    start(async () => {
+      const outcome = await deleteData();
+      setConfirming(false);
+      // The live app leaves this screen once the data is gone; the demo starts afresh and says nothing.
+      if (outcome !== "ok") setMessage({ text: s.failed, error: true });
+    });
+  const button =
+    "from-primary to-primary-container text-on-primary font-label-md text-label-md rounded-lg bg-gradient-to-b px-4 py-2 shadow-md disabled:opacity-50";
+  return (
+    <section className="gap-space-sm flex flex-col" data-settings-data>
+      <div className="flex items-center gap-1.5 px-1">
+        <Icon name="shield_person" className="text-primary text-[18px]" />
+        <h2 className="font-headline-md text-headline-md text-text-ivory">{s.data}</h2>
+      </div>
+      <div className="p-space-md bg-surface flex flex-col gap-3 rounded-xl border border-[#6E5A3A]/20 shadow-md">
+        <p className="font-body-md text-body-md text-text-muted">{mode === "demo" ? s.demoData : s.dataNote}</p>
+        <div className="flex flex-wrap gap-2">
+          <button type="button" onClick={download} disabled={pending} data-action="download-data" className={button}>
+            <span className="flex items-center gap-1.5">
+              <Icon name="download" className="text-[18px]" />
+              {s.download}
+            </span>
+          </button>
+          {!confirming ? (
+            <button
+              type="button"
+              onClick={() => (setConfirming(true), setMessage(null))}
+              disabled={pending}
+              data-action="delete-data"
+              className="bg-surface-container-high text-status-error font-label-md text-label-md rounded-lg px-4 py-2 shadow-md disabled:opacity-50"
+            >
+              <span className="flex items-center gap-1.5">
+                <Icon name="delete" className="text-[18px]" />
+                {s.remove}
+              </span>
+            </button>
+          ) : null}
+        </div>
+        {confirming ? (
+          <div role="alertdialog" aria-label={s.remove} className="flex flex-col gap-2" data-confirm-delete>
+            <p className="font-body-md text-body-md text-status-error">{s.removeConfirm}</p>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={remove}
+                disabled={pending}
+                data-action="delete-data-confirm"
+                className="bg-status-error text-text-ivory font-label-md text-label-md rounded-lg px-4 py-2 shadow-md disabled:opacity-50"
+              >
+                {s.removeYes}
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirming(false)}
+                disabled={pending}
+                className="bg-surface-container-high text-text-ivory font-label-md text-label-md rounded-lg px-4 py-2 shadow-md"
+              >
+                {s.removeNo}
+              </button>
+            </div>
+          </div>
+        ) : null}
+        {message ? (
+          <p
+            role={message.error ? "alert" : "status"}
+            className={`font-caption text-caption ${message.error ? "text-status-error" : "text-status-success"}`}
+          >
+            {message.text}
+          </p>
+        ) : null}
+      </div>
+    </section>
+  );
+}
 
 export function SettingsScreen() {
   const { t, locale, base, account } = useStudent();
@@ -95,6 +306,9 @@ export function SettingsScreen() {
               </div>
             </div>
           </section>
+
+          <GroupSection />
+          <DataSection />
         </div>
       </main>
       <BottomNav base={base} active="profile" labels={t.nav} position="screen" />

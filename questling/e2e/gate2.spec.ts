@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { campaignKeys } from "../lib/content/campaign-keys";
+import { forgottenAcademyKeys } from "../lib/content/campaigns/forgotten-academy-keys";
 import { dailyQuizKeys } from "../lib/content/daily-keys";
 import { itemById } from "../lib/content/items";
 import { quickQuestKeys } from "../lib/content/quick-quest-keys";
@@ -57,13 +57,21 @@ test("a quick quest is played to the end and rewarded once", async ({ page }) =>
 });
 
 test("a wrong answer in a quick quest shows why and allows a second try", async ({ page }) => {
-  const quest = dailyQuests(today()).find((q) => q.questions[0].kind === "choice")!;
-  const [question] = quest.questions;
-  const key = quickQuestKeys[quest.id][question.id];
-  if (key.kind !== "choice" || question.kind !== "choice") throw new Error("expected a choice question");
+  // The demo seed leaves today's first quest untouched (lib/demo/seed.ts). Its first choice,
+  // fill-in or word-order question is reached by answering the ones before it, whichever day it is.
+  const quest = dailyQuests(today())[0];
+  const index = quest.questions.findIndex((q) => q.kind === "choice" || q.kind === "fill" || q.kind === "order");
+  const question = quest.questions[index];
+  const key = quickQuestKeys[quest.id][question?.id];
+  if (!question) throw new Error("expected a choice, fill-in or word-order question");
   await page.goto(`/ru/demo/quests/${quest.id}`);
   await ready(page);
-  await page.locator(`[data-option="${question.options.find((o) => o.id !== key.correct)!.id}"]`).click();
+  for (const before of quest.questions.slice(0, index)) await answerQuestion(page, quest.id, before.id);
+  if (question.kind === "choice" && key.kind === "choice")
+    await page.locator(`[data-option="${question.options.find((o) => o.id !== key.correct)!.id}"]`).click();
+  else if (question.kind === "fill" && key.kind === "fill")
+    await page.locator(`[data-tile="${question.bank.find((w) => w !== key.correct)!}"]`).click();
+  else if (key.kind === "order") for (const tile of [...key.correct].reverse()) await page.locator(`[data-tile="${tile}"]`).click();
   await page.locator("[data-action=check]").click();
   await expect(page.getByRole("status")).toContainText("Осталось попыток: 1");
   await page.locator("[data-action=next]").click();
@@ -93,23 +101,27 @@ test("the story: a clue solved, then the cipher, and the journal fills", async (
   await page.getByRole("link", { name: /Продолжить путь/ }).click();
   await expect(page).toHaveURL(/\/ru\/demo\/quest\/tower$/);
   await page.getByRole("link", { name: /Продолжить расследование/ }).click();
-  await expect(page).toHaveURL(/\/ru\/demo\/play$/);
+  await expect(page).toHaveURL(/\/ru\/demo\/play\/forgotten-academy$/);
 
   await page.getByRole("radio", { name: /The cellar/ }).click();
   await page.locator("[data-action=check]").click();
   await expect(page.getByText("Верно!")).toBeVisible();
   await page.locator("[data-action=next]").click();
 
-  // The next node is the archivist's chest: a word-order cipher.
-  const order = campaignKeys["tower-3"];
+  // A choice (Gate 3), then the archivist's chest: a word-order cipher.
+  await page.locator("[data-option=now]").click();
+  await page.locator("[data-action=choose]").click();
+  const order = forgottenAcademyKeys["tower-3"];
   if (order.kind !== "puzzle") throw new Error("tower-3 should be a puzzle");
   for (const tile of order.order) await page.locator(`[data-tile="${tile}"]`).click();
   await page.locator("[data-action=check]").click();
   await expect(page.getByRole("status")).toContainText("Шифр разгадан!");
-  await page.getByRole("link", { name: /Забрать сокровища/ }).click();
-  await expect(page).toHaveURL(/\/ru\/demo\/journal$/);
+  await page.getByRole("button", { name: /Забрать сокровища/ }).click();
+  await expect(page.locator("[data-play-scene=tower-4]")).toBeAttached();
+  await page.goto("/ru/demo/journal");
+  await ready(page);
   await expect(page.locator("[data-clue=manuscript]")).toBeVisible();
-  await expect(page.getByText("3 / 5 найдено")).toBeVisible();
+  await expect(page.getByText("4 / 8 найдено")).toBeVisible();
 });
 
 test("a wrong story answer explains itself, then a retry can still solve the clue", async ({ page }) => {

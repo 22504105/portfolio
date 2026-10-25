@@ -1,0 +1,892 @@
+{
+  "comment": "How equipment sits on each hero (Gate 4). Every layer is a cut of a 1024-px master (art/layers, from scripts/extract-layers.mjs) split by scripts/build-layers.mjs; a fit places the whole master of an item on the hero's rig canvas: rig = fit.x + source * fit.scale. One fit per item and species, so the back and front parts of an item move together.",
+  "canvas": [1024, 1280],
+  "fits": {
+    "cat": {
+      "base": {
+        "x": 0,
+        "y": 256,
+        "scale": 1
+      },
+      "witch-hat": {
+        "x": 56,
+        "y": -130,
+        "scale": 0.9
+      },
+      "ceremonial-cape": {
+        "x": 233,
+        "y": 602,
+        "scale": 0.62
+      },
+      "star-amulet": {
+        "x": 399,
+        "y": 783,
+        "scale": 0.22
+      },
+      "star-crown": {
+        "x": 251,
+        "y": 163,
+        "scale": 0.51
+      },
+      "forest-hood": {
+        "x": -45,
+        "y": 224,
+        "scale": 1.05
+      },
+      "round-glasses": {
+        "x": 290,
+        "y": 420,
+        "scale": 0.434
+      },
+      "red-bow": {
+        "x": 379,
+        "y": 698,
+        "scale": 0.26
+      },
+      "moon-pendant": {
+        "x": 402,
+        "y": 783,
+        "scale": 0.22
+      },
+      "green-cape": {
+        "x": 264,
+        "y": 662,
+        "scale": 0.55
+      },
+      "satchel": {
+        "x": 380,
+        "y": 820,
+        "scale": 0.36
+      },
+      "wand": {
+        "x": 547,
+        "y": 747,
+        "scale": 0.35
+      },
+      "crystal-staff": {
+        "x": -38,
+        "y": 521,
+        "scale": 0.75
+      },
+      "lantern": {
+        "x": 516,
+        "y": 932,
+        "scale": 0.34
+      },
+      "spellbook": {
+        "x": 548,
+        "y": 842,
+        "scale": 0.3
+      },
+      "raven": {
+        "x": -120,
+        "y": 727,
+        "scale": 0.55
+      },
+      "owlet": {
+        "x": -100,
+        "y": 719,
+        "scale": 0.55
+      },
+      "fox-cub": {
+        "x": -130,
+        "y": 726,
+        "scale": 0.52
+      },
+      "moon-cat": {
+        "x": -120,
+        "y": 731,
+        "scale": 0.52
+      },
+      "ghost": {
+        "x": -100,
+        "y": 678,
+        "scale": 0.52
+      },
+      "sprite": {
+        "x": -98,
+        "y": 700,
+        "scale": 0.5
+      },
+      "violet-tunic": {
+        "x": 0,
+        "y": 256,
+        "scale": 1
+      },
+      "violet-robe": {
+        "x": 0,
+        "y": 256,
+        "scale": 1
+      },
+      "brown-coat": {
+        "x": 0,
+        "y": 256,
+        "scale": 1
+      },
+      "midnight-cloak": {
+        "x": 0,
+        "y": 256,
+        "scale": 1
+      }
+    },
+    "boy": {
+      "base": {
+        "x": 0,
+        "y": 261,
+        "scale": 1
+      },
+      "witch-hat": {
+        "x": 13,
+        "y": -127,
+        "scale": 0.9844
+      },
+      "ceremonial-cape": {
+        "x": 228,
+        "y": 568,
+        "scale": 0.6303
+      },
+      "star-amulet": {
+        "x": 397,
+        "y": 752,
+        "scale": 0.2237
+      },
+      "star-crown": {
+        "x": 227,
+        "y": 108,
+        "scale": 0.5578
+      },
+      "forest-hood": {
+        "x": -97,
+        "y": 135,
+        "scale": 1.1484
+      },
+      "round-glasses": {
+        "x": 343,
+        "y": 489,
+        "scale": 0.333
+      },
+      "red-bow": {
+        "x": 377,
+        "y": 666,
+        "scale": 0.2643
+      },
+      "moon-pendant": {
+        "x": 400,
+        "y": 752,
+        "scale": 0.2237
+      },
+      "green-cape": {
+        "x": 260,
+        "y": 629,
+        "scale": 0.5592
+      },
+      "satchel": {
+        "x": 378,
+        "y": 790,
+        "scale": 0.366
+      },
+      "wand": {
+        "x": 565,
+        "y": 733,
+        "scale": 0.3558
+      },
+      "crystal-staff": {
+        "x": -59,
+        "y": 503,
+        "scale": 0.7625
+      },
+      "lantern": {
+        "x": 533,
+        "y": 921,
+        "scale": 0.3457
+      },
+      "spellbook": {
+        "x": 566,
+        "y": 830,
+        "scale": 0.305
+      },
+      "raven": {
+        "x": -120,
+        "y": 727,
+        "scale": 0.55
+      },
+      "owlet": {
+        "x": -100,
+        "y": 719,
+        "scale": 0.55
+      },
+      "fox-cub": {
+        "x": -130,
+        "y": 726,
+        "scale": 0.52
+      },
+      "moon-cat": {
+        "x": -120,
+        "y": 731,
+        "scale": 0.52
+      },
+      "ghost": {
+        "x": -100,
+        "y": 678,
+        "scale": 0.52
+      },
+      "sprite": {
+        "x": -98,
+        "y": 700,
+        "scale": 0.5
+      },
+      "violet-tunic": {
+        "x": -9,
+        "y": 217,
+        "scale": 1.0167
+      },
+      "violet-robe": {
+        "x": -9,
+        "y": 217,
+        "scale": 1.0167
+      },
+      "brown-coat": {
+        "x": -9,
+        "y": 217,
+        "scale": 1.0167
+      },
+      "midnight-cloak": {
+        "x": -9,
+        "y": 217,
+        "scale": 1.0167
+      }
+    },
+    "girl": {
+      "base": {
+        "x": 0,
+        "y": 246,
+        "scale": 1
+      },
+      "witch-hat": {
+        "x": 113,
+        "y": -20,
+        "scale": 0.7875
+      },
+      "ceremonial-cape": {
+        "x": 233,
+        "y": 572,
+        "scale": 0.62
+      },
+      "star-amulet": {
+        "x": 399,
+        "y": 753,
+        "scale": 0.22
+      },
+      "star-crown": {
+        "x": 284,
+        "y": 141,
+        "scale": 0.4463
+      },
+      "forest-hood": {
+        "x": 25,
+        "y": 159,
+        "scale": 0.9188
+      },
+      "round-glasses": {
+        "x": 322,
+        "y": 441,
+        "scale": 0.3881
+      },
+      "red-bow": {
+        "x": 379,
+        "y": 668,
+        "scale": 0.26
+      },
+      "moon-pendant": {
+        "x": 402,
+        "y": 753,
+        "scale": 0.22
+      },
+      "green-cape": {
+        "x": 264,
+        "y": 632,
+        "scale": 0.55
+      },
+      "satchel": {
+        "x": 380,
+        "y": 790,
+        "scale": 0.36
+      },
+      "wand": {
+        "x": 587,
+        "y": 742,
+        "scale": 0.35
+      },
+      "crystal-staff": {
+        "x": -78,
+        "y": 516,
+        "scale": 0.75
+      },
+      "lantern": {
+        "x": 556,
+        "y": 927,
+        "scale": 0.34
+      },
+      "spellbook": {
+        "x": 588,
+        "y": 837,
+        "scale": 0.3
+      },
+      "raven": {
+        "x": -120,
+        "y": 727,
+        "scale": 0.55
+      },
+      "owlet": {
+        "x": -100,
+        "y": 719,
+        "scale": 0.55
+      },
+      "fox-cub": {
+        "x": -130,
+        "y": 726,
+        "scale": 0.52
+      },
+      "moon-cat": {
+        "x": -120,
+        "y": 731,
+        "scale": 0.52
+      },
+      "ghost": {
+        "x": -100,
+        "y": 678,
+        "scale": 0.52
+      },
+      "sprite": {
+        "x": -98,
+        "y": 700,
+        "scale": 0.5
+      },
+      "violet-tunic": {
+        "x": 0,
+        "y": 226,
+        "scale": 1
+      },
+      "violet-robe": {
+        "x": 0,
+        "y": 226,
+        "scale": 1
+      },
+      "brown-coat": {
+        "x": 0,
+        "y": 226,
+        "scale": 1
+      },
+      "midnight-cloak": {
+        "x": 0,
+        "y": 226,
+        "scale": 1
+      }
+    },
+    "fox": {
+      "base": {
+        "x": 0,
+        "y": 251,
+        "scale": 1
+      },
+      "witch-hat": {
+        "x": 56,
+        "y": -135,
+        "scale": 0.9
+      },
+      "ceremonial-cape": {
+        "x": 233,
+        "y": 582,
+        "scale": 0.62
+      },
+      "star-amulet": {
+        "x": 399,
+        "y": 763,
+        "scale": 0.22
+      },
+      "star-crown": {
+        "x": 251,
+        "y": 158,
+        "scale": 0.51
+      },
+      "forest-hood": {
+        "x": -45,
+        "y": 219,
+        "scale": 1.05
+      },
+      "round-glasses": {
+        "x": 290,
+        "y": 405,
+        "scale": 0.434
+      },
+      "red-bow": {
+        "x": 379,
+        "y": 678,
+        "scale": 0.26
+      },
+      "moon-pendant": {
+        "x": 402,
+        "y": 763,
+        "scale": 0.22
+      },
+      "green-cape": {
+        "x": 264,
+        "y": 642,
+        "scale": 0.55
+      },
+      "satchel": {
+        "x": 380,
+        "y": 800,
+        "scale": 0.36
+      },
+      "wand": {
+        "x": 557,
+        "y": 747,
+        "scale": 0.35
+      },
+      "crystal-staff": {
+        "x": -48,
+        "y": 521,
+        "scale": 0.75
+      },
+      "lantern": {
+        "x": 526,
+        "y": 932,
+        "scale": 0.34
+      },
+      "spellbook": {
+        "x": 558,
+        "y": 842,
+        "scale": 0.3
+      },
+      "raven": {
+        "x": -120,
+        "y": 727,
+        "scale": 0.55
+      },
+      "owlet": {
+        "x": -100,
+        "y": 719,
+        "scale": 0.55
+      },
+      "fox-cub": {
+        "x": -130,
+        "y": 726,
+        "scale": 0.52
+      },
+      "moon-cat": {
+        "x": -120,
+        "y": 731,
+        "scale": 0.52
+      },
+      "ghost": {
+        "x": -100,
+        "y": 678,
+        "scale": 0.52
+      },
+      "sprite": {
+        "x": -98,
+        "y": 700,
+        "scale": 0.5
+      },
+      "violet-tunic": {
+        "x": 0,
+        "y": 236,
+        "scale": 1
+      },
+      "violet-robe": {
+        "x": 0,
+        "y": 236,
+        "scale": 1
+      },
+      "brown-coat": {
+        "x": 0,
+        "y": 236,
+        "scale": 1
+      },
+      "midnight-cloak": {
+        "x": 0,
+        "y": 236,
+        "scale": 1
+      }
+    },
+    "owl": {
+      "base": {
+        "x": 0,
+        "y": 241,
+        "scale": 1
+      },
+      "witch-hat": {
+        "x": 71,
+        "y": -119,
+        "scale": 0.8708
+      },
+      "ceremonial-cape": {
+        "x": 233,
+        "y": 572,
+        "scale": 0.62
+      },
+      "star-amulet": {
+        "x": 399,
+        "y": 753,
+        "scale": 0.22
+      },
+      "star-crown": {
+        "x": 218,
+        "y": 68,
+        "scale": 0.5737
+      },
+      "forest-hood": {
+        "x": -115,
+        "y": 122,
+        "scale": 1.1813
+      },
+      "round-glasses": {
+        "x": 258,
+        "y": 349,
+        "scale": 0.4942
+      },
+      "red-bow": {
+        "x": 379,
+        "y": 668,
+        "scale": 0.26
+      },
+      "moon-pendant": {
+        "x": 402,
+        "y": 753,
+        "scale": 0.22
+      },
+      "green-cape": {
+        "x": 264,
+        "y": 632,
+        "scale": 0.55
+      },
+      "satchel": {
+        "x": 380,
+        "y": 790,
+        "scale": 0.36
+      },
+      "wand": {
+        "x": 592,
+        "y": 772,
+        "scale": 0.35
+      },
+      "crystal-staff": {
+        "x": -78,
+        "y": 546,
+        "scale": 0.75
+      },
+      "lantern": {
+        "x": 561,
+        "y": 957,
+        "scale": 0.34
+      },
+      "spellbook": {
+        "x": 593,
+        "y": 867,
+        "scale": 0.3
+      },
+      "raven": {
+        "x": -120,
+        "y": 727,
+        "scale": 0.55
+      },
+      "owlet": {
+        "x": -100,
+        "y": 719,
+        "scale": 0.55
+      },
+      "fox-cub": {
+        "x": -130,
+        "y": 726,
+        "scale": 0.52
+      },
+      "moon-cat": {
+        "x": -120,
+        "y": 731,
+        "scale": 0.52
+      },
+      "ghost": {
+        "x": -100,
+        "y": 678,
+        "scale": 0.52
+      },
+      "sprite": {
+        "x": -98,
+        "y": 700,
+        "scale": 0.5
+      },
+      "violet-tunic": {
+        "x": 0,
+        "y": 226,
+        "scale": 1
+      },
+      "violet-robe": {
+        "x": 0,
+        "y": 226,
+        "scale": 1
+      },
+      "brown-coat": {
+        "x": 0,
+        "y": 226,
+        "scale": 1
+      },
+      "midnight-cloak": {
+        "x": 0,
+        "y": 226,
+        "scale": 1
+      }
+    },
+    "forest": {
+      "base": {
+        "x": 0,
+        "y": 231,
+        "scale": 1
+      },
+      "witch-hat": {
+        "x": 151,
+        "y": 11,
+        "scale": 0.7125
+      },
+      "ceremonial-cape": {
+        "x": 242,
+        "y": 539,
+        "scale": 0.5993
+      },
+      "star-amulet": {
+        "x": 403,
+        "y": 714,
+        "scale": 0.2127
+      },
+      "star-crown": {
+        "x": 305,
+        "y": 198,
+        "scale": 0.4037
+      },
+      "forest-hood": {
+        "x": 71,
+        "y": 246,
+        "scale": 0.8313
+      },
+      "round-glasses": {
+        "x": 312,
+        "y": 412,
+        "scale": 0.391
+      },
+      "red-bow": {
+        "x": 383,
+        "y": 632,
+        "scale": 0.2513
+      },
+      "moon-pendant": {
+        "x": 406,
+        "y": 714,
+        "scale": 0.2127
+      },
+      "green-cape": {
+        "x": 272,
+        "y": 597,
+        "scale": 0.5317
+      },
+      "satchel": {
+        "x": 384,
+        "y": 750,
+        "scale": 0.348
+      },
+      "wand": {
+        "x": 606,
+        "y": 720,
+        "scale": 0.3383
+      },
+      "crystal-staff": {
+        "x": -80,
+        "y": 501,
+        "scale": 0.725
+      },
+      "lantern": {
+        "x": 576,
+        "y": 898,
+        "scale": 0.3287
+      },
+      "spellbook": {
+        "x": 607,
+        "y": 811,
+        "scale": 0.29
+      },
+      "raven": {
+        "x": -120,
+        "y": 727,
+        "scale": 0.55
+      },
+      "owlet": {
+        "x": -100,
+        "y": 719,
+        "scale": 0.55
+      },
+      "fox-cub": {
+        "x": -130,
+        "y": 726,
+        "scale": 0.52
+      },
+      "moon-cat": {
+        "x": -120,
+        "y": 731,
+        "scale": 0.52
+      },
+      "ghost": {
+        "x": -100,
+        "y": 678,
+        "scale": 0.52
+      },
+      "sprite": {
+        "x": -98,
+        "y": 700,
+        "scale": 0.5
+      },
+      "violet-tunic": {
+        "x": 17,
+        "y": 205,
+        "scale": 0.9667
+      },
+      "violet-robe": {
+        "x": 17,
+        "y": 205,
+        "scale": 0.9667
+      },
+      "brown-coat": {
+        "x": 17,
+        "y": 205,
+        "scale": 0.9667
+      },
+      "midnight-cloak": {
+        "x": 17,
+        "y": 205,
+        "scale": 0.9667
+      }
+    }
+  },
+  "anchors": {
+    "cat": {
+      "eyes": [
+        [410, 385],
+        [612, 385]
+      ],
+      "headTop": 170,
+      "headWidth": 480,
+      "neck": [512, 565],
+      "shoulders": 300,
+      "paws": [
+        [340, 720],
+        [680, 720]
+      ],
+      "feet": 920
+    },
+    "boy": {
+      "eyes": [
+        [435, 398],
+        [590, 398]
+      ],
+      "headTop": 95,
+      "headWidth": 525,
+      "neck": [512, 530],
+      "shoulders": 305,
+      "paws": [
+        [325, 705],
+        [700, 705]
+      ],
+      "feet": 915
+    },
+    "girl": {
+      "eyes": [
+        [430, 400],
+        [610, 385]
+      ],
+      "headTop": 90,
+      "headWidth": 420,
+      "neck": [512, 545],
+      "shoulders": 300,
+      "paws": [
+        [300, 725],
+        [720, 725]
+      ],
+      "feet": 930
+    },
+    "fox": {
+      "eyes": [
+        [410, 375],
+        [612, 375]
+      ],
+      "headTop": 170,
+      "headWidth": 480,
+      "neck": [512, 550],
+      "shoulders": 300,
+      "paws": [
+        [330, 725],
+        [690, 725]
+      ],
+      "feet": 925
+    },
+    "owl": {
+      "eyes": [
+        [395, 360],
+        [625, 360]
+      ],
+      "headTop": 108,
+      "headWidth": 540,
+      "neck": [512, 550],
+      "shoulders": 300,
+      "paws": [
+        [300, 760],
+        [725, 760]
+      ],
+      "feet": 935
+    },
+    "forest": {
+      "eyes": [
+        [420, 380],
+        [602, 380]
+      ],
+      "headTop": 175,
+      "headWidth": 380,
+      "neck": [512, 520],
+      "shoulders": 290,
+      "paws": [
+        [285, 710],
+        [735, 710]
+      ],
+      "feet": 945
+    }
+  },
+  "tweaks": {
+    "boy": {
+      "witch-hat": {
+        "dy": 125
+      },
+      "star-crown": {
+        "dy": 40
+      }
+    },
+    "girl": {
+      "witch-hat": {
+        "dy": 130
+      },
+      "star-crown": {
+        "dy": 35
+      }
+    },
+    "owl": {
+      "witch-hat": {
+        "dy": 70,
+        "k": 0.86
+      },
+      "star-crown": {
+        "dy": 15
+      }
+    },
+    "forest": {
+      "witch-hat": {
+        "dy": 45
+      }
+    }
+  }
+}

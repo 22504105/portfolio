@@ -1,10 +1,13 @@
-import { campaignKeys } from "@/lib/content/campaign-keys";
+import { forgottenAcademy } from "@/lib/content/campaigns/forgotten-academy";
+import { keysOf } from "@/lib/content/campaigns/keys";
 import { dailyQuizKeys } from "@/lib/content/daily-keys";
 import { quickQuestKeys } from "@/lib/content/quick-quest-keys";
 import type { Answer, QuestionKey } from "@/lib/learning/questions";
 import { applyEffects, emptyFacts, type Facts } from "@/lib/game/facts";
 import { run, type Action } from "@/lib/game/ops";
-import { balance, dailyEntry, dailyQuests } from "@/lib/game/stats";
+import { balance, dailyEntry, dailyQuests, runOf } from "@/lib/game/stats";
+import { rightMove } from "@/lib/story/autoplay";
+import { startRun } from "@/lib/story/run";
 import { dayFromNumber, dayNumber, dayOf } from "@/lib/game/time";
 
 // The demo student's past, played through the real actions: two weeks ago they chose the cat,
@@ -46,9 +49,16 @@ export function demoFacts(now: Date): Facts {
       .slice(0, upTo)
       .forEach(([questionId, key]) => act({ type: "answerQuest", questId, questionId, answer: answerFor(key) }, at));
   };
-  const storyAnswer = (nodeId: string) => {
-    const key = campaignKeys[nodeId];
-    return key.kind === "question" ? key.correct : key.order;
+  // The first campaign played up to (not including) a scene, each move right the first time.
+  const playStory = (until: string, at: Date) => {
+    const campaign = forgottenAcademy;
+    for (let step = 0; step < 50; step++) {
+      const run = runOf(facts, campaign.id) ?? startRun(campaign);
+      if (run.scene === until) return;
+      const move = rightMove(campaign, keysOf(campaign), run);
+      if (!move) return;
+      act({ type: "story", campaign: campaign.id, move }, at);
+    }
   };
 
   act({ type: "chooseCharacter", characterId: "cat" }, noonOf(now, -13));
@@ -59,8 +69,9 @@ export function demoFacts(now: Date): Facts {
     // The day's word, answered and claimed: it goes into the vocabulary.
     act({ type: "answerDailyQuiz", option: dailyQuizKeys[dailyEntry(dayOf(at)).id].correct }, at);
     act({ type: "claimDaily" }, at);
-    if (offset === -4) act({ type: "answerStory", nodeId: "prologue-1", answer: storyAnswer("prologue-1") }, at);
-    if (offset === -2) act({ type: "answerStory", nodeId: "tower-1", answer: storyAnswer("tower-1") }, at);
+    // The prologue on one day; chapter II begun on another, up to the sealed letter of the story player screen.
+    if (offset === -4) playStory("t-intro", at);
+    if (offset === -2) playStory("tower-2", at);
   }
 
   // Today: the third daily quest done, the second one started, the first not yet.

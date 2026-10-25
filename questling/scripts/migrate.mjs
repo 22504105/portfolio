@@ -34,7 +34,9 @@ const db = new pg.Client({ connectionString: url, ssl: local ? false : { rejectU
 await db.connect();
 try {
   await db.query("create schema if not exists questling_meta");
-  await db.query("create table if not exists questling_meta.migrations (name text primary key, applied_at timestamptz not null default now())");
+  await db.query(
+    "create table if not exists questling_meta.migrations (name text primary key, applied_at timestamptz not null default now())",
+  );
   const applied = new Set((await db.query("select name from questling_meta.migrations")).rows.map((row) => row.name));
 
   for (const name of readdirSync("supabase/migrations").sort()) {
