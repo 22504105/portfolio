@@ -50,6 +50,8 @@ const studioRu = {
     library: "Библиотека историй",
     studentView: "Режим ученика",
     menu: "Меню учителя",
+    openMenu: "Открыть разделы",
+    closeMenu: "Закрыть разделы",
     language: "Язык интерфейса",
     signOut: "Выйти",
   },
@@ -335,6 +337,7 @@ const studioRu = {
   },
   builder: {
     title: "Конструктор квестов",
+    panes: { label: "Части конструктора", palette: "Палитра", canvas: "Сцены", inspector: "Свойства" },
     pick: "Выберите кампанию для правки или создайте новую.",
     pickBuiltIn: "Встроенные кампании правятся копией — их можно скопировать в библиотеке.",
     create: "+ Создать новую кампанию",
@@ -688,6 +691,8 @@ const studioEn: StudioDictionary = {
     library: "Story library",
     studentView: "Student view",
     menu: "Teacher menu",
+    openMenu: "Open the sections",
+    closeMenu: "Close the sections",
     language: "Interface language",
     signOut: "Sign out",
   },
@@ -973,6 +978,7 @@ const studioEn: StudioDictionary = {
   },
   builder: {
     title: "Quest builder",
+    panes: { label: "Builder parts", palette: "Palette", canvas: "Scenes", inspector: "Properties" },
     pick: "Pick a campaign to edit, or create a new one.",
     pickBuiltIn: "Built-in campaigns are edited as a copy — copy one in the library.",
     create: "+ Create a new campaign",

@@ -672,7 +672,7 @@ function LibraryTable({ entries, onSelect }: { entries: LibraryEntry[]; onSelect
   const { t } = useStudio();
   return (
     <div className="bg-surface-container overflow-x-auto rounded-xl shadow-md">
-      <table className="font-body-md text-body-md w-full text-left">
+      <table className="font-body-md text-body-md w-full min-w-[560px] text-left">
         <thead>
           <tr className="bg-surface-container-lowest text-text-muted font-caption text-caption tracking-wider uppercase">
             <th className="py-space-sm px-space-md">{t.library.tabs.all}</th>

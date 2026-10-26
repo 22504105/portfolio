@@ -705,7 +705,7 @@ function SkillsAndHeat({ days, today, onGradebook }: { days: number; today: stri
           </div>
         </div>
         <div className="overflow-x-auto">
-          <table className="font-body-md text-body-md w-full text-left">
+          <table className="font-body-md text-body-md w-full min-w-[560px] text-left">
             <thead>
               <tr className="text-text-muted font-caption text-caption">
                 <th className="px-2 py-1 font-normal">{t.analytics.student}</th>
@@ -759,7 +759,7 @@ function Gradebook({ student }: { student: string | null }) {
         </p>
       </div>
       <div className="overflow-x-auto">
-        <table className="font-body-md text-body-md w-full text-left">
+        <table className="font-body-md text-body-md w-full min-w-[560px] text-left">
           <thead>
             <tr className="bg-surface-container-lowest text-text-muted font-caption text-caption tracking-wider uppercase">
               <th className="py-space-sm px-space-md">{t.analytics.student}</th>

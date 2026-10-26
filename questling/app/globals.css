@@ -310,3 +310,15 @@
 .pb-safe {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
+
+/* The demo badge sits over the middle of the header; in Teacher Studio on a phone that is where the
+   title and the menu button are, so there it moves to the bottom right corner (the studio has no bottom bar). */
+@media (max-width: 1023px) {
+  body:has([data-studio-section]) [data-demo-badge] {
+    top: auto;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 0.75rem);
+    left: auto;
+    right: 0.75rem;
+    transform: none;
+  }
+}

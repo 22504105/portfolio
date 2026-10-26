@@ -126,6 +126,9 @@ function Builder({ quest }: { quest: Quest }) {
   const [draft, setDraft] = useState<Draft>(() => ({ graph: structuredClone(source.graph), keys: structuredClone(source.keys) }));
   const [save, setSave] = useState<SaveState>({ kind: "saved", at: source.updatedAt });
   const [selected, setSelected] = useState<string | null>(null);
+  // On a phone the three columns (palette, scenes, properties) take turns, switched by tabs above them.
+  const [pane, setPane] = useState<"palette" | "canvas" | "inspector">("canvas");
+  const narrow = () => typeof window !== "undefined" && window.matchMedia("(max-width: 1023px)").matches;
   const [zoom, setZoom] = useState(1);
   const [grid, setGrid] = useState(true);
   const [title, setTitle] = useState(quest.title);
@@ -278,6 +281,8 @@ function Builder({ quest }: { quest: Quest }) {
     replace(result.draft);
     setSelected(result.id);
     setNotice(null);
+    // A new scene is filled in next: on a phone, its properties open.
+    if (narrow()) setPane("inspector");
   };
 
   const publish = async () => {
@@ -317,8 +322,8 @@ function Builder({ quest }: { quest: Quest }) {
 
   return (
     <div className="flex h-[calc(100vh-7.5rem)] w-full flex-col overflow-hidden select-none" data-builder={quest.id}>
-      <header className="px-space-lg py-space-sm bg-surface-container-lowest mb-space-sm gap-space-sm flex shrink-0 items-center justify-between gap-2 rounded-xl shadow-md">
-        <div className="gap-space-md flex min-w-0 flex-1 items-center">
+      <header className="px-space-md lg:px-space-lg py-space-sm bg-surface-container-lowest mb-space-sm gap-space-sm flex shrink-0 flex-wrap items-center justify-between gap-2 rounded-xl shadow-md">
+        <div className="gap-space-md flex min-w-0 flex-1 basis-full items-center sm:basis-auto">
           <div className="bg-surface-container text-primary flex h-8 w-8 shrink-0 items-center justify-center rounded-lg shadow-sm">
             <Icon name="account_tree" className="text-[20px]" />
           </div>
@@ -440,8 +445,30 @@ function Builder({ quest }: { quest: Quest }) {
         </div>
       </header>
 
+      <div
+        className="gap-space-xs bg-surface-container-lowest mb-space-sm flex shrink-0 rounded-xl p-1 lg:hidden"
+        role="tablist"
+        aria-label={t.builder.panes.label}
+      >
+        {(["palette", "canvas", "inspector"] as const).map((p) => (
+          <button
+            key={p}
+            type="button"
+            role="tab"
+            aria-selected={pane === p}
+            onClick={() => setPane(p)}
+            data-pane={p}
+            className={`font-label-md text-label-md flex flex-1 items-center justify-center gap-1 rounded-lg py-2 transition-colors ${pane === p ? "bg-surface-container text-primary shadow-sm" : "text-on-surface-variant"}`}
+          >
+            <Icon name={p === "palette" ? "widgets" : p === "canvas" ? "account_tree" : "tune"} className="text-[18px]" />
+            {t.builder.panes[p]}
+          </button>
+        ))}
+      </div>
       <div className="gap-space-sm relative flex min-h-0 w-full flex-1">
-        <aside className="bg-surface-container-lowest p-space-md flex w-[230px] shrink-0 flex-col overflow-y-auto rounded-xl shadow-md">
+        <aside
+          className={`bg-surface-container-lowest p-space-md w-full shrink-0 flex-col overflow-y-auto rounded-xl shadow-md lg:flex lg:w-[230px] ${pane === "palette" ? "flex" : "hidden"}`}
+        >
           <div className="mb-space-md pb-space-xs flex items-center justify-between">
             <span className="font-label-md text-label-md text-text-muted text-[11px] tracking-wider uppercase">{t.builder.palette}</span>
             <Icon name="touch_app" className="text-text-muted text-[16px]" />
@@ -481,7 +508,10 @@ function Builder({ quest }: { quest: Quest }) {
 
         <main
           ref={canvas}
-          className="bg-surface-container-lowest relative flex-1 overflow-auto rounded-xl shadow-inner"
+          // Scrolls both ways when the graph is bigger than the screen: reachable from the keyboard.
+          tabIndex={0}
+          aria-label={t.builder.panes.canvas}
+          className={`bg-surface-container-lowest relative flex-1 overflow-auto rounded-xl shadow-inner lg:block ${pane === "canvas" ? "" : "max-lg:hidden"}`}
           onPointerMove={onMove}
           onPointerUp={onUp}
           onClick={(e) => e.target === e.currentTarget && setSelected(null)}
@@ -628,7 +658,9 @@ function Builder({ quest }: { quest: Quest }) {
           </div>
         </main>
 
-        <aside className="bg-surface-container-lowest flex w-[340px] shrink-0 flex-col overflow-hidden rounded-xl shadow-md">
+        <aside
+          className={`bg-surface-container-lowest w-full shrink-0 flex-col overflow-hidden rounded-xl shadow-md lg:flex lg:w-[340px] ${pane === "inspector" ? "flex" : "hidden"}`}
+        >
           <div className="p-space-md bg-surface-container-low flex shrink-0 items-center justify-between">
             <div className="flex min-w-0 flex-col">
               <span className="font-caption text-caption text-primary font-semibold tracking-widest uppercase">
