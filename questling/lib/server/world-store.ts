@@ -6,6 +6,7 @@ import { studentDaily, teacherDailyId, teacherDailyKey } from "@/lib/studio/dail
 import type { DailyContent } from "@/lib/studio/model";
 import type { Campaign, CampaignKeys } from "@/lib/story/graph";
 import type { Db } from "./db";
+import type { DubContent } from "@/lib/dub/model";
 import { studentMediaUrls } from "./media";
 
 // What surrounds a signed-in student (lib/game/world.ts): their groups and teachers, what the groups
@@ -25,6 +26,15 @@ export async function loadWorld(
     [userId],
   );
   const groupIds = groups.rows.map((g) => g.id);
+  // Voice-acting scenes given to the student's groups: the assigned (published) version of each.
+  const dubs = await db.query<{ slug: string; version: number; group_id: string; due_at: Date | null; content: DubContent }>(
+    `select e.slug, a.version, a.group_id, a.due_at, v.content
+       from questling.dub_assignments a
+       join questling.dub_exercises e on e.id = a.exercise_id and e.archived_at is null
+       join questling.dub_versions v on v.exercise_id = a.exercise_id and v.version = a.version and v.status = 'published'
+      where a.group_id = any($1::uuid[]) order by a.created_at`,
+    [groupIds],
+  );
   const assignments = await db.query<{ group_id: string; campaign: string; version: number | null; due_at: Date | null }>(
     "select group_id, campaign, version, due_at from questling.assignments where group_id = any($1::uuid[]) and starts_at <= $2 order by created_at",
     [groupIds, now],
@@ -88,6 +98,13 @@ export async function loadWorld(
       messages: messages.rows.map((m) => ({ id: m.id, ref: m.ref, body: m.body, mentor: m.mentor, createdAt: m.created_at.toISOString() })),
       daily,
       media,
+      dubs: dubs.rows.map((d) => ({
+        exercise: d.slug,
+        version: d.version,
+        groupId: d.group_id,
+        dueAt: d.due_at && d.due_at.toISOString(),
+        content: d.content,
+      })),
     },
     keys,
     dailyKeys,

@@ -1,6 +1,7 @@
 import { campaignById, campaigns, campaignVersion } from "@/lib/content/campaigns";
 import type { DailyEntry } from "@/lib/content/daily";
 import type { Campaign } from "@/lib/story/graph";
+import type { AssignedDub } from "@/lib/dub/model";
 import type { Facts } from "./facts";
 
 // What surrounds a student's own record: the groups they joined, what their teachers assigned, the
@@ -20,6 +21,8 @@ export type World = {
   daily?: { day: string; entry: DailyEntry }[];
   /** Links to the teachers' recordings this student may hear, by recording id (scene.audio, word.audio). */
   media?: Record<string, string>;
+  /** Voice-acting scenes assigned to the student's groups (published versions; lib/dub/model.ts). */
+  dubs?: AssignedDub[];
 };
 
 export const emptyWorld = (): World => ({ groups: [], assignments: [], campaigns: [], messages: [] });

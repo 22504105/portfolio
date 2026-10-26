@@ -1,6 +1,7 @@
 import type { CharacterId } from "@/lib/content/characters";
 import type { AnswerRecord, Completion } from "@/lib/game/facts";
 import type { Campaign, CampaignKeys } from "@/lib/story/graph";
+import type { DubAssignment, DubContent, DubExercise, DubSubmission, Rubric } from "@/lib/dub/model";
 import type { RunState } from "@/lib/story/run";
 
 // What Teacher Studio knows, as plain facts, the way the student app keeps a student's record
@@ -79,6 +80,23 @@ export type StudioFacts = {
   messages: MentorMessage[];
   /** The teacher's recordings (lib/server/media.ts), with links to play them; none in the demo. */
   media: MediaItem[];
+  /** Voice-acting scenes (lib/dub/model.ts), their assignments, and students' submissions to review. */
+  dubs?: DubExercise[];
+  dubAssignments?: DubAssignment[];
+  dubSubmissions?: DubSubmission[];
+  /** The teacher's videos, images and background sounds in object storage (lib/server/media-store.ts). */
+  objects?: StoredMedia[];
+};
+
+export type StoredMedia = {
+  id: string;
+  kind: "video" | "image" | "background";
+  mime: string;
+  size: number;
+  durationMs: number | null;
+  width: number | null;
+  height: number | null;
+  createdAt: string;
 };
 
 export type MediaItem = { id: string; name: string; mime: string; size: number; durationMs: number; createdAt: string; url: string };
@@ -96,7 +114,23 @@ export type StudioEffect =
   | { type: "daily.set"; entry: DailyEntry }
   | { type: "daily.remove"; entryId: string }
   | { type: "message.send"; message: Omit<MentorMessage, "createdAt" | "readAt"> }
-  | { type: "audit"; action: string; target: string | null };
+  | { type: "audit"; action: string; target: string | null }
+  | { type: "dub.create"; exercise: Omit<DubExercise, "createdAt" | "archivedAt" | "versions"> }
+  | { type: "dub.update"; exerciseId: string; title?: string; cefr?: Cefr; archived?: boolean }
+  | { type: "dub.saveDraft"; exerciseId: string; version: number; content: DubContent }
+  | { type: "dub.publish"; exerciseId: string; version: number }
+  | { type: "dub.assign"; assignment: Omit<DubAssignment, "createdAt"> }
+  | { type: "dub.unassign"; assignmentId: string }
+  /** A review; on approval the student's XP is granted with the given ledger key (once, by the key). */
+  | {
+      type: "dub.review";
+      submissionId: string;
+      status: "approved" | "retry";
+      feedback: string | null;
+      rubric: Rubric | null;
+      grant: { userId: string; xp: number; key: string } | null;
+    }
+  | { type: "object.remove"; id: string };
 
 /** The facts with the effects added, as of `at`: the demo studio's whole write path, the server's mirror image. */
 export function applyStudioEffects(facts: StudioFacts, effects: StudioEffect[], at: string): StudioFacts {
@@ -197,6 +231,71 @@ export function applyStudioEffects(facts: StudioFacts, effects: StudioEffect[], 
         next.messages.push({ ...effect.message, createdAt: at, readAt: null });
         break;
       case "audit":
+        break;
+      case "dub.create":
+        next.dubs = [...(next.dubs ?? []), { ...effect.exercise, createdAt: at, archivedAt: null, versions: [] }];
+        break;
+      case "dub.update":
+        next.dubs = (next.dubs ?? []).map((d) =>
+          d.id !== effect.exerciseId
+            ? d
+            : {
+                ...d,
+                ...(effect.title !== undefined ? { title: effect.title } : {}),
+                ...(effect.cefr !== undefined ? { cefr: effect.cefr } : {}),
+                ...(effect.archived !== undefined ? { archivedAt: effect.archived ? at : null } : {}),
+              },
+        );
+        break;
+      case "dub.saveDraft":
+        next.dubs = (next.dubs ?? []).map((d) =>
+          d.id !== effect.exerciseId
+            ? d
+            : {
+                ...d,
+                title: effect.content.title,
+                cefr: effect.content.cefr,
+                versions: [
+                  ...d.versions.filter((v) => v.version !== effect.version),
+                  { version: effect.version, status: "draft" as const, content: effect.content, updatedAt: at, publishedAt: null },
+                ].sort((a, b) => a.version - b.version),
+              },
+        );
+        break;
+      case "dub.publish":
+        next.dubs = (next.dubs ?? []).map((d) =>
+          d.id !== effect.exerciseId
+            ? d
+            : {
+                ...d,
+                versions: d.versions.map((v) =>
+                  v.version === effect.version ? { ...v, status: "published" as const, publishedAt: at, updatedAt: at } : v,
+                ),
+              },
+        );
+        break;
+      case "dub.assign":
+        next.dubAssignments = [
+          ...(next.dubAssignments ?? []).filter(
+            (a) => !(a.groupId === effect.assignment.groupId && a.exercise === effect.assignment.exercise),
+          ),
+          { ...effect.assignment, createdAt: at },
+        ];
+        break;
+      case "dub.unassign":
+        next.dubAssignments = (next.dubAssignments ?? []).filter((a) => a.id !== effect.assignmentId);
+        break;
+      case "dub.review":
+        next.dubSubmissions = (next.dubSubmissions ?? []).map((s) =>
+          s.id !== effect.submissionId
+            ? s
+            : { ...s, status: effect.status, feedback: effect.feedback, rubric: effect.rubric, reviewedAt: at },
+        );
+        if (effect.grant)
+          next.members = next.members.map((m) => (m.userId === effect.grant!.userId ? { ...m, xp: m.xp + effect.grant!.xp } : m));
+        break;
+      case "object.remove":
+        next.objects = (next.objects ?? []).filter((o) => o.id !== effect.id);
         break;
     }
   }

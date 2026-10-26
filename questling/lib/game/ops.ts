@@ -34,6 +34,8 @@ import {
   runState,
 } from "./stats";
 import { dayOf, weekOf } from "./time";
+import { isRole, latestTakes, SUBMITTED_MODES, type DubSubmission } from "@/lib/dub/model";
+import { worldOf } from "./world";
 import { findCampaign } from "./world";
 
 // What a student can do, as pure functions: (facts, input) → effects, or a refusal.
@@ -59,7 +61,12 @@ export type Action =
   | { type: "keepWord"; ref: string }
   | { type: "flagWord"; ref: string; favorite?: boolean; known?: boolean }
   | { type: "dropWord"; ref: string }
-  | { type: "reviewWord"; ref: string; option: string };
+  | { type: "reviewWord"; ref: string; option: string }
+  /** Voice acting (lib/dub/model.ts): pick a role and mode, then submit the recorded lines. */
+  | { type: "startDub"; exercise: string; role: string; mode: string }
+  | { type: "submitDub"; exercise: string }
+  /** The demo's stand-in for an upload: a take kept in this browser. Refused anywhere but the demo. */
+  | { type: "demoTake"; exercise: string; line: string; media: string };
 
 export type Refusal =
   | "invalid"
@@ -104,6 +111,8 @@ export type Context = {
   demo: boolean;
   random?: () => number;
   keys?: (campaign: Campaign) => CampaignKeys | null;
+  /** New ids (the server's are random UUIDs); without it the demo makes its own. */
+  newId?: () => string;
   /** A teacher's word of the day's quiz key, by entry id (the server holds them). */
   dailyKeys?: (entryId: string) => { correct: string; explanation: Text } | null;
 };
@@ -297,6 +306,57 @@ function perform(facts: Facts, action: Action, ctx: Context): OpResult {
       if (rewarded)
         effects.push({ type: "ledger", currency: "xp", amount: rewarded, key: `review:${today}:${card.ref}`, reason: "review" });
       return done(effects, { kind: "review", correct, right: options.find((o) => o.text === card.ru)!.id, due: schedule.due, rewarded });
+    }
+
+    case "startDub": {
+      const assigned = worldOf(facts).dubs?.find((d) => d.exercise === action.exercise);
+      if (!assigned) return refuse("not_available");
+      const mode = action.mode as DubSubmission["mode"];
+      if (!SUBMITTED_MODES.includes(mode) || !assigned.content.modes.includes(mode)) return refuse("invalid");
+      const role = assigned.content.speakers.length === 1 ? assigned.content.speakers[0].id : action.role;
+      if (!isRole(assigned.content, role)) return refuse("invalid");
+      const existing = (facts.dubs ?? []).find((d) => d.exercise === assigned.exercise && d.version === assigned.version);
+      // The role and mode can change until the first take is kept; after that, the recording is theirs.
+      if (existing && (existing.takes.length || (existing.status !== "recording" && existing.status !== "retry")))
+        return existing.role === role && existing.mode === mode ? done([]) : refuse("already_done");
+      const submission: DubSubmission = existing
+        ? { ...existing, role, mode }
+        : {
+            id: ctx.newId?.() ?? `demo-${assigned.exercise}-${assigned.version}`,
+            userId: "",
+            exercise: assigned.exercise,
+            version: assigned.version,
+            role,
+            mode,
+            status: "recording",
+            attempts: 0,
+            submittedAt: null,
+            reviewedAt: null,
+            feedback: null,
+            rubric: null,
+            takes: [],
+          };
+      return done([{ type: "dub", submission }]);
+    }
+
+    case "submitDub": {
+      const assigned = worldOf(facts).dubs?.find((d) => d.exercise === action.exercise);
+      const own = assigned && (facts.dubs ?? []).find((d) => d.exercise === assigned.exercise && d.version === assigned.version);
+      if (!assigned || !own) return refuse("not_available");
+      if (own.status !== "recording" && own.status !== "retry") return refuse("already_done");
+      if (own.attempts >= assigned.content.submissions) return refuse("exhausted");
+      // Every line of the student's part needs a kept take.
+      if (!latestTakes(assigned.content, own)) return refuse("not_ready");
+      return done([
+        { type: "dub", submission: { ...own, status: "submitted", attempts: own.attempts + 1, submittedAt: ctx.now.toISOString() } },
+      ]);
+    }
+
+    case "demoTake": {
+      if (!ctx.demo) return refuse("invalid");
+      const own = (facts.dubs ?? []).find((d) => d.exercise === action.exercise);
+      if (!own || (own.status !== "recording" && own.status !== "retry")) return refuse("not_available");
+      return done([{ type: "dubTake", submissionId: own.id, lineId: action.line, mediaId: action.media }]);
     }
 
     case "story": {
