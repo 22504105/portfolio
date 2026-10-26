@@ -9,6 +9,7 @@ import { useStudio } from "@/lib/client/studio";
 import { applyEffects, emptyFacts, type Facts } from "@/lib/game/facts";
 import { run, type Action } from "@/lib/game/ops";
 import { getDictionary } from "@/lib/i18n";
+import { builtInClip } from "@/lib/dub/model";
 import { StudioShell } from "./studio-shell";
 
 // "Предпросмотр (Telegram)" of 18_quest_builder: the saved draft played as a student would play it,
@@ -103,6 +104,8 @@ function Sandbox({ graph, keys, questId }: { graph: Version["graph"]; keys: Vers
       facts,
       account: { telegram: null, group: null },
       act,
+      // The preview plays no scenes with student recordings: built-in files only, nothing kept.
+      media: { link: async (id: string) => builtInClip(id), uploadTake: async () => ({ ok: false as const, reason: "preview" }) },
     }),
     [locale, base, questId, facts, act],
   );

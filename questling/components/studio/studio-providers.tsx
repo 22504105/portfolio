@@ -7,6 +7,8 @@ import type { Locale } from "@/lib/i18n";
 import { studioDictionary } from "@/lib/i18n/studio";
 import { demoStudio } from "@/lib/studio/demo";
 import { applyStudioEffects, type MediaItem, type StudioFacts } from "@/lib/studio/model";
+import { builtInClip } from "@/lib/dub/model";
+import type { StorageUsage, StudioObjects } from "@/lib/client/studio";
 import { studioRun, type StudioAction, type StudioOutcome, type StudioRefusal } from "@/lib/studio/ops";
 
 // The two homes of Teacher Studio's facts. The demo studio keeps made-up classes in this browser
@@ -54,7 +56,20 @@ function readDemo(): StudioFacts {
   if (memory) return memory;
   try {
     const stored = window.localStorage.getItem(DEMO_KEY);
-    if (stored) memory = JSON.parse(stored) as StudioFacts;
+    if (stored) {
+      const parsed = JSON.parse(stored) as StudioFacts;
+      // Saved before voice acting existed: take the demo's scenes from a fresh demo.
+      if (!parsed.dubs) {
+        const fresh = demoStudio(new Date());
+        Object.assign(parsed, {
+          dubs: fresh.dubs,
+          dubAssignments: fresh.dubAssignments,
+          dubSubmissions: fresh.dubSubmissions,
+          objects: [],
+        });
+      }
+      memory = parsed;
+    }
   } catch {}
   memory ??= demoStudio(new Date());
   return memory;
@@ -107,6 +122,8 @@ export function DemoStudioProvider({ locale, children }: { locale: Locale; child
             groupId,
             setGroupId,
             signOut,
+            // The demo studio keeps no files: only the built-in clip and the demo takes ship with the app.
+            link: async (id: string) => builtInClip(id),
           }
         : null,
     [facts, locale, act, groupId, setGroupId, signOut],
@@ -235,6 +252,57 @@ export function LiveStudioProvider({ locale, children }: { locale: Locale; child
     [session],
   );
 
+  const objects = useMemo<StudioObjects | undefined>(() => {
+    if (!session) return undefined;
+    const post = (path: string, body: unknown) =>
+      fetch(`/api/v1/${path}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.token}` },
+        body: JSON.stringify(body),
+      }).catch(() => null);
+    const refresh = async () => {
+      const response = await fetch("/api/v1/studio/state", { headers: { Authorization: `Bearer ${session.token}` } }).catch(() => null);
+      if (response?.ok) setFacts(((await response.json()) as { facts: StudioFacts }).facts);
+    };
+    return {
+      // Three steps: a signed upload from the server, the file straight to storage, the server's check.
+      upload: async (kind, file, rights) => {
+        const ask = await post("media/upload", { kind, mime: file.type, size: file.size, rights });
+        if (!ask) return { ok: false, reason: "network" };
+        const ticket = (await ask.json().catch(() => ({}))) as { id?: string; url?: string; contentType?: string; error?: string };
+        if (!ask.ok || !ticket.id || !ticket.url) return { ok: false, reason: ticket.error ?? "network" };
+        const put = await fetch(ticket.url, { method: "PUT", body: file, headers: { "Content-Type": ticket.contentType! } }).catch(
+          () => null,
+        );
+        if (!put?.ok) return { ok: false, reason: "upload" };
+        const done = await post("media/complete", { id: ticket.id });
+        const data = (await done?.json().catch(() => ({}))) as { error?: string; media?: { durationMs: number | null } } | undefined;
+        if (!done?.ok) return { ok: false, reason: data?.error ?? "network" };
+        await refresh();
+        return { ok: true, id: ticket.id, durationMs: data?.media?.durationMs ?? null };
+      },
+      link: async (id) => {
+        const response = await post("media/link", { id });
+        return response?.ok ? ((await response.json()) as { url: string }).url : null;
+      },
+      remove: async (id) => {
+        const response = await post("studio/objects/delete", { id });
+        if (!response) return "network";
+        if (response.ok) {
+          await refresh();
+          return "deleted";
+        }
+        return response.status === 409 ? "in_use" : response.status === 404 ? "not_found" : "network";
+      },
+      usage: async () => {
+        const response = await fetch("/api/v1/studio/objects/usage", { headers: { Authorization: `Bearer ${session.token}` } }).catch(
+          () => null,
+        );
+        return response?.ok ? ((await response.json()) as StorageUsage) : null;
+      },
+    };
+  }, [session]);
+
   const signOut = useCallback(() => {
     try {
       window.sessionStorage.removeItem(SESSION_KEY);
@@ -257,9 +325,11 @@ export function LiveStudioProvider({ locale, children }: { locale: Locale; child
             setGroupId,
             signOut,
             media,
+            objects,
+            link: async (id: string) => builtInClip(id) ?? (await objects?.link(id)) ?? null,
           }
         : null,
-    [facts, locale, act, groupId, setGroupId, signOut, media],
+    [facts, locale, act, groupId, setGroupId, signOut, media, objects],
   );
   if (!api) return <div className="bg-background min-h-dvh" aria-busy="true"></div>;
   return (

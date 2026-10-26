@@ -227,12 +227,48 @@ export function LiveProvider({ locale, children }: { locale: Locale; children: R
     return "ok" as const;
   }, [session]);
 
+  // Large media: signed links from the server; a take goes up in three steps (ask, PUT to storage, confirm).
+  const media = useMemo(() => {
+    const post = (path: string, body: unknown) =>
+      session
+        ? fetch(`/api/v1/${path}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.token}` },
+            body: JSON.stringify(body),
+          }).catch(() => null)
+        : Promise.resolve(null);
+    return {
+      link: async (id: string) => {
+        const response = await post("media/link", { id });
+        if (!response?.ok) return null;
+        return ((await response.json()) as { url: string }).url;
+      },
+      uploadTake: async (exercise: string, line: string, take: { blob: Blob; mime: string }) => {
+        const ask = await post("media/upload", { kind: "voice", mime: take.mime, size: take.blob.size, exercise, line });
+        if (!ask) return { ok: false as const, reason: "network" };
+        const ticket = (await ask.json().catch(() => ({}))) as { id?: string; url?: string; contentType?: string; error?: string };
+        if (!ask.ok || !ticket.id || !ticket.url) return { ok: false as const, reason: ticket.error ?? "server" };
+        const put = await fetch(ticket.url, { method: "PUT", body: take.blob, headers: { "Content-Type": ticket.contentType! } }).catch(
+          () => null,
+        );
+        if (!put?.ok) return { ok: false as const, reason: "upload" };
+        const done = await post("media/complete", { id: ticket.id, exercise, line });
+        if (!done?.ok)
+          return { ok: false as const, reason: ((await done?.json().catch(() => ({}))) as { error?: string }).error ?? "network" };
+        // The take is in the submission now: read the record again.
+        const state = await fetch("/api/v1/state", { headers: { Authorization: `Bearer ${session!.token}` } }).catch(() => null);
+        if (state?.ok) setFacts(((await state.json()) as { facts: Facts }).facts);
+        return { ok: true as const };
+      },
+    };
+  }, [session]);
+
   const api = useMemo(
     () =>
       facts && account
-        ? { mode: "live" as const, locale, t, base: `/${locale}/app`, facts, account, act, join, downloadData, deleteData }
+        ? { mode: "live" as const, locale, t, base: `/${locale}/app`, facts, account, act, join, downloadData, deleteData, media }
         : null,
-    [facts, account, locale, t, act, join, downloadData, deleteData],
+    [facts, account, locale, t, act, join, downloadData, deleteData, media],
   );
 
   if (status === "ready" && api)

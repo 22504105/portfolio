@@ -48,3 +48,22 @@ Record the date, the Telegram app version and the device model with the results.
   of the development data: delete them in the app (Settings → My data) when done.
 - Teachers: signing up a new teacher needs confirmation off or SMTP (`docs/security.md`, finding 7);
   the owner's own teacher account signs in already.
+
+## Voice acting and word journal (features gates A–D, 2026-10-26)
+
+Record each item as passed, failed or not tested — never "passed" without having done it on the device.
+
+| Check | Android Chrome | Android Telegram | iOS Safari | iOS Telegram |
+| --- | --- | --- | --- | --- |
+| A scene's video plays, with sound, seek by line, 0.75× and 0.5× | | | | |
+| Microphone prompt appears only after "Record"; denying it shows what to do | | | | |
+| A take records and ends by itself at the end of the line; listen, delete, keep | | | | |
+| A call or switching apps during a take drops it with the message | | | | |
+| Keep uploads (slow network: 3G throttling); a failed upload says so, retry works | | | | |
+| "My voice" plays the takes in step with the video; background track when given | | | | |
+| Send; the mentor's "record again" and "accepted" (+XP) come back to the screen | | | | |
+| Shadowing with headphones (with and after the speaker) | | | | |
+| A tapped word opens its translation; "Keep the word" adds it to My words | | | | |
+| My words: review today's words; a mistake costs nothing | | | | |
+| Answer options are in a different order for another student; a reload keeps the order | | | | |
+| Teacher (desktop and phone): upload MP4 (accepted), MOV (refused with reason), publish, assign, review | | | | |

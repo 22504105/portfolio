@@ -29,6 +29,18 @@ export type StudentApi = {
   downloadData?: () => Promise<"ok" | "limited" | "network">;
   /** Deletes the student and everything about them (live: on the server; demo: starts the demo afresh). */
   deleteData?: () => Promise<"ok" | "network">;
+  /**
+   * Large media (lib/server/media-store.ts): a short-lived link to a scene's video or a take, and a
+   * take sent up for a line. Live: signed links from the server; demo: files kept in this browser.
+   */
+  media: {
+    link: (id: string) => Promise<string | null>;
+    uploadTake: (
+      exercise: string,
+      line: string,
+      take: { blob: Blob; mime: string },
+    ) => Promise<{ ok: true } | { ok: false; reason: string }>;
+  };
 };
 
 /** Saves text as a file through the browser (outside Telegram, and for the demo). */

@@ -217,8 +217,13 @@ export function latestTakes(content: DubContent, submission: Pick<DubSubmission,
   return out;
 }
 
-/** A built-in clip for the demo and as a starting point: "demo:archive" → /media/demo/archive.mp4. */
-export const builtInClip = (ref: string) => (ref.startsWith("demo:") ? `/media/demo/${ref.slice(5)}.mp4` : null);
+/** A built-in file for the demo and as a starting point: "demo:archive" → /media/demo/archive.mp4, others .m4a. */
+export const builtInClip = (ref: string) => {
+  if (!ref.startsWith("demo:")) return null;
+  const name = ref.slice(5);
+  // The scene itself is a video; its background and the demo takes are sound only.
+  return name === "archive" ? `/media/demo/${name}.mp4` : `/media/demo/${name}.m4a`;
+};
 
 /** A new scene: the built-in archive clip with its two speakers, for the teacher to change or replace. */
 export function starterDub(title: string, cefr: DubContent["cefr"]): DubContent {

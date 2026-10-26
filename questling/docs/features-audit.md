@@ -116,3 +116,58 @@ on, no grants to the API roles.
 Tests: `tests/vocab.test.ts` (13), DB tests for the journal and the switch (3), `e2e/features-d.spec.ts` (5).
 Full suites: unit/DB 164/164, e2e 106/106. Live check on the working database: 50 passed, 1 skipped
 (that day's quests paid 55 coins, below any level-1 item, so the purchase itself was not tested).
+
+## Gates B and C — media storage and voice acting (2026-10-26)
+
+**Storage change (owner, 2026-10-26)**: Cloudflare R2 could not be activated (the card was not accepted),
+so media go to **Backblaze B2** through its S3-compatible API. The code is provider-neutral
+(`MEDIA_S3_*`), so R2 or another S3-compatible store needs only other values. Details, limits, setup and
+the B2 free-tier caveats: `docs/media-storage.md`.
+
+**Gate B — foundation**: SigV4 presigned URLs (`lib/server/sigv4.ts`), private storage access
+(`lib/server/storage.ts`), checks by content (`lib/server/media-check.ts`: MP4 H.264/AAC and WebM
+VP8/VP9 video; MOV, H.265, over 60 s refused; voice WebM/Opus or MP4/AAC; images by header), uploads in
+three steps with quotas and a global cap (`lib/server/media-store.ts`), signed links after an access
+check, daily cleanup and 180-day voice retention, a student's recordings deleted with them, operations
+counted per day. Migration 9 `20261028000100_media_dubbing.sql`, applied 2026-10-26 after backup
+`E:\Backups\questling\2026-10-26T18-39-51` (verified by restore) and a dry run.
+
+Found and fixed on the way: the Permissions-Policy header forbade the microphone outright, and the
+Content-Security-Policy would have blocked videos from storage, uploads to it and playback of fresh
+takes (`blob:`); both now allow exactly the site and the storage origin. Studio actions were capped at
+16 KB, so saving an edited copy of a built-in campaign (≈42 KB) failed with 413; the cap is now 384 KB
+for studio actions (what the database keeps).
+
+**Gate C — voice acting** (`lib/dub/model.ts`, `components/dub/*`, `components/studio/dubbing-screen.tsx`):
+- Teacher Studio, new section **Voice acting** (`/studio/dubbing`): a scene = a video (own upload, with
+  rights confirmed, or the built-in original clip), a non-destructive trim, characters, timed lines with
+  English text, Russian translation and optional word help, modes, subtitles, XP, sends allowed. Draft
+  → publish (versions frozen) → assign to groups. Review tab: the student's scene with their voice,
+  line-by-line original vs take, a rubric without numbers (good / work on it), written feedback,
+  approve (XP once, by ledger key) or ask to record again.
+- Student (`/dub/<scene>`, listed in Quests): choose a part (when there are several) and a mode
+  (listen and repeat, voice-over, role-play); per line: hear the original at 1×, 0.75×, 0.5×, record
+  after a countdown (in voice-over and role-play the line plays muted while the student speaks), listen,
+  delete, keep (upload). The whole scene: Original / My voice, with takes started at their lines and
+  kept in step with the video; while a take plays the clip is muted (voices and music are one track —
+  said on screen) and the teacher's background track plays instead when given. Send when every line
+  has a kept take; status, feedback and rubric come back to the same screen. Shadowing: practice with
+  or after the speaker, never sent, never graded.
+- Recording (`lib/client/recorder.ts`): only after the student's button, one line at a time; format by
+  feature detection; refusals explained (no permission, no microphone, busy, unsupported, interrupted
+  — a page going to the background stops and drops the take).
+- Demo: the built-in scene (`scripts/build-demo-clip.mts`: a pan over the app's own illustration, lines
+  read by Piper, the student's part pitched) is "assigned" by the demo mentor; takes stay in the browser
+  and nobody reviews them (said on screen). The demo studio has the scene and a synthetic student
+  recording to review.
+
+Not in these gates: the scene as a node inside a story campaign, and story rewards for it (gate E);
+real-device checks (gate F).
+
+Tests: `tests/storage.test.ts` (7), `tests/db/media.test.ts` (6), `e2e/features-c.spec.ts` (7, Chrome's
+fake microphone), studio phone widths include the new section. Full suites: unit/DB 177/177, e2e
+113/113 in three runs in a row. The old gate 1 flake was slow client navigation under a full parallel
+run (over the default 5 s); assertions now wait up to 10 s (`playwright.config.ts`).
+Live check on the working database with a local storage stand-in: 63 passed, 1 skipped (the day's
+quests paid too few coins for a purchase); everything it stored was removed. **Not checked yet**: the
+real B2 bucket (keys needed) and real phones.

@@ -19,6 +19,7 @@ import {
   runState,
 } from "@/lib/game/stats";
 import { dayOf, msUntilNextDay } from "@/lib/game/time";
+import { worldOf } from "@/lib/game/world";
 import { fill, plural } from "@/lib/i18n";
 import { BottomNav } from "./bottom-nav";
 import { CoinHeader } from "./coin-header";
@@ -167,6 +168,7 @@ export function QuestsScreen() {
             shown.map((quest, i) => <QuestCard key={quest.id} quest={quest} today={today} featured={i === 0 && filter === "all"} />)
           )}
         </div>
+        <DubList />
       </main>
       <BottomNav base={base} active="quests" labels={t.nav} position="screen" />
     </div>
@@ -294,5 +296,42 @@ function QuestCard({ quest, today, featured }: { quest: QuickQuest; today: strin
         </Link>
       )}
     </div>
+  );
+}
+
+/** Voice-acting scenes the student was given (lib/dub/model.ts), with where each stands; none, nothing shown. */
+function DubList() {
+  const { t, base, facts } = useStudent();
+  const dubs = worldOf(facts).dubs ?? [];
+  if (!dubs.length) return null;
+  return (
+    <section className="mt-space-lg gap-space-sm flex flex-col" data-dub-list>
+      <div className="flex flex-col gap-0.5 px-1">
+        <h2 className="font-headline-md text-headline-md text-text-ivory">{t.dub.list}</h2>
+        <p className="font-caption text-caption text-text-muted">{t.dub.listNote}</p>
+      </div>
+      {dubs.map((dub) => {
+        const own = facts.dubs?.find((d) => d.exercise === dub.exercise && d.version === dub.version);
+        const status = own?.status ?? "none";
+        return (
+          <Link
+            key={dub.exercise}
+            href={`${base}/dub/${dub.exercise}`}
+            data-dub-card={dub.exercise}
+            className="bg-surface p-space-md hover:bg-surface-container-high flex items-center justify-between gap-3 rounded-xl shadow-md transition-colors"
+          >
+            <span className="flex min-w-0 flex-col gap-0.5">
+              <span className="font-title-sm text-title-sm text-text-ivory truncate">{dub.content.title}</span>
+              <span
+                className={`font-caption text-caption ${status === "approved" ? "text-status-success" : status === "retry" ? "text-status-error" : "text-text-muted"}`}
+              >
+                CEFR {dub.content.cefr} · {t.dub.statuses[status]} · +{dub.content.xp} XP
+              </span>
+            </span>
+            <Icon name="mic" className="text-primary shrink-0 text-[24px]" />
+          </Link>
+        );
+      })}
+    </section>
   );
 }

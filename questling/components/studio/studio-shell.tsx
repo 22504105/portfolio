@@ -15,15 +15,17 @@ import { activeGroups, membersOf, pendingHelp } from "@/lib/studio/views";
 // (the export's "Telegram: Синхронизировано" becomes how students join). On a phone (below lg) the
 // same sidebar slides in over the page from the header's menu button, and the search folds into an icon.
 
-export type StudioSection = "dashboard" | "groups" | "builder" | "library" | "analytics";
+export type StudioSection = "dashboard" | "groups" | "builder" | "library" | "dubbing" | "analytics";
 
-const NAV: { id: StudioSection; icon: "dashboard" | "groups" | "auto_fix_high" | "auto_stories" | "rate_review"; path: string }[] = [
-  { id: "dashboard", icon: "dashboard", path: "" },
-  { id: "groups", icon: "groups", path: "/groups" },
-  { id: "builder", icon: "auto_fix_high", path: "/builder" },
-  { id: "library", icon: "auto_stories", path: "/library" },
-  { id: "analytics", icon: "rate_review", path: "/analytics" },
-];
+const NAV: { id: StudioSection; icon: "dashboard" | "groups" | "auto_fix_high" | "auto_stories" | "rate_review" | "mic"; path: string }[] =
+  [
+    { id: "dashboard", icon: "dashboard", path: "" },
+    { id: "groups", icon: "groups", path: "/groups" },
+    { id: "builder", icon: "auto_fix_high", path: "/builder" },
+    { id: "library", icon: "auto_stories", path: "/library" },
+    { id: "dubbing", icon: "mic", path: "/dubbing" },
+    { id: "analytics", icon: "rate_review", path: "/analytics" },
+  ];
 
 export function StudioShell({ section, title, children }: { section: StudioSection; title: string; children: React.ReactNode }) {
   const { t, base, facts, mode, groupId, studentBase } = useStudio();

@@ -12,6 +12,7 @@ const SCREENS = [
   `studio/builder?quest=${QUEST}`,
   "studio/library",
   "studio/analytics",
+  "studio/dubbing",
   `studio/preview/${QUEST}`,
 ];
 

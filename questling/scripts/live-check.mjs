@@ -340,6 +340,69 @@ try {
   const messages = (await call("GET", "state", undefined, token)).data.facts?.world?.messages ?? [];
   check(reply.status === 200 && messages.some((m) => m.body === "Перечитай свиток."), "the mentor's reply reaches the student");
 
+  // ——— Voice acting with object storage (features gates B/C) ———
+  const usageNow = await call("GET", "studio/objects/usage", undefined, tt);
+  if (!usageNow.data.configured) console.log("SKIP  media storage is not configured on this deployment: voice acting uploads not checked");
+  else {
+    const { readFileSync } = await import("node:fs");
+    const fixture = (name) => readFileSync(`tests/fixtures/video/${name}`);
+    const uploadAs = async (who, kind, mime, bytes, extra = {}) => {
+      const ask = await call("POST", "media/upload", { kind, mime, size: bytes.length, rights: true, ...extra }, who);
+      if (ask.status !== 200) return ask;
+      const put = await fetch(ask.data.url, { method: "PUT", body: bytes, headers: { "Content-Type": ask.data.contentType } });
+      if (!put.ok) return { status: put.status, data: { error: "put" } };
+      return call("POST", "media/complete", { id: ask.data.id, ...extra }, who);
+    };
+    const video = await uploadAs(tt, "video", "video/mp4", fixture("ok.mp4"));
+    check(video.status === 200 && video.data.media?.durationMs > 2900, "a teacher's video goes to private storage and is checked by content");
+    const junk = await uploadAs(tt, "video", "video/mp4", fixture("clip.mov"));
+    check(junk.status === 422 && junk.data.error === "type", "a MOV named as MP4 is refused after the upload, and deleted");
+    const byStudentVideo = await call("POST", "media/upload", { kind: "video", mime: "video/mp4", size: 100, rights: true }, token);
+    check(byStudentVideo.status === 403, "a student cannot upload video");
+
+    const scene = await studio({ type: "createDub", title: "Live check scene", cefr: "A2" });
+    const sceneId = scene.data.outcome?.id;
+    const slug = scene.data.facts?.dubs?.find((d) => d.id === sceneId)?.slug;
+    const content = {
+      ...scene.data.facts.dubs.find((d) => d.id === sceneId).versions[0].content,
+      video: video.data.media?.id,
+      trim: { start: 0, end: 3000 },
+    };
+    content.lines = [
+      { ...content.lines[0], start: 0, end: 1400 },
+      { ...content.lines[1], start: 1500, end: 2900 },
+    ];
+    await studio({ type: "saveDub", exerciseId: sceneId, content });
+    const published = await studio({ type: "publishDub", exerciseId: sceneId });
+    const assigned = await studio({ type: "assignDub", groupId, exerciseId: sceneId });
+    check(published.status === 200 && assigned.status === 200, "the scene on that video is published and given to the group");
+
+    const world = (await call("GET", "state", undefined, token)).data.facts?.world;
+    check(world?.dubs?.some((d) => d.exercise === slug), "the group's student sees the scene");
+    const videoLink = await call("POST", "media/link", { id: video.data.media?.id }, token);
+    const ranged = videoLink.data.url ? await fetch(videoLink.data.url, { headers: { Range: "bytes=0-99" } }) : null;
+    check(ranged?.status === 206, "the student plays the video through a short-lived signed link, in ranges");
+    const outsiderSession = await call("POST", "session", { initData: initData(outsiderId) });
+    const outsiderLink = await call("POST", "media/link", { id: video.data.media?.id }, outsiderSession.data.token);
+    check(outsiderLink.status === 404, "a student outside the group gets no link to the video");
+
+    await call("POST", "actions", { action: { type: "startDub", exercise: slug, role: "student", mode: "voiceover" } }, token);
+    const wrongLine = await uploadAs(token, "voice", "audio/webm", fixture("voice.webm"), { exercise: slug, line: "l1" });
+    check(wrongLine.status === 409, "a take for another character's line is refused");
+    const take = await uploadAs(token, "voice", "audio/webm", fixture("voice.webm"), { exercise: slug, line: "l2" });
+    check(take.status === 200, "the student's take goes up, checked as sound");
+    const sent = await call("POST", "actions", { action: { type: "submitDub", exercise: slug } }, token);
+    check(sent.status === 200 && sent.data.facts?.dubs?.[0]?.status === "submitted", "the recording is sent to the teacher");
+    const toReview = (await call("GET", "studio/state", undefined, tt)).data.facts?.dubSubmissions?.[0];
+    const heardTake = await call("POST", "media/link", { id: toReview?.takes?.[0]?.mediaId }, tt);
+    check(heardTake.status === 200, "the teacher hears the student's take");
+    const approved = await studio({ type: "reviewDub", submissionId: toReview?.id, decision: "approve", rubric: { pacing: "good" } });
+    const ledgerAfter = (await call("GET", "state", undefined, token)).data.facts?.ledger ?? [];
+    check(approved.status === 200 && ledgerAfter.some((l) => l.key === `dub:${slug}@1` && l.amount === 40), "the teacher approves, and the XP is granted once");
+    const inUseVideo = await call("POST", "studio/objects/delete", { id: video.data.media?.id }, tt);
+    check(inUseVideo.status === 409, "a video a published scene uses cannot be deleted");
+  }
+
   // Gate 5: the student's own data — downloaded through a ticket link, then deleted through the API.
   const ticket = await call("POST", "export/ticket", {}, token);
   const file = ticket.data.url ? await fetch(`${base}${ticket.data.url}`) : null;
@@ -355,6 +418,26 @@ try {
   ]);
   check(deleted.status === 200 && left.rows[0].n === 0, "the student deletes their data, and nothing of it is left");
 } finally {
+  // Objects the check put in storage go first (rows alone would leave files in the bucket).
+  const stored = await db.query(
+    `select o.storage_key from questling.media_objects o join questling.auth_identities a on a.user_id = coalesce(o.teacher_id, o.user_id)
+      where (a.provider = 'telegram' and a.subject = any($1::text[])) or (a.provider = 'supabase' and a.subject = $2)`,
+    [[String(telegramId), String(outsiderId)], teacherAuthId],
+  );
+  const mediaEnv = (key) => process.env[key] ?? env[key];
+  if (stored.rowCount && mediaEnv("MEDIA_S3_ENDPOINT")) {
+    const { presign } = await import("../lib/server/sigv4.ts");
+    const creds = {
+      accessKeyId: mediaEnv("MEDIA_S3_ACCESS_KEY_ID"),
+      secretAccessKey: mediaEnv("MEDIA_S3_SECRET_ACCESS_KEY"),
+      region: mediaEnv("MEDIA_S3_REGION"),
+    };
+    for (const { storage_key } of stored.rows) {
+      const url = new URL(`${mediaEnv("MEDIA_S3_ENDPOINT").replace(/\/+$/, "")}/${mediaEnv("MEDIA_S3_BUCKET")}/${storage_key}`);
+      await fetch(presign(creds, { method: "DELETE", url, expires: 60 }), { method: "DELETE" }).catch(() => null);
+    }
+    console.log(`cleaned up ${stored.rowCount} stored object(s)`);
+  }
   // Remove the test student and everything of theirs.
   const removed = await db.query(
     "delete from questling.users where id in (select user_id from questling.auth_identities where provider = 'telegram' and subject = any($1::text[]))",

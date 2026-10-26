@@ -7,6 +7,8 @@ import { applyEffects, type Facts } from "@/lib/game/facts";
 import { run, type Action } from "@/lib/game/ops";
 import { getDictionary, type Locale } from "@/lib/i18n";
 import { AudioNotice } from "./line-audio";
+import { demoMediaUrl, keepDemoTake } from "@/lib/client/demo-media";
+import { demoWorld } from "@/lib/demo/dub";
 import type { Account } from "@/lib/student/profile";
 
 // The demo student lives in this browser only: made-up history (lib/demo/seed.ts), actions
@@ -38,6 +40,8 @@ function read(): Facts {
     // Private mode or blocked storage: the demo still works, it just forgets on reload.
   }
   memory ??= demoFacts(new Date());
+  // The demo's teacher material is not the visitor's record: always the current one.
+  memory = { ...memory, world: demoWorld() };
   return memory;
 }
 
@@ -83,11 +87,25 @@ export function DemoProvider({ locale, children }: { locale: Locale; children: R
     return "ok" as const;
   }, []);
 
+  // Demo takes stay in this browser (lib/client/demo-media.ts); nothing is uploaded anywhere.
+  const media = useMemo(
+    () => ({
+      link: async (id: string) => demoMediaUrl(id),
+      uploadTake: async (exercise: string, line: string, take: { blob: Blob; mime: string }) => {
+        const id = keepDemoTake(take.blob);
+        const result = await act({ type: "demoTake", exercise, line, media: id });
+        return result.ok ? ({ ok: true } as const) : ({ ok: false, reason: result.refusal } as const);
+      },
+    }),
+    [act],
+  );
+
   const api = useMemo(
     () =>
       facts
         ? {
             mode: "demo" as const,
+            media,
             locale,
             t: getDictionary(locale),
             base: `/${locale}/demo`,
@@ -98,7 +116,7 @@ export function DemoProvider({ locale, children }: { locale: Locale; children: R
             deleteData,
           }
         : null,
-    [facts, locale, act, downloadData, deleteData],
+    [facts, locale, act, downloadData, deleteData, media],
   );
 
   if (!api) return <div className="bg-background min-h-dvh" aria-busy="true"></div>;

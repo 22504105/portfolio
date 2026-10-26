@@ -11,6 +11,7 @@ import type { Answer, QuestionKey } from "@/lib/learning/questions";
 import { rightMove } from "@/lib/story/autoplay";
 import { locate, runSeed, startRun } from "@/lib/story/run";
 import type { Member, StudioFacts } from "./model";
+import { DEMO_DUB } from "@/lib/demo/dub";
 import { starterCampaign } from "./starter";
 
 // The demo studio's made-up classes. Like the demo student (lib/demo/seed.ts), every student here
@@ -385,5 +386,47 @@ export function demoStudio(now: Date): StudioFacts {
     daily: [],
     messages: [],
     media: [],
+    // Voice acting: the built-in scene, published and given to the A2 group; Барсик's recording waits for review.
+    dubs: [
+      {
+        id: DEMO_DUB_ID,
+        slug: DEMO_DUB.exercise,
+        title: DEMO_DUB.content.title,
+        cefr: DEMO_DUB.content.cefr,
+        createdAt: created,
+        archivedAt: null,
+        versions: [{ version: 1, status: "published", content: DEMO_DUB.content, updatedAt: created, publishedAt: created }],
+      },
+    ],
+    dubAssignments: [
+      {
+        id: "cccccccc-0000-4000-8000-000000000101",
+        groupId: GROUPS[0].id,
+        exercise: DEMO_DUB.exercise,
+        version: 1,
+        dueAt: null,
+        createdAt: created,
+      },
+    ],
+    dubSubmissions: [
+      {
+        id: "cccccccc-0000-4000-8000-000000000201",
+        userId: members[0].userId,
+        exercise: DEMO_DUB.exercise,
+        version: 1,
+        role: "student",
+        mode: "voiceover",
+        status: "submitted",
+        attempts: 1,
+        submittedAt: noonOf(now, -1).toISOString(),
+        reviewedAt: null,
+        feedback: null,
+        rubric: null,
+        takes: ["l2", "l4"].map((lineId) => ({ lineId, mediaId: `demo:take-${lineId}`, createdAt: noonOf(now, -1).toISOString() })),
+      },
+    ],
+    objects: [],
   };
 }
+
+const DEMO_DUB_ID = "cccccccc-0000-4000-8000-000000000100";

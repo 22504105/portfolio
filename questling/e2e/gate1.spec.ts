@@ -94,6 +94,8 @@ test("the bottom bar leads to the four main screens", async ({ page }) => {
 
 test("the language is switched in settings, reached from the profile", async ({ page }) => {
   await page.goto("/ru/demo/profile");
+  // One click only: a second click on the same link while the first navigation is still on its way
+  // makes Next.js keep the old address (seen when this used to retry). Slow runs get the 10 s expect timeout.
   await page.getByRole("link", { name: /Настройки и Telegram ID/ }).click();
   await expect(page).toHaveURL(/\/ru\/demo\/settings$/);
   await expect(page.getByRole("radio", { name: /Русский/ })).toHaveAttribute("aria-checked", "true");
