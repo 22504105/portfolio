@@ -109,6 +109,15 @@ const actionSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("buy"), itemId: id }),
   z.object({ type: z.literal("saveLook"), equipped: z.partialRecord(slot, id.nullable()) }),
   z.object({ type: z.literal("openChest") }),
+  z.object({ type: z.literal("keepWord"), ref: z.string().min(1).max(120) }),
+  z.object({
+    type: z.literal("flagWord"),
+    ref: z.string().min(1).max(120),
+    favorite: z.boolean().optional(),
+    known: z.boolean().optional(),
+  }),
+  z.object({ type: z.literal("dropWord"), ref: z.string().min(1).max(120) }),
+  z.object({ type: z.literal("reviewWord"), ref: z.string().min(1).max(120), option: z.enum(["a", "b", "c", "d"]) }),
 ]);
 
 export async function act(
@@ -154,6 +163,7 @@ const STUDENT_TABLES = [
   "inventory",
   "equipped",
   "story_runs",
+  "vocab",
   "group_members",
   "mentor_messages",
 ] as const;

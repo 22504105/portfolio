@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import Link from "next/link";
+import { useEffect, useId, useRef, useState, useTransition } from "react";
 import { createPortal } from "react-dom";
 import { Icon } from "@/components/ui/icon";
 import { useStudent } from "@/lib/client/student";
@@ -133,6 +134,7 @@ function GlossSheet({ gloss, onClose }: { gloss: GlossView; onClose: () => void 
             </span>
           </span>
         ) : null}
+        {gloss.ref ? <KeepWord reference={gloss.ref} term={gloss.phrase} ru={gloss.ru} /> : null}
         {gloss.note ? (
           <span className="flex gap-2 pb-1">
             <Icon name="lightbulb" className="text-primary text-[18px]" />
@@ -143,5 +145,45 @@ function GlossSheet({ gloss, onClose }: { gloss: GlossView; onClose: () => void 
       </span>
     </span>,
     document.body,
+  );
+}
+
+/** Keeps the word in the student's journal (lib/learning/vocab.ts); the server copies its content. */
+export function KeepWord({ reference, term, ru }: { reference: string; term: string; ru: string }) {
+  const { t, base, facts, act } = useStudent();
+  const [pending, startTransition] = useTransition();
+  const [failed, setFailed] = useState(false);
+  const kept = facts.vocab.some(
+    (c) => c.ref === reference || (c.term.toLowerCase() === term.toLowerCase() && c.ru.toLowerCase() === ru.toLowerCase()),
+  );
+  if (kept)
+    return (
+      <span className="flex items-center justify-between gap-2" data-kept={reference}>
+        <span className="font-label-md text-label-md text-status-success flex items-center gap-1">
+          <Icon name="bookmark_added" className="text-[18px]" /> {t.words.kept}
+        </span>
+        <Link href={`${base}/words`} className="font-label-md text-label-md text-primary">
+          {t.words.open}
+        </Link>
+      </span>
+    );
+  return (
+    <span className="flex flex-col gap-1">
+      <button
+        type="button"
+        data-action="keep-word"
+        disabled={pending}
+        onClick={() =>
+          startTransition(async () => {
+            const result = await act({ type: "keepWord", ref: reference });
+            setFailed(!result.ok && result.refusal !== "already_done");
+          })
+        }
+        className="bg-surface-container-high hover:bg-surface-bright text-text-ivory font-label-md text-label-md flex h-10 items-center justify-center gap-2 rounded-lg shadow-xs transition-colors disabled:opacity-50"
+      >
+        <Icon name="bookmark_add" className="text-primary text-[18px]" /> {t.words.keep}
+      </button>
+      {failed ? <span className="font-caption text-caption text-status-error">{t.words.keepFailed}</span> : null}
+    </span>
   );
 }

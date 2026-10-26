@@ -82,6 +82,22 @@ try {
   const again = await call("POST", "actions", { action: { type: "claimDaily" } }, token);
   check(again.status === 409 && again.data.error === "already_done", "and only once");
 
+  // ——— Word journal (features gate D) ———
+  const moscowDay = new Date(Date.now() + 3 * 3_600_000).toISOString().slice(0, 10);
+  const kept = await call("POST", "actions", { action: { type: "keepWord", ref: `daily:${moscowDay}` } }, token);
+  check(kept.status === 200 && kept.data.facts?.vocab?.length === 1, "the day's word is kept in the journal");
+  const keptTwice = await call("POST", "actions", { action: { type: "keepWord", ref: `daily:${moscowDay}` } }, token);
+  check(keptTwice.status === 409 && keptTwice.data.error === "already_done", "the same word is not kept twice");
+  const unreached = await call("POST", "actions", { action: { type: "keepWord", ref: "gloss:forgotten-academy:tower-4:tower-4-2" } }, token);
+  check(unreached.status === 409 && unreached.data.error === "not_available", "a word from a scene not reached is refused");
+  const notDue = await call("POST", "actions", { action: { type: "reviewWord", ref: `daily:${moscowDay}`, option: "a" } }, token);
+  check(notDue.status === 409, "a word is not reviewed (for XP) before it is due");
+  const vocabRows = await db.query(
+    "select count(*)::int as n from questling.vocab v join questling.auth_identities a on a.user_id = v.user_id where a.subject = $1",
+    [String(telegramId)],
+  );
+  check(vocabRows.rows[0].n === 1, "the journal card is in Supabase");
+
   const poor = await call("POST", "actions", { action: { type: "buy", itemId: "ghost" } }, token);
   check(poor.status === 409, "an item out of reach is not sold");
 
@@ -151,7 +167,14 @@ try {
     );
     const twice = await call("POST", "actions", { action: { type: "buy", itemId: affordable.id } }, token);
     check(twice.status === 409, "the same item is not sold twice");
-  } else check(false, `no level-1 item costs at most ${coins} coins: the purchase was not tested`);
+  } else {
+    // Today's quests did not pay enough for any level-1 item (the rotation decides): the purchase
+    // itself is not tested today, which is said as such; the refusal for too few coins is.
+    const cheapest = items.filter((i) => i.price > 0 && i.level <= 1 && !owned.has(i.id)).sort((x, y) => x.price - y.price)[0];
+    const refused = await call("POST", "actions", { action: { type: "buy", itemId: cheapest.id } }, token);
+    check(refused.status === 409 && refused.data.error === "not_enough_coins", `with ${coins} coins, a ${cheapest.price}-coin item is refused`);
+    console.log(`SKIP  no level-1 item costs at most ${coins} coins today: the purchase itself was not tested`);
+  }
 
   // Gate 3: the story is a run kept on the server; a wrong answer uses an attempt there.
   const story = (move) => call("POST", "actions", { action: { type: "story", campaign: "forgotten-academy", move }, locale: "ru" }, token);

@@ -29,6 +29,11 @@ export async function loadFacts(db: Db, userId: string): Promise<Facts | null> {
   const runs = await db.query<{ state: RunState }>("select state from questling.story_runs where user_id = $1 order by started_at", [
     userId,
   ]);
+  const vocab = await db.query(
+    `select ref, term, ru, example, cefr, source, saved_at, favorite, known, to_char(due, 'YYYY-MM-DD') as due, interval_days, ease, reps, lapses
+     from questling.vocab where user_id = $1 order by saved_at`,
+    [userId],
+  );
   const profile = user.rows[0];
   return {
     profile: {
@@ -51,6 +56,18 @@ export async function loadFacts(db: Db, userId: string): Promise<Facts | null> {
     inventory: inventory.rows.map((r) => ({ item: r.item, source: r.source, at: iso(r.at) })),
     equipped: Object.fromEntries(equipped.rows.map((r) => [r.slot, r.item])),
     runs: runs.rows.map((r) => r.state),
+    vocab: vocab.rows.map((r) => ({
+      ref: r.ref,
+      term: r.term,
+      ru: r.ru,
+      ...(r.example ? { example: r.example } : {}),
+      ...(r.cefr ? { cefr: r.cefr } : {}),
+      source: r.source,
+      savedAt: iso(r.saved_at),
+      favorite: r.favorite,
+      known: r.known,
+      schedule: { due: r.due, interval: r.interval_days, ease: r.ease, reps: r.reps, lapses: r.lapses },
+    })),
   };
 }
 
@@ -121,6 +138,36 @@ export async function persist(db: Db, userId: string, effects: Effect[], at: Dat
            on conflict (user_id, campaign) do update set state = excluded.state, updated_at = excluded.updated_at`,
           [userId, effect.state.campaign, effect.state.version, JSON.stringify(effect.state), at],
         );
+        break;
+      case "vocab": {
+        const c = effect.card;
+        await db.query(
+          `insert into questling.vocab (user_id, ref, term, ru, example, cefr, source, saved_at, favorite, known, due, interval_days, ease, reps, lapses)
+           values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+           on conflict (user_id, ref) do update set favorite = excluded.favorite, known = excluded.known, due = excluded.due,
+             interval_days = excluded.interval_days, ease = excluded.ease, reps = excluded.reps, lapses = excluded.lapses`,
+          [
+            userId,
+            c.ref,
+            c.term,
+            c.ru,
+            c.example ?? null,
+            c.cefr ?? null,
+            c.source,
+            c.savedAt,
+            c.favorite,
+            c.known,
+            c.schedule.due,
+            c.schedule.interval,
+            c.schedule.ease,
+            c.schedule.reps,
+            c.schedule.lapses,
+          ],
+        );
+        break;
+      }
+      case "unvocab":
+        await db.query("delete from questling.vocab where user_id = $1 and ref = $2", [userId, effect.ref]);
         break;
     }
   }

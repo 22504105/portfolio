@@ -49,6 +49,8 @@ export type GlossView = {
   example?: string;
   note?: string;
   cefr?: Cefr;
+  /** How the word journal names it ("gloss:<campaign>:<scene>:<mark>"), when it can be kept. */
+  ref?: string;
 };
 
 const level = (cefr: string) => {

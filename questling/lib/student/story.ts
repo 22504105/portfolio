@@ -47,7 +47,12 @@ export function grimoireView(grimoire: Grimoire, locale: Locale): GrimoireView {
 
 /** The word help a scene offers the student, in the interface language. */
 export function sceneGlosses(campaign: Campaign, chapter: Chapter, scene: Scene, locale: Locale, solved = false): GlossView[] {
-  return glossViews(scene.glosses, (field) => fieldText(scene, field), { locale, cefr: chapter.cefr, support: campaign.support, solved });
+  return glossViews(scene.glosses, (field) => fieldText(scene, field), {
+    locale,
+    cefr: chapter.cefr,
+    support: campaign.support,
+    solved,
+  }).map((g) => ({ ...g, ref: `gloss:${campaign.id}:${scene.id}:${g.id}` }));
 }
 
 /** Options in this run's order: shuffled once per run (seeded), unless the author keeps their order or the run predates shuffling. */

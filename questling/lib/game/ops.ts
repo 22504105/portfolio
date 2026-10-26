@@ -12,6 +12,8 @@ import { gradeAnswer, validAnswer, type Graded } from "@/lib/learning/questions"
 import { isGraded, type Campaign, type CampaignKeys } from "@/lib/story/graph";
 import { isExhausted, locate, move, sceneProgress, runSeed, startRun, type Move } from "@/lib/story/run";
 import { applyEffects, type Effect, type Facts } from "./facts";
+import { newSchedule, review } from "@/lib/learning/srs";
+import { cardContent, duplicateOf, REVIEW_XP, REVIEW_XP_PER_DAY, reviewOptions } from "@/lib/learning/vocab";
 import {
   assignedQuests,
   balance,
@@ -52,7 +54,12 @@ export type Action =
   | { type: "askMentor"; campaign: string; scene: string }
   | { type: "buy"; itemId: string }
   | { type: "saveLook"; equipped: Partial<Record<Slot, string | null>> }
-  | { type: "openChest" };
+  | { type: "openChest" }
+  /** The word journal (lib/learning/vocab.ts): keep a word, flag it, drop it, review it. */
+  | { type: "keepWord"; ref: string }
+  | { type: "flagWord"; ref: string; favorite?: boolean; known?: boolean }
+  | { type: "dropWord"; ref: string }
+  | { type: "reviewWord"; ref: string; option: string };
 
 export type Refusal =
   | "invalid"
@@ -84,6 +91,7 @@ export type Outcome =
       rewarded: { xp: number; coins: number };
     }
   | { kind: "chest"; item: string | null; coins: number }
+  | { kind: "review"; correct: boolean; right: string; due: string; rewarded: number }
   | { kind: "ok" };
 
 /**
@@ -237,6 +245,58 @@ function perform(facts: Facts, action: Action, ctx: Context): OpResult {
       const id = dailyFor(facts, today).id;
       const saved = facts.saved.some((s) => s.kind === "fact" && s.ref === id);
       return done([{ type: saved ? "unsave" : "save", kind: "fact", ref: id }]);
+    }
+
+    case "keepWord": {
+      const content = cardContent(facts, action.ref, today);
+      if (!content) return refuse("not_available");
+      // The same word in the same sense is one card, wherever it was met; another sense is another card.
+      if (facts.vocab.some((c) => c.ref === action.ref) || duplicateOf(facts, content)) return refuse("already_done");
+      if (facts.vocab.length >= 2000) return refuse("invalid");
+      return done([
+        {
+          type: "vocab",
+          card: {
+            ref: action.ref,
+            ...content,
+            savedAt: ctx.now.toISOString(),
+            favorite: false,
+            known: false,
+            schedule: newSchedule(today),
+          },
+        },
+      ]);
+    }
+
+    case "flagWord": {
+      const card = facts.vocab.find((c) => c.ref === action.ref);
+      if (!card) return refuse("not_available");
+      if (action.favorite !== undefined && typeof action.favorite !== "boolean") return refuse("invalid");
+      if (action.known !== undefined && typeof action.known !== "boolean") return refuse("invalid");
+      return done([{ type: "vocab", card: { ...card, favorite: action.favorite ?? card.favorite, known: action.known ?? card.known } }]);
+    }
+
+    case "dropWord": {
+      if (!facts.vocab.some((c) => c.ref === action.ref)) return refuse("not_available");
+      return done([{ type: "unvocab", ref: action.ref }]);
+    }
+
+    case "reviewWord": {
+      const card = facts.vocab.find((c) => c.ref === action.ref);
+      // Only a card that is due: a review cannot be repeated for XP, and is never a penalty.
+      if (!card || card.known) return refuse("not_available");
+      if (card.schedule.due > today) return refuse("already_done");
+      const options = reviewOptions(facts, card, today);
+      const chosen = options.find((o) => o.id === action.option);
+      if (!chosen) return refuse("invalid");
+      const correct = chosen.text === card.ru;
+      const schedule = review(card.schedule, correct, today);
+      const effects: Effect[] = [{ type: "vocab", card: { ...card, schedule } }];
+      const paidToday = facts.ledger.filter((l) => l.reason === "review" && l.key.startsWith(`review:${today}:`)).length;
+      const rewarded = correct && paidToday < REVIEW_XP_PER_DAY ? REVIEW_XP : 0;
+      if (rewarded)
+        effects.push({ type: "ledger", currency: "xp", amount: rewarded, key: `review:${today}:${card.ref}`, reason: "review" });
+      return done(effects, { kind: "review", correct, right: options.find((o) => o.text === card.ru)!.id, due: schedule.due, rewarded });
     }
 
     case "story": {

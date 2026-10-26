@@ -29,7 +29,11 @@ function read(): Facts {
   if (memory) return memory;
   try {
     const stored = window.localStorage.getItem(STORAGE_KEY);
-    if (stored) memory = JSON.parse(stored) as Facts;
+    // A record saved before the word journal existed has none: start it empty.
+    if (stored) {
+      const parsed = JSON.parse(stored) as Facts;
+      memory = { ...parsed, vocab: parsed.vocab ?? [] };
+    }
   } catch {
     // Private mode or blocked storage: the demo still works, it just forgets on reload.
   }

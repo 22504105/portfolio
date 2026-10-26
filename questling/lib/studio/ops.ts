@@ -14,7 +14,7 @@ import { starterCampaign } from "./starter";
 
 export type StudioAction =
   | { type: "createGroup"; name: string; cefr: Cefr }
-  | { type: "updateGroup"; groupId: string; name?: string; cefr?: Cefr }
+  | { type: "updateGroup"; groupId: string; name?: string; cefr?: Cefr; recommend?: boolean }
   | { type: "archiveGroup"; groupId: string; archived: boolean }
   | { type: "renewInvite"; groupId: string }
   | { type: "removeMember"; groupId: string; userId: string }
@@ -107,7 +107,11 @@ export function studioRun(facts: StudioFacts, action: StudioAction, ctx: StudioC
       if (found.archivedAt) return refuse("archived");
       const groupName = action.name === undefined ? undefined : name(action.name);
       if (groupName === null || (action.cefr !== undefined && !isCefr(action.cefr))) return refuse("invalid");
-      return done([{ type: "group.update", groupId: found.id, name: groupName, cefr: action.cefr }, audit("group.update", found.id)]);
+      if (action.recommend !== undefined && typeof action.recommend !== "boolean") return refuse("invalid");
+      return done([
+        { type: "group.update", groupId: found.id, name: groupName, cefr: action.cefr, recommend: action.recommend },
+        audit("group.update", found.id),
+      ]);
     }
     case "archiveGroup": {
       const found = group(action.groupId);

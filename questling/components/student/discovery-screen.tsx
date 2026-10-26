@@ -10,6 +10,7 @@ import { balance, completed, dailyFor, programDay, PROGRAM_DAYS } from "@/lib/ga
 import { dayOf } from "@/lib/game/time";
 import { fill, LOCALES } from "@/lib/i18n";
 import { attemptSeed, shuffled } from "@/lib/learning/shuffle";
+import { KeepWord } from "./glossed-text";
 import { LineAudioButton } from "./line-audio";
 
 // Ported from design-source/questling-v2/01_APPROVED_SCREENS/09_daily_discovery/code.html.
@@ -156,6 +157,9 @@ export function DiscoveryScreen() {
                 {tr(entry.word.exampleTranslation, locale) ? (
                   <p className="font-caption text-caption text-text-muted mt-1">{tr(entry.word.exampleTranslation, locale)}</p>
                 ) : null}
+              </div>
+              <div className="mt-2 flex flex-col">
+                <KeepWord reference={`daily:${today}`} term={entry.word.text} ru={entry.word.translation.ru} />
               </div>
             </div>
 

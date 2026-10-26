@@ -21,7 +21,7 @@ export async function loadStudio(db: Db, teacherId: string): Promise<StudioFacts
   );
   if (teacher.rowCount === 0) return null;
   const groups = await db.query(
-    "select id, name, cefr, invite_code, created_at, archived_at from questling.groups where teacher_id = $1 order by created_at",
+    "select id, name, cefr, invite_code, created_at, archived_at, recommend from questling.groups where teacher_id = $1 order by created_at",
     [teacherId],
   );
   const groupIds = groups.rows.map((g) => g.id as string);
@@ -119,6 +119,7 @@ export async function loadStudio(db: Db, teacherId: string): Promise<StudioFacts
       inviteCode: g.invite_code,
       createdAt: iso(g.created_at),
       archivedAt: g.archived_at && iso(g.archived_at),
+      recommend: g.recommend,
     })),
     members,
     quests: quests.rows.map((q): Quest => ({
@@ -175,9 +176,19 @@ export async function persistStudio(db: Db, teacherId: string, effects: StudioEf
       case "group.update":
         await db.query(
           `update questling.groups set name = coalesce($3, name), cefr = coalesce($4, cefr), invite_code = coalesce($5, invite_code),
-             archived_at = case when $6::boolean is null then archived_at when $6 then $7 else null end
+             archived_at = case when $6::boolean is null then archived_at when $6 then $7 else null end,
+             recommend = coalesce($8, recommend)
            where id = $1 and teacher_id = $2`,
-          [effect.groupId, teacherId, effect.name ?? null, effect.cefr ?? null, effect.inviteCode ?? null, effect.archived ?? null, at],
+          [
+            effect.groupId,
+            teacherId,
+            effect.name ?? null,
+            effect.cefr ?? null,
+            effect.inviteCode ?? null,
+            effect.archived ?? null,
+            at,
+            effect.recommend ?? null,
+          ],
         );
         break;
       case "member.remove":

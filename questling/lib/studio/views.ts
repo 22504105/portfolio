@@ -7,6 +7,9 @@ import type { Locale } from "@/lib/i18n";
 import type { Campaign } from "@/lib/story/graph";
 import { isGraded } from "@/lib/story/graph";
 import { chapterSolved, locate } from "@/lib/story/run";
+import { emptyWorld } from "@/lib/game/world";
+import { STORY_OBJECTIVES, type Objective } from "@/lib/learning/objectives";
+import { exercises, gaps, MIN_EXERCISES, questsFor } from "@/lib/learning/recommend";
 import type { Assignment, Group, Member, StudioFacts } from "./model";
 
 // What Teacher Studio's screens show, worked out from the teacher's facts: every count, percentage
@@ -27,6 +30,7 @@ export function asFacts(member: Member): Facts {
     saved: [],
     inventory: [],
     equipped: {},
+    vocab: [],
     runs: member.runs,
   };
 }
@@ -428,4 +432,45 @@ export function sceneKinds(entries: LibraryEntry[]) {
     for (const c of e.campaign.chapters)
       for (const s of c.scenes) if (s.kind === "question" || s.kind === "puzzle" || s.kind === "evidence") counts[s.kind]++;
   return counts;
+}
+
+/**
+ * The group's learning gaps by objective (lib/learning/recommend.ts), counted over everyone in it:
+ * how many students show repeated recent mistakes there, and the share of wrong exercises. Counts
+ * only: no names, no ranking of children by their weaknesses. Objectives with too little data are left out.
+ */
+export function groupGaps(facts: StudioFacts, groupId: string | null) {
+  const campaigns = facts.quests.flatMap((q) => q.versions.filter((v) => v.status === "published").map((v) => v.graph));
+  const by = new Map<Objective, { exercises: number; wrong: number; students: number }>();
+  for (const member of membersOf(facts, groupId)) {
+    const list = exercises({ runs: member.runs, world: { ...emptyWorld(), campaigns } }, member.answers);
+    const struggling = new Set(gaps(list).map((g) => g.objective));
+    for (const e of list) {
+      const row = by.get(e.objective) ?? { exercises: 0, wrong: 0, students: 0 };
+      row.exercises++;
+      if (!e.correct) row.wrong++;
+      by.set(e.objective, row);
+    }
+    for (const objective of struggling) by.get(objective)!.students++;
+  }
+  return [...by.entries()]
+    .filter(([, row]) => row.exercises >= MIN_EXERCISES && row.students > 0)
+    .map(([objective, row]) => ({
+      objective,
+      ...row,
+      percent: Math.round((row.wrong / row.exercises) * 100),
+      /** What trains it: quick quests and campaigns (built-in, or the teacher's published ones) with such exercises. */
+      quests: questsFor(objective),
+      campaigns: [
+        ...Object.entries(STORY_OBJECTIVES)
+          .filter(([, scenes]) => Object.values(scenes).includes(objective))
+          .map(([id]) => id),
+        ...facts.quests
+          .filter((q) =>
+            campaignFor(facts, q.slug)?.chapters.some((c) => c.scenes.some((s) => "objective" in s && s.objective === objective)),
+          )
+          .map((q) => q.slug),
+      ],
+    }))
+    .sort((a, b) => b.students - a.students || b.percent - a.percent || a.objective.localeCompare(b.objective));
 }

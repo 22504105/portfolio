@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { OBJECTIVE_IDS, type Objective } from "@/lib/learning/objectives";
 import type { Campaign, CampaignKeys } from "./graph";
 
 // The shape of a teacher-authored campaign and its keys, checked on the way in (Teacher Studio's
@@ -91,6 +92,7 @@ const graded = {
   hint: z.object({ topic: text(60), text: text(300) }),
   grimoire,
   clue: id.optional(),
+  objective: z.enum(OBJECTIVE_IDS as [Objective, ...Objective[]]).optional(),
 };
 
 const scene = z.discriminatedUnion("kind", [

@@ -71,6 +71,11 @@ export function demoFacts(now: Date): Facts {
     act({ type: "claimDaily" }, at);
     // The prologue on one day; chapter II begun on another, up to the sealed letter of the story player screen.
     if (offset === -4) playStory("t-intro", at);
+    // A few words kept from the prologue and from yesterday's word: due for review today (lib/learning/vocab.ts).
+    if (offset === -4)
+      for (const ref of ["gloss:forgotten-academy:p-arrive:p-arrive-1", "gloss:forgotten-academy:p-greet:p-greet-1"])
+        act({ type: "keepWord", ref }, at);
+    if (offset === -1) act({ type: "keepWord", ref: `daily:${dayOf(at)}` }, at);
     if (offset === -2) playStory("tower-2", at);
   }
 

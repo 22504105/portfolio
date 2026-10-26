@@ -71,7 +71,13 @@ const cefr = z.enum(["A1", "A2", "B1", "B2", "C1"]);
 const short = z.string().max(200);
 const actionSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("createGroup"), name: short, cefr }),
-  z.object({ type: z.literal("updateGroup"), groupId: uuid, name: short.optional(), cefr: cefr.optional() }),
+  z.object({
+    type: z.literal("updateGroup"),
+    groupId: uuid,
+    name: short.optional(),
+    cefr: cefr.optional(),
+    recommend: z.boolean().optional(),
+  }),
   z.object({ type: z.literal("archiveGroup"), groupId: uuid, archived: z.boolean() }),
   z.object({ type: z.literal("renewInvite"), groupId: uuid }),
   z.object({ type: z.literal("removeMember"), groupId: uuid, userId: uuid }),

@@ -343,6 +343,19 @@ function GroupPage({ group, openDialog, today, now }: { group: Group; openDialog
             <p className="font-body-md text-body-md text-text-muted">
               {fill(t.groups.meta, { students: plural(locale, members.length, t.common.students), mentor: facts.teacher.displayName })}
             </p>
+            <label className="font-caption text-caption text-on-surface-variant flex items-start gap-2">
+              <input
+                type="checkbox"
+                data-field="recommend"
+                checked={group.recommend !== false}
+                disabled={archived || pending}
+                onChange={(e) => run({ type: "updateGroup", groupId: group.id, recommend: e.target.checked })}
+              />
+              <span>
+                <span className="text-text-ivory font-label-sm text-label-sm block">{t.groups.recommend}</span>
+                {t.groups.recommendNote}
+              </span>
+            </label>
           </div>
           <div className="gap-space-sm relative flex flex-wrap items-center">
             <a

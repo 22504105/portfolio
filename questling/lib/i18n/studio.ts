@@ -160,6 +160,8 @@ const studioRu = {
     telegramNote: "Ответы учеников проверяются на сервере, опыт и монеты начисляются один раз.",
   },
   groups: {
+    recommend: "Советы ученикам по их ошибкам",
+    recommendNote: "Ученики видят, что повторить, — по своим ответам. Назначения учителя это не меняет.",
     title: "Управление группами",
     chip: "Группа {cefr}",
     heading: "Группа: «{name}»",
@@ -339,6 +341,9 @@ const studioRu = {
     title: "Конструктор квестов",
     panes: { label: "Части конструктора", palette: "Палитра", canvas: "Сцены", inspector: "Свойства" },
     words: {
+      objective: "Чему учит задание",
+      objectiveNone: "Не указано",
+      objectiveNote: "для советов ученикам и пробелов группы",
       title: "Слова с переводом",
       note: "ученик нажимает на слово и видит перевод",
       field: "Текст",
@@ -544,6 +549,12 @@ const studioRu = {
     previewMissing: "Черновик не найден.",
   },
   analytics: {
+    gapsKicker: "Пробелы группы",
+    gapsTitle: "Где ошибки повторяются",
+    gapsNote: "Задание засчитано неверным, если первая попытка была неверной. Учеников с повторяющимися ошибками — только число, без имён.",
+    gapRow: "Учеников с повторяющимися ошибками: {students} · неверно {p}% из {n} заданий",
+    gapPractice: "Тренируют: {list}",
+    gapsNone: "Пока повторяющихся ошибок нет или заданий мало.",
     title: "Аналитика и проверка",
     kicker: "Академический реестр",
     kickerAccent: "Проверка манускриптов",
@@ -826,6 +837,8 @@ const studioEn: StudioDictionary = {
     telegramNote: "Students' answers are checked on the server; XP and coins are granted once.",
   },
   groups: {
+    recommend: "Practice suggestions for students",
+    recommendNote: "Students see what to practise, from their own answers. Your assignments stay as they are.",
     title: "Group management",
     chip: "Group {cefr}",
     heading: "Group: “{name}”",
@@ -1005,6 +1018,9 @@ const studioEn: StudioDictionary = {
     title: "Quest builder",
     panes: { label: "Builder parts", palette: "Palette", canvas: "Scenes", inspector: "Properties" },
     words: {
+      objective: "What the task trains",
+      objectiveNone: "Not set",
+      objectiveNote: "for students' suggestions and the group's gaps",
       title: "Words with translations",
       note: "the student taps a word to see its translation",
       field: "Text",
@@ -1211,6 +1227,12 @@ const studioEn: StudioDictionary = {
     previewMissing: "Draft not found.",
   },
   analytics: {
+    gapsKicker: "Group gaps",
+    gapsTitle: "Where mistakes repeat",
+    gapsNote: "A task counts as wrong when its first attempt was. Students with repeated mistakes are a number only, never names.",
+    gapRow: "Students with repeated mistakes: {students} · {p}% wrong of {n} tasks",
+    gapPractice: "Trained by: {list}",
+    gapsNone: "No repeated mistakes yet, or too few tasks.",
     title: "Analytics & review",
     kicker: "Academic register",
     kickerAccent: "Manuscript review",

@@ -12,7 +12,20 @@ import { dayOf } from "@/lib/game/time";
 import { fill, plural } from "@/lib/i18n";
 import { download, timeAgo } from "@/lib/studio/format";
 import type { Member, StudioFacts } from "@/lib/studio/model";
-import { campaignFor, gradebook, heatmap, helpRequests, membersOf, skills, topics, type HelpRequest } from "@/lib/studio/views";
+import {
+  campaignFor,
+  campaignTitle,
+  gradebook,
+  groupGaps,
+  heatmap,
+  helpRequests,
+  membersOf,
+  skills,
+  topics,
+  type HelpRequest,
+} from "@/lib/studio/views";
+import { OBJECTIVES } from "@/lib/learning/objectives";
+import { quickQuestById } from "@/lib/content/quick-quests";
 import { isGraded, type CampaignKeys, type GradedScene } from "@/lib/story/graph";
 import { locate, sceneProgress } from "@/lib/story/run";
 import { Avatar } from "./dashboard-screen";
@@ -326,7 +339,10 @@ export function AnalyticsScreen() {
         {tab === "errors" ? <Errors /> : null}
         {tab === "daily" ? <DailyEditor /> : null}
         {tab === "queue" || tab === "skills" ? (
-          <SkillsAndHeat days={Number(period)} today={today} onGradebook={() => setTab("gradebook")} />
+          <>
+            <SkillsAndHeat days={Number(period)} today={today} onGradebook={() => setTab("gradebook")} />
+            <GroupGaps />
+          </>
         ) : null}
       </div>
     </StudioShell>
@@ -845,5 +861,52 @@ function Errors() {
         ))}
       </div>
     </div>
+  );
+}
+
+/** Where the group's mistakes repeat, by objective (lib/studio/views.ts groupGaps): counts only, and what trains it. */
+function GroupGaps() {
+  const { t, locale, facts, groupId } = useStudio();
+  const list = groupGaps(facts, groupId).slice(0, 6);
+  const questTitle = (id: string) => {
+    const quest = quickQuestById.get(id);
+    return quest ? tr(quest.title, locale) : id;
+  };
+  return (
+    <section className="p-space-lg bg-surface-container gap-space-md flex flex-col rounded-xl shadow-xl" data-gaps>
+      <div className="flex flex-col">
+        <span className="font-caption text-caption text-primary font-semibold tracking-wider uppercase">{t.analytics.gapsKicker}</span>
+        <h3 className="font-title-sm text-title-sm text-text-ivory">{t.analytics.gapsTitle}</h3>
+        <p className="font-caption text-caption text-text-muted mt-1">{t.analytics.gapsNote}</p>
+      </div>
+      {list.length ? (
+        <ul className="gap-space-sm grid grid-cols-1 md:grid-cols-2">
+          {list.map((gap) => (
+            <li
+              key={gap.objective}
+              data-gap={gap.objective}
+              className="p-space-md bg-surface-container-lowest flex flex-col gap-1 rounded-lg"
+            >
+              <span className="font-label-md text-label-md text-text-ivory">{tr(OBJECTIVES[gap.objective], locale)}</span>
+              <span className="font-caption text-caption text-on-surface-variant">
+                {fill(t.analytics.gapRow, { students: gap.students, p: gap.percent, n: gap.exercises })}
+              </span>
+              {gap.quests.length || gap.campaigns.length ? (
+                <span className="font-caption text-caption text-text-muted">
+                  {fill(t.analytics.gapPractice, {
+                    list: [
+                      ...gap.campaigns.map((c) => `«${campaignTitle(facts, c, locale)}»`),
+                      ...gap.quests.map((q) => `«${questTitle(q)}»`),
+                    ].join(", "),
+                  })}
+                </span>
+              ) : null}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="font-body-md text-body-md text-text-muted">{t.analytics.gapsNone}</p>
+      )}
+    </section>
   );
 }

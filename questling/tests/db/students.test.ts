@@ -5,7 +5,8 @@ import { balance, dailyQuests } from "@/lib/game/stats";
 import { dayOf } from "@/lib/game/time";
 import { handle } from "@/lib/server/api";
 import { resetPool } from "@/lib/server/db";
-import { act, ServiceError, signInWithTelegram } from "@/lib/server/service";
+import { act, deleteStudent, exportData, ServiceError, signInWithTelegram } from "@/lib/server/service";
+import { reviewOptions } from "@/lib/learning/vocab";
 import { loadFacts } from "@/lib/server/store";
 import { campaignById } from "@/lib/content/campaigns";
 import { keysOf } from "@/lib/content/campaigns/keys";
@@ -419,5 +420,51 @@ describe("the API", () => {
     expect(fresh.facts.profile.characterId).toBeNull();
     // The other student is untouched.
     expect((await handle(request("GET", "state", { token: theirs.token }), ["state"])).status).toBe(200);
+  });
+});
+
+describe("the word journal on the database (gate D)", () => {
+  it("keeps a word as the rules decided, reads it back the same, exports it, and deletes it with the student", async () => {
+    const userId = await newStudent(41);
+    const now = new Date();
+    const today = dayOf(now);
+    const kept = await tx((db) => act(db, userId, { action: { type: "keepWord", ref: `daily:${today}` } }, now));
+    expect(kept.facts.vocab).toHaveLength(1);
+    const card = kept.facts.vocab[0];
+    expect(card.source).toBe("daily");
+
+    const flagged = await tx((db) => act(db, userId, { action: { type: "flagWord", ref: card.ref, favorite: true } }, now));
+    const stored = await loadFacts(pg.db, userId);
+    expect(stored!.vocab).toEqual(flagged.facts.vocab);
+    expect(stored!.vocab[0]).toMatchObject({ favorite: true, known: false, schedule: { due: card.schedule.due, ease: 250 } });
+
+    // Kept twice: refused, nothing changes. A made-up reference: refused.
+    await expect(tx((db) => act(db, userId, { action: { type: "keepWord", ref: `daily:${today}` } }, now))).rejects.toThrow(ServiceError);
+    await expect(tx((db) => act(db, userId, { action: { type: "keepWord", ref: "gloss:t-x:y:z" } }, now))).rejects.toThrow(ServiceError);
+    await expect(tx((db) => act(db, userId, { action: { type: "reviewWord", ref: card.ref, option: "e" } }, now))).rejects.toThrow(
+      ServiceError,
+    );
+
+    const exported = await exportData(pg.db, userId);
+    expect((exported.vocab as { ref: string }[]).map((r) => r.ref)).toEqual([card.ref]);
+
+    await tx((db) => deleteStudent(db, userId));
+    expect((await pg.db.query("select count(*)::int as n from questling.vocab where user_id = $1", [userId])).rows[0].n).toBe(0);
+  });
+
+  it("pays a review once per card and day, through the ledger's unique key", async () => {
+    const userId = await newStudent(42);
+    const now = new Date();
+    const card = (await tx((db) => act(db, userId, { action: { type: "keepWord", ref: `daily:${dayOf(now)}` } }, now))).facts.vocab[0];
+    const due = new Date(now.getTime() + 86_400_000);
+    const facts = (await loadFacts(pg.db, userId))!;
+    const right = reviewOptions(facts, card, dayOf(due)).find((o) => o.text === card.ru)!.id;
+    const done = await tx((db) => act(db, userId, { action: { type: "reviewWord", ref: card.ref, option: right } }, due));
+    expect(done.outcome).toMatchObject({ kind: "review", correct: true, rewarded: 2 });
+    const rows = await pg.db.query("select amount, reason from questling.ledger where user_id = $1 and reason = 'review'", [userId]);
+    expect(rows.rows).toEqual([{ amount: 2, reason: "review" }]);
+    await expect(tx((db) => act(db, userId, { action: { type: "reviewWord", ref: card.ref, option: right } }, due))).rejects.toThrow(
+      ServiceError,
+    );
   });
 });

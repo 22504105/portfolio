@@ -69,6 +69,8 @@ type Graded = {
   grimoire: Grimoire;
   /** The evidence found by solving it. */
   clue?: string;
+  /** What it trains (lib/learning/objectives.ts), for recommendations and the studio's gaps. */
+  objective?: string;
 };
 
 export type QuestionScene = SceneBase &

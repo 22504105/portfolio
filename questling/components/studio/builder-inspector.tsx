@@ -12,6 +12,8 @@ import { CEFR_LEVELS, type Cefr } from "@/lib/studio/model";
 import type { CampaignKeys, Chapter, Clue, Condition, GradedScene, Next, Scene } from "@/lib/story/graph";
 import { fieldText, glossFields } from "@/lib/story/graph";
 import { anchored, occurrences, reanchor, type Support } from "@/lib/learning/gloss";
+import { OBJECTIVE_IDS, OBJECTIVES } from "@/lib/learning/objectives";
+import { tr } from "@/lib/content/text";
 import { SCENE_IMAGES } from "@/lib/story/schema";
 import { shuffled } from "@/lib/learning/shuffle";
 
@@ -161,7 +163,7 @@ export function SceneInspector({
   update: Update;
   sceneLabel: (id: string) => string;
 }) {
-  const { t } = useStudio();
+  const { t, locale } = useStudio();
   const f = t.builder.fields;
   const all = draft.graph.chapters.flatMap((c) => c.scenes);
   // Edits the selected scene inside the draft being changed.
@@ -378,6 +380,28 @@ export function SceneInspector({
             <span className="text-text-ivory font-label-sm text-label-sm block">{t.builder.words.shuffle}</span>
             {t.builder.words.shuffleNote}
           </span>
+        </label>
+      ) : null}
+      {scene.kind === "question" || scene.kind === "puzzle" || scene.kind === "evidence" ? (
+        <label className="flex flex-col gap-1.5">
+          <Label note={t.builder.words.objectiveNote}>{t.builder.words.objective}</Label>
+          <select
+            className={field}
+            data-field="objective"
+            value={scene.objective ?? ""}
+            onChange={(e) =>
+              edit((s) => {
+                if (s.kind === "question" || s.kind === "puzzle" || s.kind === "evidence") s.objective = e.target.value || undefined;
+              })
+            }
+          >
+            <option value="">{t.builder.words.objectiveNone}</option>
+            {OBJECTIVE_IDS.map((id) => (
+              <option key={id} value={id}>
+                {tr(OBJECTIVES[id], locale)}
+              </option>
+            ))}
+          </select>
         </label>
       ) : null}
       <GlossForm key={scene.id} scene={scene} cefr={chapterCefr} edit={edit} />

@@ -13,7 +13,16 @@ import type { RunState } from "@/lib/story/run";
 export type Cefr = "A1" | "A2" | "B1" | "B2" | "C1";
 export const CEFR_LEVELS: Cefr[] = ["A1", "A2", "B1", "B2", "C1"];
 
-export type Group = { id: string; name: string; cefr: Cefr; inviteCode: string; createdAt: string; archivedAt: string | null };
+export type Group = {
+  id: string;
+  name: string;
+  cefr: Cefr;
+  inviteCode: string;
+  createdAt: string;
+  archivedAt: string | null;
+  /** Whether the group's students see practice suggestions from their mistakes (lib/learning/recommend.ts); on unless turned off. */
+  recommend?: boolean;
+};
 
 /** A student as their teacher sees them: the profile, and what they did (no Telegram id, no coins history). */
 export type Member = {
@@ -76,7 +85,7 @@ export type MediaItem = { id: string; name: string; mime: string; size: number; 
 
 export type StudioEffect =
   | { type: "group.create"; group: Omit<Group, "createdAt" | "archivedAt"> }
-  | { type: "group.update"; groupId: string; name?: string; cefr?: Cefr; inviteCode?: string; archived?: boolean }
+  | { type: "group.update"; groupId: string; name?: string; cefr?: Cefr; inviteCode?: string; archived?: boolean; recommend?: boolean }
   | { type: "member.remove"; groupId: string; userId: string }
   | { type: "quest.create"; quest: Omit<Quest, "createdAt" | "archivedAt" | "versions"> }
   | { type: "quest.update"; questId: string; title?: string; cefr?: Cefr; archived?: boolean }
@@ -115,6 +124,7 @@ export function applyStudioEffects(facts: StudioFacts, effects: StudioEffect[], 
                 ...(effect.cefr !== undefined ? { cefr: effect.cefr } : {}),
                 ...(effect.inviteCode !== undefined ? { inviteCode: effect.inviteCode } : {}),
                 ...(effect.archived !== undefined ? { archivedAt: effect.archived ? at : null } : {}),
+                ...(effect.recommend !== undefined ? { recommend: effect.recommend } : {}),
               },
         );
         break;

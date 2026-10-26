@@ -18,8 +18,8 @@ export async function loadWorld(
   userId: string,
   now = new Date(),
 ): Promise<{ world: World; keys: Map<string, CampaignKeys>; dailyKeys: Map<string, { correct: string; explanation: Text }> }> {
-  const groups = await db.query<{ id: string; name: string; cefr: string; mentor: string }>(
-    `select g.id, g.name, g.cefr, t.display_name as mentor
+  const groups = await db.query<{ id: string; name: string; cefr: string; mentor: string; recommend: boolean }>(
+    `select g.id, g.name, g.cefr, t.display_name as mentor, g.recommend
        from questling.group_members m join questling.groups g on g.id = m.group_id join questling.teachers t on t.user_id = g.teacher_id
       where m.user_id = $1 and g.archived_at is null order by m.joined_at`,
     [userId],

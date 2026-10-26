@@ -30,21 +30,21 @@ gate changed. Out of scope by the prompt: team quests, 3D.
 - Supabase Storage with private buckets needs the `service_role` key on the server to issue signed
   upload and download URLs. The app does not hold that key today (see `docs/audio.md`).
 
-**Decisions needed from the owner before gate B** (not taken silently):
-1. Use Supabase Storage (private buckets) for teacher video and student voice, and put the
-   `service_role` key into Vercel and `.env.local` (only the server reads it).
-2. A migration adding tables for video exercises, recordings, submissions and reviews — applied to the
-   working database only after a fresh backup, as with migration 7.
-3. Quotas: proposed 25 MB and 60 s per clip, 300 MB of video per teacher, last 2 takes kept per line,
-   recordings deleted 180 days after the assignment closes (or on request).
+**Owner's decisions (2026-10-26)**: the three proposals approved, with **Cloudflare R2 instead of
+Supabase Storage** for teacher video, student voice and teacher images; Supabase keeps the database,
+auth and media metadata. Limits: video 25 MB / 60 s, 300 MB per teacher; local takes unlimited, at most
+2 kept per line; recordings deleted after 180 days or earlier on request; a global storage cap with
+warnings. R2's free tier (checked 2026-10-26 on developers.cloudflare.com/r2/pricing): 10 GB-month of
+storage, 1 M Class A and 10 M Class B operations a month, free egress; usage above it is billed.
+Cloudflare asks for a payment method before the first bucket and has no spending cap, so the app keeps
+its own hard limits below the free tier (gate B).
 
 ## Delivery order
 
 - **Gate A — done 2026-10-26** (below).
 - Gate B — media foundation (needs the decisions above).
 - Gate C — voice acting on top of B.
-- Gate D — vocabulary journal with spaced repetition, recommendations. Needs a migration (journal
-  table, `saved` kinds) but no new services.
+- **Gate D — done 2026-10-26** (below).
 - Gate E — NPC dialogue trees, clue search in images (image upload needs B's storage), rewards.
 - Gate F — QA, docs, real-device matrix.
 
@@ -85,3 +85,34 @@ Not in gate A: saving words to a journal (gate D), word help in quick quests and
 texts have no marks yet; the component takes any text).
 
 Tests: `tests/learning.test.ts` (16), `e2e/features-a.spec.ts` (5). Full suites: unit 148/148, e2e 101/101.
+
+## Gate D — word journal, spaced repetition, suggestions (2026-10-26)
+
+**Word journal** (`lib/learning/vocab.ts`, screen `/words`, linked from the profile and from every
+translation sheet). A student keeps a marked word from the story (once its scene is reached; a mark on
+the answer only once solved) or the word of the day (today's only). The server copies the card's
+content from the content itself. The same word in the same sense is one card; another sense is another
+card. Search, filters (favourites, story, word of the day, learnt), favourite, learnt, remove.
+
+**Spaced repetition** (`lib/learning/srs.ts`): due the day after keeping; right → 1, 3, then the gap
+× ease days; wrong → tomorrow, ease −0.2, nothing taken. A review asks the meaning among four (option
+ids are letters, so the page cannot tell the right one; the server recomputes the list). Only due cards
+can be reviewed; 2 XP per right review, at most 10 paid a day (ledger reason `review`, key per card and day).
+
+**Suggestions** (`lib/learning/recommend.ts`, `lib/learning/objectives.ts`). Exercises are tagged with an
+objective (built-in tables; teachers pick one per graded scene). An exercise counts as wrong when its
+first attempt was. Over the last 5 exercises of an objective, at least 3 with 2 wrong make a suggestion,
+shown with exactly those numbers and a quick quest that trains it when one is available today. Never
+blocks anything; the teacher can turn suggestions off per group (`groups.recommend`). Studio analytics
+shows the group's gaps as counts (students with repeated mistakes, share wrong), never names, with the
+campaigns and quick quests that train each.
+
+**Migration 8** `20261027000100_vocab_journal.sql` (table `vocab`, `groups.recommend`, ledger reason
+`review`; rollback in its header). Applied to the working database 2026-10-26 after an inventory (only
+test data), a backup (`E:/Backups/questling/2026-10-26T13-46-04`, verified by restore table by table) and
+a dry run on the restored copy (no existing row changed). After: users 2 and ledger 31 as before, RLS
+on, no grants to the API roles.
+
+Tests: `tests/vocab.test.ts` (13), DB tests for the journal and the switch (3), `e2e/features-d.spec.ts` (5).
+Full suites: unit/DB 164/164, e2e 106/106. Live check on the working database: 50 passed, 1 skipped
+(that day's quests paid 55 coins, below any level-1 item, so the purchase itself was not tested).

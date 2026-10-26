@@ -9,7 +9,8 @@ import type { Facts } from "./facts";
 // Campaign graphs here carry no answer keys: those stay on the server.
 
 export type World = {
-  groups: { id: string; name: string; cefr: string; mentor: string }[];
+  /** `recommend: false`: the teacher turned practice suggestions off for the group. */
+  groups: { id: string; name: string; cefr: string; mentor: string; recommend?: boolean }[];
   /** Active assignments of the student's groups, in the order they were given. */
   assignments: { groupId: string; campaign: string; version: number | null; dueAt: string | null }[];
   /** Teachers' campaigns (exact versions) this student may play or has a run on. */
