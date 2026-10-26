@@ -1,4 +1,5 @@
 import type { Text } from "@/lib/content/text";
+import { shuffled } from "./shuffle";
 
 // Question types of the quick quests and the story, and how an answer is graded.
 // A question is what the student sees; its key (answers, explanations) is kept apart
@@ -96,4 +97,23 @@ export function gradeAnswer(key: QuestionKey, answer: Answer): Graded {
     }
   })();
   return { correct, explanation: key.explanation };
+}
+
+/**
+ * The question as one attempt shows it: options, the word bank and the right column of a match in
+ * that attempt's order (lib/learning/shuffle.ts). Word order (`order`) keeps its authored, already
+ * mixed tiles: there the sequence is the answer. Grading goes by ids and words, never by position.
+ */
+export function inAttemptOrder(question: Question, seed: string): Question {
+  switch (question.kind) {
+    case "choice":
+    case "multi":
+      return { ...question, options: shuffled(question.options, seed) };
+    case "fill":
+      return { ...question, bank: shuffled(question.bank, seed) };
+    case "match":
+      return { ...question, right: shuffled(question.right, seed) };
+    case "order":
+      return question;
+  }
 }

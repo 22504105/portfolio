@@ -1,6 +1,7 @@
 "use client";
 
 /* eslint-disable @next/next/no-img-element -- illustrations are pre-sized WebP in public/images */
+import { useState } from "react";
 import { Icon } from "@/components/ui/icon";
 import type { Text } from "@/lib/content/text";
 import { useStudio } from "@/lib/client/studio";
@@ -9,7 +10,10 @@ import { fill } from "@/lib/i18n";
 import type { Draft } from "@/lib/studio/builder";
 import { CEFR_LEVELS, type Cefr } from "@/lib/studio/model";
 import type { CampaignKeys, Chapter, Clue, Condition, GradedScene, Next, Scene } from "@/lib/story/graph";
+import { fieldText, glossFields } from "@/lib/story/graph";
+import { anchored, occurrences, reanchor, type Support } from "@/lib/learning/gloss";
 import { SCENE_IMAGES } from "@/lib/story/schema";
+import { shuffled } from "@/lib/learning/shuffle";
 
 // The builder's right pane (18_quest_builder, "Инспектор узла"): the form of the selected scene, by
 // its kind, or — with nothing selected — the campaign's own properties, chapters and clues. Every
@@ -164,8 +168,17 @@ export function SceneInspector({
   const edit = (fn: (s: Scene, keys: CampaignKeys) => void) =>
     update((d) => {
       const s = d.graph.chapters.flatMap((c) => c.scenes).find((x) => x.id === scene.id);
-      if (s) fn(s, d.keys);
+      if (!s) return;
+      fn(s, d.keys);
+      // Word help follows its words when the text around them is edited; a mark whose words are
+      // gone stays where it was, shown as lost, until the teacher fixes the text or removes it.
+      if (s.glosses)
+        s.glosses = s.glosses.map((g) => {
+          const text = fieldText(s, g.field);
+          return text === null ? g : (reanchor(text, g) ?? g);
+        });
     });
+  const chapterCefr = draft.graph.chapters.find((c) => c.scenes.some((x) => x.id === scene.id))?.cefr ?? draft.graph.cefr;
   const targets = all.filter((s) => s.id !== scene.id).map((s) => ({ value: s.id, label: sceneLabel(s.id) }));
   const clues = draft.graph.clues;
 
@@ -349,6 +362,25 @@ export function SceneInspector({
         </>
       ) : null}
 
+      {scene.kind === "question" || scene.kind === "evidence" ? (
+        <label className="font-caption text-caption text-on-surface-variant flex items-start gap-2">
+          <input
+            type="checkbox"
+            data-field="shuffle"
+            checked={scene.shuffle !== false}
+            onChange={(e) =>
+              edit((s) => {
+                if (s.kind === "question" || s.kind === "evidence") s.shuffle = e.target.checked ? undefined : false;
+              })
+            }
+          />
+          <span>
+            <span className="text-text-ivory font-label-sm text-label-sm block">{t.builder.words.shuffle}</span>
+            {t.builder.words.shuffleNote}
+          </span>
+        </label>
+      ) : null}
+      <GlossForm key={scene.id} scene={scene} cefr={chapterCefr} edit={edit} />
       {scene.kind !== "ending" && scene.kind !== "choice" ? <NextForm scene={scene} targets={targets} clues={clues} edit={edit} /> : null}
       {scene.kind === "question" || scene.kind === "puzzle" || scene.kind === "evidence" ? (
         <Method scene={scene} draft={draft} edit={edit} />
@@ -555,8 +587,9 @@ function PuzzleForm({ scene, draft, edit }: { scene: Extract<Scene, { kind: "puz
           p((s, k) => {
             const words = list(v, /\|/);
             k.order = words;
-            // The board starts with the words turned round by one: never already solved, unless all are the same.
-            s.tiles = words.length > 1 ? [...words.slice(1), words[0]] : words;
+            // The board starts with the words mixed at random (not just turned round by one, which a
+            // student would learn to undo), never already solved unless all are the same.
+            s.tiles = scramble(words);
           })
         }
       />
@@ -825,6 +858,12 @@ export function CampaignInspector({ draft, update, onCefr }: { draft: Draft; upd
           onCefr(v);
         }}
       />
+      <Pick
+        label={t.builder.words.support}
+        value={g.support ?? "auto"}
+        options={(["auto", "all", "none"] as const).map((v) => ({ value: v, label: t.builder.words.supportOptions[v] }))}
+        onChange={(v: Support) => update((d) => (d.graph.support = v === "auto" ? undefined : v))}
+      />
       <div className="flex flex-col gap-2">
         <div className="flex items-center justify-between">
           <Label>{f.chapters}</Label>
@@ -973,5 +1012,185 @@ export function CampaignInspector({ draft, update, onCefr }: { draft: Draft; upd
         ))}
       </div>
     </div>
+  );
+}
+
+/** The words in a random order other than the given one (when there is any other). */
+function scramble(words: string[]): string[] {
+  if (new Set(words).size < 2) return words;
+  for (;;) {
+    const mixed = shuffled(words, `${Date.now()}|${Math.random()}`);
+    if (mixed.join("\u0000") !== words.join("\u0000")) return mixed;
+  }
+}
+
+/** Words with translations (lib/learning/gloss.ts): marked on the scene's English texts by place and words. */
+function GlossForm({ scene, cefr, edit }: { scene: Scene; cefr: string; edit: Edit }) {
+  const { t } = useStudio();
+  const w = t.builder.words;
+  const fields = glossFields(scene);
+  const [field, setField] = useState(fields[0]?.field ?? "text");
+  const [phrase, setPhrase] = useState("");
+  const [occurrence, setOccurrence] = useState(0);
+  const [ru, setRu] = useState("");
+  const [definition, setDefinition] = useState("");
+  const [example, setExample] = useState("");
+  const [note, setNote] = useState<Text>({ ru: "", en: "" });
+  const [level, setLevel] = useState<Cefr | "">("");
+  const [answer, setAnswer] = useState(false);
+  const text = fields.find((x) => x.field === field)?.text ?? "";
+  const places = occurrences(text, phrase.trim());
+  const glosses = scene.glosses ?? [];
+  const fieldName = (name: string) =>
+    name.startsWith("line:") ? fill(w.fields.line, { n: Number(name.slice(5)) + 1 }) : w.fields[name as keyof typeof w.fields];
+  const ready = places.length > 0 && ru.trim().length > 0;
+
+  const add = () => {
+    const words = phrase.trim();
+    const start = places[Math.min(occurrence, places.length - 1)];
+    if (!ready || start === undefined) return;
+    edit((s) => {
+      const taken = new Set((s.glosses ?? []).map((g) => g.id));
+      let n = (s.glosses ?? []).length + 1;
+      while (taken.has(`w${n}`)) n++;
+      s.glosses = [
+        ...(s.glosses ?? []),
+        {
+          id: `w${n}`,
+          field,
+          start,
+          end: start + words.length,
+          phrase: words,
+          ru: ru.trim(),
+          ...(definition.trim() ? { definition: definition.trim() } : {}),
+          ...(example.trim() ? { example: example.trim() } : {}),
+          ...(note.ru.trim() || note.en.trim() ? { note } : {}),
+          ...(level ? { cefr: level } : {}),
+          ...(answer ? { answer: true } : {}),
+        },
+      ];
+    });
+    setPhrase("");
+    setRu("");
+    setDefinition("");
+    setExample("");
+    setNote({ ru: "", en: "" });
+    setLevel("");
+    setAnswer(false);
+    setOccurrence(0);
+  };
+
+  return (
+    <div className="flex flex-col gap-2" data-glosses={scene.id}>
+      <Label note={w.note}>{w.title}</Label>
+      {glosses.length ? (
+        <ul className="flex flex-col gap-1.5">
+          {glosses.map((g) => {
+            const current = fieldText(scene, g.field);
+            const lost = current === null || !anchored(current, g);
+            return (
+              <li key={g.id} className={`${card} ${lost ? "ring-status-error ring-1" : ""}`} data-gloss-row={g.id}>
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex min-w-0 flex-col">
+                    <span lang="en" className="font-title-sm text-title-sm text-text-ivory truncate">
+                      {g.phrase}
+                    </span>
+                    <span className="font-caption text-caption text-text-muted">
+                      {fieldName(g.field)} · {g.ru}
+                      {g.cefr ? ` · ${g.cefr}` : ""}
+                    </span>
+                  </div>
+                  <RemoveButtonLabelled
+                    label={fill(w.remove, { phrase: g.phrase })}
+                    onClick={() => edit((s) => (s.glosses = (s.glosses ?? []).filter((x) => x.id !== g.id)))}
+                  />
+                </div>
+                <label className="font-caption text-caption text-on-surface-variant flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={!!g.answer}
+                    onChange={(e) =>
+                      edit((s) => {
+                        const x = s.glosses?.find((y) => y.id === g.id);
+                        if (x) x.answer = e.target.checked || undefined;
+                      })
+                    }
+                  />
+                  {w.answer}
+                </label>
+                {lost ? <span className="font-caption text-caption text-status-error">{w.lost}</span> : null}
+              </li>
+            );
+          })}
+        </ul>
+      ) : (
+        <p className="font-caption text-caption text-text-muted">{w.empty}</p>
+      )}
+      <div className={card}>
+        {fields.length > 1 ? (
+          <Pick
+            label={w.field}
+            value={field}
+            options={fields.map((x) => ({ value: x.field, label: fieldName(x.field) }))}
+            onChange={(v) => {
+              setField(v);
+              setOccurrence(0);
+            }}
+          />
+        ) : null}
+        <Line label={w.phrase} value={phrase} onChange={(v) => (setPhrase(v), setOccurrence(0))} compact />
+        {phrase.trim() && !places.length ? <span className="font-caption text-caption text-status-error">{w.notFound}</span> : null}
+        {places.length > 1 ? (
+          <Pick
+            label={w.occurrence}
+            value={String(occurrence)}
+            options={places.map((p, i) => ({
+              value: String(i),
+              label: `${i + 1}: …${text.slice(Math.max(0, p - 12), p + phrase.trim().length + 12)}…`,
+            }))}
+            onChange={(v) => setOccurrence(Number(v))}
+          />
+        ) : null}
+        <Line label={w.ru} value={ru} onChange={setRu} compact />
+        <Line label={w.definition} value={definition} onChange={setDefinition} compact />
+        <Line label={w.example} value={example} onChange={setExample} compact />
+        <Pair label={w.explain} value={note} onChange={setNote} compact />
+        <Pick
+          label={w.level}
+          value={level}
+          options={[{ value: "" as const, label: `${w.levelChapter} (${cefr})` }, ...CEFR_LEVELS.map((l) => ({ value: l, label: l }))]}
+          onChange={(v) => setLevel(v as Cefr | "")}
+        />
+        <label className="font-caption text-caption text-on-surface-variant flex items-center gap-2">
+          <input type="checkbox" checked={answer} onChange={(e) => setAnswer(e.target.checked)} />
+          {w.answer}
+        </label>
+        <button
+          type="button"
+          data-action="add-gloss"
+          disabled={!ready}
+          onClick={add}
+          className="font-label-md text-label-md text-primary hover:bg-surface-container-high rounded-lg px-2 py-1.5 text-left transition-colors disabled:opacity-50"
+        >
+          {w.add}
+        </button>
+        {phrase.trim() && places.length && !ru.trim() ? (
+          <span className="font-caption text-caption text-text-muted">{w.noTranslation}</span>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function RemoveButtonLabelled({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      onClick={onClick}
+      className="text-on-surface-variant hover:text-status-error shrink-0 rounded p-1 transition-colors"
+    >
+      <Icon name="delete" className="text-[16px]" />
+    </button>
   );
 }

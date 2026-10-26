@@ -1,5 +1,6 @@
 import type { Campaign, CampaignKeys, Next } from "./graph";
-import { isGraded } from "./graph";
+import { fieldText, isGraded } from "./graph";
+import { glossProblems } from "@/lib/learning/gloss";
 import { locate, nextScene } from "./run";
 
 // Checks a campaign and its keys before anyone plays it: every transition leads to a scene,
@@ -32,6 +33,20 @@ export function validateCampaign(campaign: Campaign, keys: CampaignKeys): string
     if (scene.kind === "ending" && scene.next !== undefined) problem(`ending ${scene.id} leads on`);
     if ("clue" in scene && scene.clue && !clueIds.has(scene.clue)) problem(`${scene.id} gives unknown clue ${scene.clue}`);
 
+    // Word help: every mark on a text the scene has, still on its words, not overlapping another.
+    const glosses = scene.glosses ?? [];
+    if (new Set(glosses.map((g) => g.id)).size !== glosses.length) problem(`${scene.id}: two word-help marks share an id`);
+    for (const field of new Set(glosses.map((g) => g.field))) {
+      const text = fieldText(scene, field);
+      if (text === null) problem(`${scene.id}: word help on ${field}, which the scene does not have`);
+      else
+        for (const p of glossProblems(
+          text,
+          glosses.filter((g) => g.field === field),
+        ))
+          problem(`${scene.id}: ${p}`);
+    }
+
     if (!isGraded(scene)) continue;
     const key = keys[scene.id];
     if (!key || key.kind !== scene.kind) {
@@ -44,6 +59,14 @@ export function validateCampaign(campaign: Campaign, keys: CampaignKeys): string
     if (scene.kind === "question" && key.kind === "question") {
       if (!scene.options.some((o) => o.id === key.correct)) problem(`${scene.id}: correct answer is not an option`);
       for (const option of scene.options) if (!key.explanations[option.id]) problem(`${scene.id}: no explanation for ${option.id}`);
+      // Help on the very words of the answer would give it away: such a mark opens only once solved.
+      const answer = scene.options
+        .find((o) => o.id === key.correct)
+        ?.label.toLowerCase()
+        .replace(/^the /, "");
+      for (const g of glosses)
+        if (answer && !g.answer && overlapsAnswer(g.phrase.toLowerCase(), answer))
+          problem(`${scene.id}: word help on "${g.phrase}" gives the answer away (mark it as the answer)`);
     }
     if (scene.kind === "puzzle" && key.kind === "puzzle") {
       if ([...key.order].sort().join("|") !== [...scene.tiles].sort().join("|")) problem(`${scene.id}: order is not made of its tiles`);
@@ -116,4 +139,11 @@ export function validateCampaign(campaign: Campaign, keys: CampaignKeys): string
   for (const scene of scenes) if (!reached.has(scene.id)) problem(`${scene.id} can never be reached`);
   if (!scenes.some((scene) => scene.kind === "ending")) problem("no ending");
   return problems;
+}
+
+/** Whether marked words and the answer share a word of substance ("midnight" and "At midnight"). */
+function overlapsAnswer(phrase: string, answer: string): boolean {
+  const words = (s: string) => s.split(/[^a-z']+/).filter((w) => w.length > 3);
+  const said = new Set(words(answer));
+  return phrase.includes(answer) || words(phrase).some((w) => said.has(w));
 }

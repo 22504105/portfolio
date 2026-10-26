@@ -12,6 +12,16 @@ export const en: Dictionary = {
     appTitle: "{page} — Questling",
   },
   demo: { badge: "Demo" },
+  gloss: {
+    open: "Translation: {phrase}",
+    close: "Close the translation",
+    translation: "Translation",
+    definition: "Meaning",
+    example: "Example",
+    listen: "Say it: {phrase}",
+    help: "Hint",
+    helpNote: "A hint points the way but never gives the answer. It costs no XP.",
+  },
   nav: { home: "Home", story: "Story", quests: "Quests", profile: "Profile" },
   common: { back: "Back", profile: "Profile", days, actionFailed: "That did not work. Check your connection and try again." },
   live: {

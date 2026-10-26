@@ -1,5 +1,6 @@
 import type { Campaign, CampaignKeys, Chapter, Condition, GradedScene, Next, Scene } from "./graph";
 import { isGraded } from "./graph";
+import { attemptSeed } from "@/lib/learning/shuffle";
 
 // Playing a campaign: the run's state and how each move changes it. Pure functions, run by the
 // demo in the browser and by the server on the stored run. Only the scene the run is at can be
@@ -20,6 +21,8 @@ export type RunState = {
   progress: Record<string, SceneProgress>;
   chapters: string[];
   ending: string | null;
+  /** Seeds the order options are shown in (lib/learning/shuffle.ts). Runs begun before it existed have none and keep the authored order. */
+  seed?: string;
 };
 
 export type Grant = { currency: "xp" | "coins"; amount: number; key: string; reason: "story_node" | "chapter" | "ending" };
@@ -77,7 +80,11 @@ export function nextScene(campaign: Campaign, sceneId: string, run: Pick<RunStat
   return campaign.chapters[here.chapterIndex + 1]?.scenes[0]?.id ?? null;
 }
 
-export function startRun(campaign: Campaign): RunState {
+/** The seed of a student's run of a campaign version: the same for every reload, new for a new version. */
+export const runSeed = (joinedAt: string, campaign: Pick<Campaign, "id" | "version">) =>
+  attemptSeed(joinedAt, `story:${campaign.id}@${campaign.version}`);
+
+export function startRun(campaign: Campaign, seed?: string): RunState {
   return {
     campaign: campaign.id,
     version: campaign.version,
@@ -89,6 +96,7 @@ export function startRun(campaign: Campaign): RunState {
     progress: {},
     chapters: [],
     ending: null,
+    ...(seed ? { seed } : {}),
   };
 }
 

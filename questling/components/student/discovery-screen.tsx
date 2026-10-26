@@ -9,6 +9,7 @@ import { useNow, useStudent } from "@/lib/client/student";
 import { balance, completed, dailyFor, programDay, PROGRAM_DAYS } from "@/lib/game/stats";
 import { dayOf } from "@/lib/game/time";
 import { fill, LOCALES } from "@/lib/i18n";
+import { attemptSeed, shuffled } from "@/lib/learning/shuffle";
 import { LineAudioButton } from "./line-audio";
 
 // Ported from design-source/questling-v2/01_APPROVED_SCREENS/09_daily_discovery/code.html.
@@ -173,7 +174,7 @@ export function DiscoveryScreen() {
                 ?
               </p>
               <div className="flex flex-col gap-2" role="radiogroup" aria-label={t.discovery.check}>
-                {entry.quiz.options.map((option, i) => {
+                {shuffled(entry.quiz.options, attemptSeed(facts.profile.joinedAt, `daily:${ref}`)).map((option, i) => {
                   const right = solved && answers.some((a) => a.correct && a.question === option.id);
                   const showWrong = flash === option.id;
                   const ruledOut = wrong.includes(option.id) && !showWrong;

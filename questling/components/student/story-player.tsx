@@ -9,6 +9,8 @@ import type { GradeResult, QuestionNode } from "@/lib/story/types";
 import { BackHeader } from "./back-header";
 import { useLineAudio } from "@/lib/client/audio";
 import { useMediaLink } from "@/lib/client/student";
+import type { GlossView } from "@/lib/learning/gloss";
+import { GlossedText } from "./glossed-text";
 import { ExhaustedView, GrimoireSheet } from "./story-help";
 
 // The story player for a question or a piece of evidence. Ported from the Stitch story-player screens:
@@ -83,7 +85,8 @@ export function StoryPlayer({ t, node, grade, initial, backHref, profileHref, on
             t={t}
             node={node}
             attemptsUsed={state.attemptsUsed}
-            tried={node.options.filter((o) => state.eliminated.includes(o.id)).map((o) => o.label)}
+            // In the order they were tried: the options themselves are shown in a shuffled order.
+            tried={state.eliminated.flatMap((id) => node.options.find((o) => o.id === id)?.label ?? [])}
             group={help.group}
             asked={help.asked}
             reply={help.reply}
@@ -122,7 +125,14 @@ export function StoryPlayer({ t, node, grade, initial, backHref, profileHref, on
                 <span className="text-text-muted">{node.prompt.task || (node.evidence ? t.story.evidenceTask : "")}</span>
               </p>
             </div>
-            <Parchment text={node.clue.text} listen={node.listen && state.phase !== "correct"} audio={node.audio} t={t} />
+            <Parchment
+              text={node.clue.text}
+              listen={node.listen && state.phase !== "correct"}
+              audio={node.audio}
+              t={t}
+              glosses={node.glosses}
+            />
+            {state.phase !== "correct" ? <AskHint t={t} node={node} /> : null}
             {state.phase === "correct" ? (
               <CorrectOptions t={t} node={node} state={state} />
             ) : (
@@ -320,7 +330,19 @@ function StepWithRay({ children, ray, last }: { children: React.ReactNode; ray: 
 }
 
 /** The parchment with the scene's English line; for a listening riddle, a button that reads it aloud instead. */
-export function Parchment({ text, listen = false, audio, t }: { text: string; listen?: boolean; audio?: string; t?: Dictionary }) {
+export function Parchment({
+  text,
+  listen = false,
+  audio,
+  t,
+  glosses,
+}: {
+  text: string;
+  listen?: boolean;
+  audio?: string;
+  t?: Dictionary;
+  glosses?: GlossView[];
+}) {
   if (listen && t) return <ListenParchment text={text} audioId={audio} t={t} />;
   return (
     <div className="mb-space-lg px-margin">
@@ -328,7 +350,9 @@ export function Parchment({ text, listen = false, audio, t }: { text: string; li
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-[#edd9b4]/50 via-transparent to-[#947e54]/30"></div>
         <div className="relative flex flex-col items-center text-center">
           <div className="mb-1 text-xs whitespace-pre text-[#6E5A3A] opacity-70">✦ ✤ ✦</div>
-          <blockquote className="px-space-xs font-georgia text-headline-md leading-snug text-[#231D15] italic">“{text}”</blockquote>
+          <blockquote lang="en" className="px-space-xs font-georgia text-headline-md leading-snug text-[#231D15] italic">
+            “<GlossedText text={text} glosses={glosses} />”
+          </blockquote>
           <div className="mt-space-sm flex w-28 items-center gap-2 opacity-60">
             <div className="h-[1px] flex-1 bg-[#6E5A3A]"></div>
             <span className="text-[9px] text-[#6E5A3A]">✦</span>
@@ -542,7 +566,7 @@ function IncorrectView({
           <div className="py-space-sm flex flex-col items-center text-center">
             <Icon name="menu_book" className="mb-1 text-[26px] text-[#725C37] opacity-80" />
             <blockquote className="font-georgia text-headline-md max-w-[90%] leading-snug tracking-wide text-[#1E1710] italic">
-              “{node.clue.text}”
+              “<GlossedText text={node.clue.text} glosses={node.glosses} />”
             </blockquote>
             {showTranslation ? <p className="mt-space-sm font-body-md text-body-md text-[#483B2A]">{node.translation}</p> : null}
           </div>
@@ -680,6 +704,45 @@ function ListenParchment({ text, audioId, t }: { text: string; audioId?: string;
           <span>{t.player.listen}</span>
         </button>
         <p className="font-caption text-caption mt-2 text-[#534525]">{supported ? t.player.listenHint : t.player.listenNoVoice}</p>
+      </div>
+    </div>
+  );
+}
+
+/** The hint on request, before any answer: the same card as after a wrong one (05_story_player_never), free. */
+function AskHint({ t, node }: { t: Dictionary; node: QuestionNode }) {
+  const [open, setOpen] = useState(false);
+  if (!open)
+    return (
+      <div className="mb-space-md px-margin -mt-space-sm flex justify-center">
+        <button
+          type="button"
+          data-action="hint"
+          aria-expanded={false}
+          onClick={() => setOpen(true)}
+          className="text-secondary font-label-md text-label-md hover:bg-secondary-container/30 flex items-center gap-1.5 rounded-full px-3 py-1.5 transition-colors"
+        >
+          <Icon name="psychology" className="text-[18px]" />
+          {t.gloss.help}
+        </button>
+      </div>
+    );
+  return (
+    <div className="mb-space-md px-margin" data-hint-open>
+      <div className="bg-secondary-container/40 p-space-md text-on-surface flex flex-col gap-2 rounded-xl shadow-[0_0_24px_rgba(82,58,138,0.2)]">
+        <div className="flex items-center justify-between">
+          <div className="text-secondary flex items-center gap-1.5">
+            <Icon name="psychology" className="text-[20px]" />
+            <span className="font-label-sm text-label-sm font-semibold tracking-wider uppercase">{t.player.archivistHint}</span>
+          </div>
+          <span className="bg-surface font-caption text-caption text-secondary-fixed-dim rounded-full px-2 py-0.5 font-medium">
+            {node.hint.topic}
+          </span>
+        </div>
+        <p className="font-body-md text-body-md text-on-surface leading-relaxed">
+          <HintText text={node.hint.text} />
+        </p>
+        <p className="font-caption text-caption text-text-muted">{t.gloss.helpNote}</p>
       </div>
     </div>
   );

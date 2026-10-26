@@ -9,8 +9,8 @@ import type { Outcome } from "@/lib/game/ops";
 import { campaignFinished, campaignOpen, completed, currentChapter, playedCampaign, runOf } from "@/lib/game/stats";
 import { findCampaign, studentCampaigns, worldOf } from "@/lib/game/world";
 import { isGraded, type Campaign } from "@/lib/story/graph";
-import { locate, sceneProgress, startRun, type Move } from "@/lib/story/run";
-import { puzzleNode, questHref, questionNode } from "@/lib/student/story";
+import { locate, sceneProgress, runSeed, startRun, type Move } from "@/lib/story/run";
+import { puzzleNode, questHref, questionNode, sceneGlosses } from "@/lib/student/story";
 import { PuzzleScreen } from "./puzzle-screen";
 import { ChapterDoneScreen, ChoiceScreen, DialogueScreen, EndingScreen, NarrationScreen, type Frame } from "./story-scenes";
 import { StoryPlayer, type Help } from "./story-player";
@@ -35,7 +35,7 @@ export function PlayScreen({ campaignId }: { campaignId?: string }) {
   const latest = id ? (findCampaign(facts, id) ?? undefined) : undefined;
   const open = latest ? campaignOpen(facts, latest) : false;
   const campaign = latest && open ? playedCampaign(facts, latest) : null;
-  const run = campaign ? (runOf(facts, campaign.id) ?? startRun(campaign)) : null;
+  const run = campaign ? (runOf(facts, campaign.id) ?? startRun(campaign, runSeed(facts.profile.joinedAt, campaign))) : null;
   const target = run ? (run.ending ?? run.scene) : null;
 
   // What is on screen is worked out from the run, never from the timing of an answer's reply:
@@ -130,7 +130,7 @@ export function PlayScreen({ campaignId }: { campaignId?: string }) {
       );
     }
 
-    const common = { t, frame, backHref, profileHref, pending, error };
+    const common = { t, frame, backHref, profileHref, pending, error, glosses: sceneGlosses(campaign, chapter, scene, locale) };
     const clueTitle = (clue?: string) => {
       const found = clue ? campaign.clues.find((c) => c.id === clue) : null;
       return found ? tr(found.title, locale) : null;
@@ -187,6 +187,7 @@ export function PlayScreen({ campaignId }: { campaignId?: string }) {
             profileHref={profileHref}
             title={tr(scene.title, locale)}
             tone={scene.tone}
+            glosses={common.glosses}
             text={scene.text}
             translation={tr(scene.translation, locale)}
             endings={campaign.chapters.flatMap((c) => c.scenes).filter((s) => s.kind === "ending").length}

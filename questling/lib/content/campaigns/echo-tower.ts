@@ -1,4 +1,5 @@
 import type { Campaign, Clue } from "@/lib/story/graph";
+import { withGlosses } from "@/lib/story/glosses";
 import type { Text } from "../text";
 
 // Campaign 2, "Башня Эха" (B1–B2): a mystery in two chapters, opened once "Забытая академия" is
@@ -156,7 +157,7 @@ const clues: Clue[] = [
   },
 ];
 
-export const echoTower: Campaign = {
+const authored: Campaign = {
   id: "echo-tower",
   version: 1,
   title: t("Башня Эха", "The Tower of Echoes"),
@@ -247,7 +248,12 @@ export const echoTower: Campaign = {
             task: t("Что это значит?", "What does it mean?"),
           },
           options: [
-            { id: "person", label: "A person rang the bell", gloss: t("В колокол звонил человек", "Somebody rang it"), icon: "door_front" },
+            {
+              id: "person",
+              label: "A person rang the bell",
+              gloss: t("В колокол звонил человек", "Somebody rang it"),
+              icon: "door_front",
+            },
             { id: "wind", label: "The wind rang the bell", gloss: t("Колокол раскачал ветер", "The wind moved it"), icon: "park" },
             {
               id: "outside",
@@ -849,3 +855,32 @@ export const echoTower: Campaign = {
     },
   ],
 };
+
+// Word help on the English texts (lib/learning/gloss.ts), placed by the words it marks.
+export const echoTower = withGlosses(authored, {
+  "e-bell": [
+    { phrase: "locked", ru: "заперта", cefr: "A2" },
+    {
+      phrase: "for a hundred years",
+      ru: "сто лет (уже сто лет)",
+      note: {
+        ru: "Has been locked for… — заперта уже сто лет и до сих пор.",
+        en: "Has been locked for…: locked then and still locked now.",
+      },
+      cefr: "B1",
+    },
+  ],
+  "e-guard": [
+    { field: "line:0", phrase: "since sunset", ru: "с заката", cefr: "B1" },
+    { field: "line:2", phrase: "I'd rather not know", ru: "я бы предпочёл не знать", cefr: "B2" },
+  ],
+  "e-wind": [{ phrase: "far too heavy", ru: "слишком тяжёлый", definition: "much heavier than something can move", cefr: "B1" }],
+  "e-footprints": [
+    { phrase: "dusty", ru: "пыльный", cefr: "B1" },
+    { phrase: "footprints", ru: "следы ног", cefr: "B1", occurrence: 0 },
+  ],
+  "a-hall": [
+    { phrase: "empty", ru: "пустая", cefr: "A2" },
+    { phrase: "barely been disturbed", ru: "почти не тронута", cefr: "B2" },
+  ],
+});

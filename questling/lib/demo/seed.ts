@@ -7,7 +7,7 @@ import { applyEffects, emptyFacts, type Facts } from "@/lib/game/facts";
 import { run, type Action } from "@/lib/game/ops";
 import { balance, dailyEntry, dailyQuests, runOf } from "@/lib/game/stats";
 import { rightMove } from "@/lib/story/autoplay";
-import { startRun } from "@/lib/story/run";
+import { runSeed, startRun } from "@/lib/story/run";
 import { dayFromNumber, dayNumber, dayOf } from "@/lib/game/time";
 
 // The demo student's past, played through the real actions: two weeks ago they chose the cat,
@@ -53,7 +53,7 @@ export function demoFacts(now: Date): Facts {
   const playStory = (until: string, at: Date) => {
     const campaign = forgottenAcademy;
     for (let step = 0; step < 50; step++) {
-      const run = runOf(facts, campaign.id) ?? startRun(campaign);
+      const run = runOf(facts, campaign.id) ?? startRun(campaign, runSeed(facts.profile.joinedAt, campaign));
       if (run.scene === until) return;
       const move = rightMove(campaign, keysOf(campaign), run);
       if (!move) return;

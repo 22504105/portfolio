@@ -10,7 +10,7 @@ import type { Text } from "@/lib/content/text";
 import type { Locale } from "@/lib/i18n";
 import { gradeAnswer, validAnswer, type Graded } from "@/lib/learning/questions";
 import { isGraded, type Campaign, type CampaignKeys } from "@/lib/story/graph";
-import { isExhausted, locate, move, sceneProgress, startRun, type Move } from "@/lib/story/run";
+import { isExhausted, locate, move, sceneProgress, runSeed, startRun, type Move } from "@/lib/story/run";
 import { applyEffects, type Effect, type Facts } from "./facts";
 import {
   assignedQuests,
@@ -245,7 +245,7 @@ function perform(facts: Facts, action: Action, ctx: Context): OpResult {
       const existing = runOf(facts, latest.id);
       if (!existing && !campaignOpen(facts, latest)) return refuse("not_available");
       const campaign = playedCampaign(facts, latest);
-      const before = existing ?? startRun(campaign);
+      const before = existing ?? startRun(campaign, runSeed(facts.profile.joinedAt, campaign));
       const keys = ctx.keys?.(campaign) ?? keysOf(campaign);
       const result = move(campaign, keys, before, action.move);
       if (!result.ok) return refuse(result.refusal);

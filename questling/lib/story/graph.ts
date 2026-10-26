@@ -1,4 +1,5 @@
 import type { Text } from "@/lib/content/text";
+import type { Gloss, Support } from "@/lib/learning/gloss";
 import type { OptionIcon } from "./types";
 
 // A campaign as a versioned story graph. Scenes (nodes) of eight kinds are joined by
@@ -28,6 +29,8 @@ type SceneBase = {
   location: Text;
   image: string;
   next?: Next;
+  /** Word help: marked words of the scene's English texts (lib/learning/gloss.ts). */
+  glosses?: Gloss[];
 };
 
 export type NarrationScene = SceneBase & {
@@ -79,6 +82,8 @@ export type QuestionScene = SceneBase &
     audio?: string;
     prompt: { lead: Text; task: Text };
     options: { id: string; label: string; gloss: Text; icon: OptionIcon }[];
+    /** Options are shown in an order shuffled for each attempt unless the author turns it off (false). */
+    shuffle?: boolean;
   };
 
 export type PuzzleScene = SceneBase &
@@ -102,6 +107,7 @@ export type EvidenceScene = SceneBase &
     prompt: Text;
     /** The clues offered; only the ones the student has found can be chosen. */
     clues: string[];
+    shuffle?: boolean;
   };
 
 export type EndingScene = SceneBase & {
@@ -115,6 +121,31 @@ export type EndingScene = SceneBase & {
 
 export type Scene = NarrationScene | DialogueScene | ChoiceScene | QuestionScene | PuzzleScene | EvidenceScene | EndingScene;
 export type GradedScene = QuestionScene | PuzzleScene | EvidenceScene;
+
+/** The English text of a scene a word-help mark refers to, or null when the scene has no such text. */
+export function fieldText(scene: Scene, field: string): string | null {
+  if (field.startsWith("line:")) {
+    if (scene.kind !== "dialogue") return null;
+    return scene.lines[Number(field.slice(5))]?.text ?? null;
+  }
+  switch (field) {
+    case "text":
+      return scene.kind === "narration" || scene.kind === "choice" || scene.kind === "ending" ? scene.text : null;
+    case "parchment":
+      return scene.kind === "question" || scene.kind === "puzzle" ? scene.parchment : null;
+    case "question":
+      return scene.kind === "evidence" ? scene.question : null;
+    default:
+      return null;
+  }
+}
+
+/** The texts of a scene that can carry word help, by field name. */
+export function glossFields(scene: Scene): { field: string; text: string }[] {
+  if (scene.kind === "dialogue") return scene.lines.map((line, i) => ({ field: `line:${i}`, text: line.text }));
+  const field = scene.kind === "question" || scene.kind === "puzzle" ? "parchment" : scene.kind === "evidence" ? "question" : "text";
+  return [{ field, text: fieldText(scene, field)! }];
+}
 
 export const isGraded = (scene: Scene): scene is GradedScene =>
   scene.kind === "question" || scene.kind === "puzzle" || scene.kind === "evidence";
@@ -175,6 +206,8 @@ export type Campaign = {
   clues: Clue[];
   /** The case number in the evidence journal. */
   caseNumber: number;
+  /** How much word help the campaign gives (lib/learning/gloss.ts); "auto" when left out. */
+  support?: Support;
   /** Where the builder draws each scene on its canvas (Teacher Studio); the story does not depend on it. */
   layout?: Record<string, { x: number; y: number }>;
 };

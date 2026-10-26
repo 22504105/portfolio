@@ -9,7 +9,7 @@ import { balance, dailyEntry, dailyQuests, runOf } from "@/lib/game/stats";
 import { dayFromNumber, dayNumber, dayOf } from "@/lib/game/time";
 import type { Answer, QuestionKey } from "@/lib/learning/questions";
 import { rightMove } from "@/lib/story/autoplay";
-import { locate, startRun } from "@/lib/story/run";
+import { locate, runSeed, startRun } from "@/lib/story/run";
 import type { Member, StudioFacts } from "./model";
 import { starterCampaign } from "./starter";
 
@@ -112,7 +112,7 @@ function simulate(profile: Profile, now: Date, seed: number): Facts {
     if (!storyDays.has(offset)) continue;
     // Some story on this day: a few scenes, with a wrong answer first when the student is unsure.
     for (let step = 0; step < 6; step++) {
-      const current = runOf(facts, campaign.id) ?? startRun(campaign);
+      const current = runOf(facts, campaign.id) ?? startRun(campaign, runSeed(facts.profile.joinedAt, campaign));
       if (current.ending || current.scene === profile.until) break;
       const scene = locate(campaign, current.scene)?.scene;
       if (scene && (scene.kind === "question" || scene.kind === "evidence") && random() > profile.skill) {

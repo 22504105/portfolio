@@ -10,6 +10,16 @@ export const ru = {
     appTitle: "{page} — Questling",
   },
   demo: { badge: "Демо" },
+  gloss: {
+    open: "Перевод: {phrase}",
+    close: "Закрыть перевод",
+    translation: "Перевод",
+    definition: "Значение",
+    example: "Пример",
+    listen: "Произнести: {phrase}",
+    help: "Подсказка",
+    helpNote: "Подсказка наводит на мысль, но не даёт ответа. Опыт за неё не снимается.",
+  },
   nav: { home: "Главная", story: "Сюжет", quests: "Квесты", profile: "Профиль" },
   common: { back: "Назад", profile: "Профиль", days, actionFailed: "Не получилось. Проверь соединение и попробуй ещё раз." },
   live: {

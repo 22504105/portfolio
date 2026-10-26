@@ -1,4 +1,5 @@
 import type { Campaign, Clue, Grimoire } from "@/lib/story/graph";
+import { withGlosses } from "@/lib/story/glosses";
 import type { Text } from "../text";
 
 // Campaign 1, "Забытая академия" (A1–A2): an investigation in three chapters. Chapter II branches
@@ -221,7 +222,7 @@ const clues: Clue[] = [
   },
 ];
 
-export const forgottenAcademy: Campaign = {
+const authored: Campaign = {
   id: "forgotten-academy",
   version: 1,
   title: t("Забытая академия", "The Forgotten Academy"),
@@ -927,3 +928,38 @@ export const forgottenAcademy: Campaign = {
     },
   ],
 };
+
+// Word help on the English texts (lib/learning/gloss.ts), placed by the words it marks.
+export const forgottenAcademy = withGlosses(authored, {
+  "p-arrive": [
+    { phrase: "Forgotten", ru: "забытая", definition: "not remembered any more", cefr: "A2" },
+    { phrase: "Inside", ru: "внутри", cefr: "A1" },
+  ],
+  "p-greet": [
+    {
+      field: "line:0",
+      phrase: "archivist",
+      ru: "архивариус, хранитель архива",
+      definition: "a person who looks after old books and papers",
+      note: { ru: "Так зовут должность Элеоноры: она хранит книги академии.", en: "Eleanor's job: she looks after the academy's books." },
+      cefr: "B1",
+    },
+  ],
+  "prologue-1": [{ phrase: "quiet", ru: "тихий", definition: "making very little noise", example: "Please be quiet.", cefr: "A1" }],
+  "tower-1": [
+    { phrase: "seal", ru: "печать", definition: "a mark pressed into wax to close a letter", cefr: "B1" },
+    { phrase: "crescent moon", ru: "полумесяц", example: "A crescent moon hung over the tower.", cefr: "B1" },
+  ],
+  "tower-2": [
+    {
+      phrase: "never shines",
+      ru: "никогда не светит",
+      note: { ru: "Never — «никогда»: в комнате нет лунного света.", en: "Never: the moon's light does not reach that room." },
+      cefr: "A2",
+    },
+  ],
+  "tower-4": [
+    { phrase: "only", ru: "только", cefr: "A1" },
+    { phrase: "midnight", ru: "полночь", example: "The clock strikes twelve at midnight.", cefr: "A2", answer: true },
+  ],
+});
