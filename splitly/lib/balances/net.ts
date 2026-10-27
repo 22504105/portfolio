@@ -9,7 +9,7 @@ import type { Expense, Settlement } from "@/lib/domain/types";
 // means the group owes them; negative means they owe the group. In any
 // currency the nets of all members add up to exactly zero.
 //
-// (The brief words the last part the other way round, "plus incoming, minus
+// (The requirements word the last part the other way round, "plus incoming, minus
 // outgoing". With net meaning "owed to me", as here, paying someone must
 // bring my net UP towards zero and being paid must bring it down: the tests
 // pin this.)

@@ -1,6 +1,6 @@
 # NOVA Residence — design system
 
-The working reference for everyone building the site. `docs/brief.md` outranks this
+The working reference for everyone building the site. `docs/requirements.md` outranks this
 file; this file outranks personal preference. Tokens live in `app/globals.css`.
 
 ## Principles

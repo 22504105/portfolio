@@ -2,14 +2,13 @@
 
 Business intelligence for small businesses: explore a full demo without an
 account, or sign up and turn a CSV or Excel export of your orders into
-revenue, customers and reports. Portfolio project #03, built on free tiers
-only.
+revenue, customers and reports. Built on free tiers only.
 
-**Live: https://flowly-nine-ochre.vercel.app** — the demo is at
-[`/demo`](https://flowly-nine-ochre.vercel.app/demo).
+**Live demo:** https://flowly-nine-ochre.vercel.app (the demo workspace, no
+account needed: [`/demo`](https://flowly-nine-ochre.vercel.app/demo)).
 
-**Flowly is a portfolio project, not a company. The sample shop, its
-customers and its orders are invented.**
+**Concept project.** Flowly is not a company. The sample shop, its customers
+and its orders are invented.
 
 ![Overview of the demo workspace](docs/screenshots/overview.jpg)
 
@@ -19,18 +18,19 @@ customers and its orders are invented.**
 | ![Import: matching columns](docs/screenshots/import-map.jpg) | ![Import: what will be left out](docs/screenshots/import-validate.jpg) |
 | ![The printable report](docs/screenshots/report.jpg)         | ![Landing page](docs/screenshots/landing.jpg)                          |
 
+## Who it is for and what it solves
+
+Small shops and independent operators who sell online but have no analyst:
+their order history sits in a CSV or Excel export from their store. Flowly
+turns that file into revenue, customers, trends and a printable report, with
+every figure defined and consistent across pages. The file is read in the
+browser and never uploaded as a whole.
+
 ## Status
 
-All five phases are done and the site is deployed. What was verified and what
-was not is stated plainly below and in [`docs/security.md`](docs/security.md).
-
-| Phase | Scope                                  | State |
-| ----- | -------------------------------------- | ----- |
-| 1     | Foundation and architecture            | Done  |
-| 2     | Demo dashboard and analytics           | Done  |
-| 3     | Accounts, persistence, CSV/XLSX import | Done  |
-| 4     | Reports, settings, polish              | Done  |
-| 5     | Hardening, QA, deployment              | Done  |
+**Complete and deployed.** Accounts, imports, reports and settings work
+against a live Supabase project; the demo needs no backend. What was verified
+and what was not is stated below and in [`docs/security.md`](docs/security.md).
 
 ## Features
 
@@ -50,7 +50,7 @@ was not is stated plainly below and in [`docs/security.md`](docs/security.md).
 | Downloads    | CSV of exactly what is on screen, with spreadsheet-formula injection neutralised                                                                                          |
 | Themes       | Light and dark (greys and near-black), or the device's own setting; remembered in the browser; a printed report is always light                                           |
 
-Deliberately absent, as the brief requires: payments, live integrations,
+Deliberately absent, as the requirements say: payments, live integrations,
 teams, billing, a conversion rate (there is no traffic data, and none is
 invented).
 
@@ -94,7 +94,7 @@ flowchart LR
 - **The database is the boundary.** Row level security on every table; no
   service-role key anywhere.
 
-More in [`docs/architecture.md`](docs/architecture.md),
+More in [`docs/requirements.md`](docs/requirements.md), [`docs/architecture.md`](docs/architecture.md),
 [`docs/metrics.md`](docs/metrics.md) and
 [`docs/design-system.md`](docs/design-system.md).
 
@@ -164,7 +164,7 @@ both. What each figure means: [`docs/metrics.md`](docs/metrics.md).
 
 ## How it was verified
 
-- **151 unit and database tests.** Metric definitions against a week worked
+- **194 unit and database tests.** Metric definitions against a week worked
   out by hand; sums that must agree (chart buckets, breakdown rows and
   customers' spend all add up to net revenue); time zones and daylight saving;
   money parsing; the import pipeline; and, on a real PostgreSQL, that one
@@ -207,8 +207,8 @@ both. What each figure means: [`docs/metrics.md`](docs/metrics.md).
 ## Hosting
 
 Deployed to Vercel from this folder (`npx vercel deploy --prod`), with the two
-public Supabase variables set in the project. The brief named Cloudflare
-Workers; the owner chose Vercel, so no adapter is involved and the adapter
+public Supabase variables set in the project. The requirements named Cloudflare
+Workers; Vercel was chosen instead, so no adapter is involved and the adapter
 comparison was not run.
 
 ## Third-party software

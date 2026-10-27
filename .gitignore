@@ -6,3 +6,6 @@ nova-images-inbox/
 
 # Raw generated images for CUT&CO, processed into barbershop-demo/public/images
 barbershop-images-inbox/
+
+# Private portfolio workspace: freelance materials and the missing-information checklist
+showcase/private/

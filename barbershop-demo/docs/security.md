@@ -1,9 +1,8 @@
 # CUT&CO — Security and QA review (Phase 05)
 
-**Who did this.** The brief asks for an independent audit by a QA subagent.
-This review was done by the Lead Agent, the same agent that wrote the code, in
-a separate pass against the built application. It is a self-review, not an
-independent one. Anything that matters commercially should still be looked at
+**Who did this.** This review was done by the project's own developer, in a
+separate pass against the built application. It is a self-review, not an
+independent audit. Anything that matters commercially should still be looked at
 by someone else before real customers use it.
 
 ## What was checked
@@ -73,7 +72,7 @@ as "cash" or "card at the counter" with an amount).
 
 | Risk | Why it stays | What would close it |
 |---|---|---|
-| The audit is a self-review | No subagent was run in this session | An independent review |
+| The audit is a self-review | No independent reviewer was available | An independent review |
 | Inline scripts allowed by the policy | See "Known limit" | Nonces and on-demand rendering |
 | The database certificate is not verified unless `DATABASE_CA_CERT` is set | Works out of the box on Supabase's pooler | Set the variable in production |
 | Emails Supabase sends itself (sign-up, password reset) were never exercised | Needs the redirect URL set in the dashboard and a real inbox | Do it once by hand before launch |

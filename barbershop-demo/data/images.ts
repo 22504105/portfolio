@@ -1,7 +1,7 @@
 import processed from "./images.json";
 import sources from "./image-sources.json";
 
-/** Every photograph the site has a place for. docs/image-brief.md describes each one. */
+/** Every photograph the site has a place for. data/image-sources.json lists each one. */
 export type ImageKey = keyof typeof sources;
 
 export type ProcessedImage = {

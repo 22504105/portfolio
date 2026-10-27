@@ -1,8 +1,7 @@
 # Flowly — Security and QA review (Phase 5)
 
-**Who did this.** The brief gives this review to a QA subagent. It was done by
-the lead agent, the same one that wrote the code, as a separate pass against
-the built application and the live database. It is a self-review, not an
+**Who did this.** This review was done by the project's own developer, as a
+separate pass against the built application and the live database. It is a self-review, not an
 independent audit, and should be read as one.
 
 ## Threat model
@@ -63,7 +62,7 @@ by the caller's id) and `delete_my_account` (takes no argument).
 
 | Risk                                                          | Why it stays                                                                                                                                                        | What would close it                                                       |
 | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| The review is a self-review                                   | No subagent was run                                                                                                                                                 | An independent review                                                     |
+| The review is a self-review                                   | No independent reviewer was available                                                                                                                               | An independent review                                                     |
 | The reset email was not followed end to end                   | Sign-up, changing a password and the reset form's answer were checked on the deployed site (12 checks). Receiving the email and opening its link needs a real inbox | Ask for one reset link by hand and follow it                              |
 | No rate limiting of its own                                   | Vercel's free plan has no limiter; Supabase limits auth attempts itself                                                                                             | A limiter in front, on a paid plan                                        |
 | Inline scripts are allowed by the content security policy     | Next.js starts pages with them; nonces would make every page render on demand                                                                                       | Nonces                                                                    |

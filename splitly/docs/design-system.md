@@ -2,7 +2,7 @@
 
 Warm, trustworthy, editorial, uncluttered. Forest green and mint on a warm
 paper white; one typeface; amounts large and tabular. Since 2026-10-12 the
-screens follow the owner's concept board (`docs/concept.md`, in Russian, says
+screens follow the owner's concept board (`docs/notes/concept.md`, in Russian, says
 what the board shows, what it lacks and which stage builds what). Not a crypto
 dashboard: no glow, no charts where a number will do, and one gradient only,
 the deep green of the concept's balance card and browser rail.
@@ -11,7 +11,7 @@ All values live in `app/globals.css` as tokens. Components use the names.
 
 > Since 2026-10-13 the tokens follow the Google Stitch design: emerald `#075F4A` for buttons, forest
 > `#173D35` for the balance card, card radius 20 px, control radius 14 px. What was ported, what was
-> not, and where the design and the product disagree is in [stitch.md](stitch.md).
+> not, and where the design and the product disagree is in [notes/stitch.md](notes/stitch.md).
 
 ## Colour
 
@@ -30,7 +30,7 @@ All values live in `app/globals.css` as tokens. Components use the names.
 | `danger-fill`            | `#B04440`             | `#A8443F`             | A destructive button, with white text |
 | `warning`                | `#8A5514`             | `#E6B56F`             | Demo badge, cautions                  |
 
-**Where the brief's colours were moved, and why** (WCAG 2.2 AA asks 4.5:1 for
+**Where the specified colours were moved, and why** (WCAG 2.2 AA asks 4.5:1 for
 text):
 
 | Brief                         | Ratio as text | Ours      | Ratio |
@@ -40,7 +40,7 @@ text):
 | warning `#A66B26` on white    | 4.4:1         | `#8A5514` | 6.2:1 |
 
 Canvas, forest, mint, ink, divider, and the whole dark palette are the
-brief's own. `tests/foundation.test.ts` reads both palettes from the
+specified ones. `tests/foundation.test.ts` reads both palettes from the
 stylesheet and checks every text pair, so a later change cannot quietly drop
 below the line.
 

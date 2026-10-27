@@ -66,10 +66,10 @@ download links (`MEDIA_DAILY_DOWNLOADS`, default 2000). Operations are counted p
 7. **CORS** (the browser uploads straight to the bucket). The web console's simple CORS options only
    allow downloads; uploads need a custom rule, set with Backblaze's command-line tool:
    ```
-   ! pip install b2
-   ! b2 account authorize          (type the MASTER key id and key when asked; nothing is shown)
+   pip install b2
+   b2 account authorize            (type the MASTER key id and key when asked; nothing is shown)
    ```
-   then Claude runs (or you do):
+   then:
    ```
    b2 bucket update --cors-rules "[{\"corsRuleName\":\"questling\",\"allowedOrigins\":[\"https://questling-dusky.vercel.app\",\"https://questling-staging.vercel.app\",\"http://localhost:3100\",\"http://localhost:3300\"],\"allowedOperations\":[\"s3_put\",\"s3_get\",\"s3_head\"],\"allowedHeaders\":[\"content-type\",\"range\"],\"exposeHeaders\":[\"ETag\",\"Content-Length\",\"Content-Range\"],\"maxAgeSeconds\":3600}]" <bucket name> allPrivate
    ```

@@ -1,13 +1,12 @@
 # CUT&CO — Architecture
 
-The decisions behind the foundation, in the order the brief asks for them.
-`docs/brief.md` is the specification; where this document and the brief
-disagree, the brief wins and this document is wrong.
+The decisions behind the application. The requirements are in
+[`requirements.md`](requirements.md); where this document departs from them,
+it says so.
 
-Status: Phase 04. Everything below is implemented and tested except where a
-section says otherwise. Phase 05 is the independent review, the PWA and
-deployment. Sections marked **Phase 03** or **Phase 04**
-describe an agreed design that is not implemented yet.
+Status: all five development phases are implemented. The **Phase NN** markers
+below were written while the work was in progress and show the phase in which
+a part was built.
 
 ## 1. Information architecture
 
@@ -37,7 +36,7 @@ sections, and `/api/cron/notifications`.
 
 | Concern | Choice | Why |
 |---|---|---|
-| Framework | Next.js 16 App Router, React 19, TypeScript | As the brief asks; same major versions as the rest of the portfolio |
+| Framework | Next.js 16 App Router, React 19, TypeScript | As required; same major versions as the rest of the portfolio |
 | Styling | Tailwind CSS 4, tokens in `app/globals.css` | One source of truth for the design system |
 | Motion | `motion` | Installed; first used in Phase 02 |
 | i18n | `next-intl` 4 | Typed message catalog, locale routing, server components |
@@ -47,7 +46,7 @@ sections, and `/api/cron/notifications`.
 | Email | Resend | **Phase 03.** Free tier; server-only key |
 | Scheduler | Vercel Cron calling `/api/cron/*` | **Phase 03.** No extra service |
 | Tests | Vitest; a real PostgreSQL through `embedded-postgres` | Concurrency cannot be tested against a mock |
-| Hosting | Vercel | As the brief asks |
+| Hosting | Vercel | As required |
 
 Two Supabase projects are planned: one for the application and one for the
 public demo, so the demo cannot reach real data even if a policy is wrong.
@@ -171,7 +170,7 @@ connections racing each other):
 - one link opened three times at once: confirmed once.
 
 One difference from the plan above, decided while building: rescheduling keeps
-the same barber, so it needs one lock, and the brief does not ask for more.
+the same barber, so it needs one lock, and the requirements do not ask for more.
 
 ## 6. Roles and permissions
 
@@ -248,7 +247,7 @@ Points the tests pin down:
 
 `/demo/admin` shows the admin workspace to anyone, read-only.
 
-The brief prefers a separate demo database and accepts a read-only demo. What
+The requirements prefer a separate demo database and accept a read-only demo. What
 was built is stricter than a separate database: **the demo has no database at
 all.** The admin pages read through one interface (`lib/admin/types.ts`,
 `AdminSource`) with two implementations. The real admin gets `live.ts`, which
@@ -272,15 +271,14 @@ What that gives:
   numbers come from invented data and are not the results of a business.
 
 The cost: the demo cannot show what happens when an admin changes something.
-A writable demo would need the separate project the brief describes, with
+A writable demo would need the separate project the requirements describe, with
 per-session isolation and a reset; that is a possible later step, not a gap in
 safety.
 
 ## 9. Security review of the booking strategy
 
-The brief asks for this review before further work. It was done by the Lead
-Agent against the design above; the QA subagent's independent audit comes with
-the implementation in Phase 03.
+This review of the design above was made before the booking engine was
+built. The review of the finished application is in [`security.md`](security.md).
 
 | Risk | Severity | Answer |
 |---|---|---|

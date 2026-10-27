@@ -76,7 +76,7 @@ Record each item as passed, failed or not tested — never "passed" without havi
 | Headphones unplugged / Bluetooth connected during a take                                                        |                |                  |            |              |
 | Picture search on a phone: a finger on the stone's edge counts; the spot list is usable with TalkBack/VoiceOver |                |                  |            |              |
 
-**Which browsers and formats to cover** (the prompt's matrix): Android Chrome and Android Telegram (records
+**Which browsers and formats to cover** (the specified matrix): Android Chrome and Android Telegram (records
 WebM/Opus), iOS Safari and iOS Telegram (records MP4/AAC — the format checked by the server but never by a
 real iPhone yet), one old browser (e.g. iOS 15 Safari or Android 9 WebView: expected "cannot record" with
 the reason, never a broken button), the microphone allowed and denied, a slow network, a call or another

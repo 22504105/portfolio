@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 
-// Gate A of the features prompt (docs/features-audit.md): word help in exercises, a hint on
+// Gate A of the features specification (docs/features-audit.md): word help in exercises, a hint on
 // request, shuffled options, and the teacher marking words in the builder. Demo routes only.
 
 const QUEST = "99999999-0000-4000-8000-000000000001";
