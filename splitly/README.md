@@ -135,7 +135,6 @@ npm run test:e2e    # Playwright on a phone and a desktop, including axe accessi
 - [`docs/security.md`](docs/security.md): identity, sessions, authorisation, the demo's isolation
 - [`docs/design-system.md`](docs/design-system.md): colour, type, layout, contrast
 - [`docs/deployment.md`](docs/deployment.md): deployment proof and steps
-- [`docs/notes/`](docs/notes/): working notes on the design migration (in Russian)
 
 ## Third-party software
 

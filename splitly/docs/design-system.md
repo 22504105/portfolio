@@ -2,16 +2,14 @@
 
 Warm, trustworthy, editorial, uncluttered. Forest green and mint on a warm
 paper white; one typeface; amounts large and tabular. Since 2026-10-12 the
-screens follow the owner's concept board (`docs/notes/concept.md`, in Russian, says
-what the board shows, what it lacks and which stage builds what). Not a crypto
+screens follow a concept board supplied for the project. Not a crypto
 dashboard: no glow, no charts where a number will do, and one gradient only,
 the deep green of the concept's balance card and browser rail.
 
 All values live in `app/globals.css` as tokens. Components use the names.
 
 > Since 2026-10-13 the tokens follow the Google Stitch design: emerald `#075F4A` for buttons, forest
-> `#173D35` for the balance card, card radius 20 px, control radius 14 px. What was ported, what was
-> not, and where the design and the product disagree is in [notes/stitch.md](notes/stitch.md).
+> `#173D35` for the balance card, card radius 20 px, control radius 14 px.
 
 ## Colour
 
