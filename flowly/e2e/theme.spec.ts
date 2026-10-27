@@ -5,6 +5,16 @@ const background = (page: Page) => page.evaluate(() => getComputedStyle(document
 const LIGHT = "rgb(247, 247, 244)";
 const DARK = "rgb(18, 20, 24)";
 
+// The head script must reach the browser as text. Imported from a "use client" module it arrives as a
+// reference to a JS chunk ("__html":"$2"), and hydration of <head> then sometimes failed (React #418).
+test("the theme script is sent as text, not as a reference to a client module", async ({ request }) => {
+  for (const path of ["/", "/login", "/demo/overview"]) {
+    const html = await (await request.get(path)).text();
+    expect(html, path).toContain('__html\\":\\"(function(){');
+    expect(html, path).not.toMatch(/__html\\":\\"\$/);
+  }
+});
+
 test("the page follows the device until a theme is chosen", async ({ page }) => {
   await page.goto("/demo/overview");
   expect([await theme(page), await background(page)]).toEqual(["light", LIGHT]);

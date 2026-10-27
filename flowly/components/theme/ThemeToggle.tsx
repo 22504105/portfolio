@@ -3,14 +3,14 @@
 import { Monitor, Moon, Sun } from "lucide-react";
 import { Suspense, useEffect, useSyncExternalStore } from "react";
 import { cn } from "@/lib/utils";
+import { THEME_KEY as KEY } from "./theme-script";
 
 // Light, dark, or whatever the device prefers. The choice is kept in the
 // browser (nothing is sent anywhere) and applied to <html data-theme> by a
 // small script in the document head before the page is painted, so a dark
-// page never flashes white first. See THEME_SCRIPT below.
+// page never flashes white first. See THEME_SCRIPT in ./theme-script.ts.
 
 export type ThemeChoice = "light" | "dark" | "system";
-const KEY = "flowly-theme";
 const ORDER: readonly ThemeChoice[] = ["light", "dark", "system"];
 
 const listeners = new Set<() => void>();
@@ -160,9 +160,3 @@ export function ThemeToggle(props: ThemeToggleProps) {
     </Suspense>
   );
 }
-
-/**
- * Runs in the document head before anything is drawn: reads the stored choice
- * and sets data-theme. Kept as a string because it must not wait for React.
- */
-export const THEME_SCRIPT = `(function(){try{var c=localStorage.getItem("${KEY}");var d=c==="dark"||(c!=="light"&&matchMedia("(prefers-color-scheme: dark)").matches);document.documentElement.dataset.theme=d?"dark":"light"}catch(e){document.documentElement.dataset.theme="light"}})()`;
