@@ -16,6 +16,7 @@ import { OBJECTIVE_IDS, OBJECTIVES } from "@/lib/learning/objectives";
 import { tr } from "@/lib/content/text";
 import { SCENE_IMAGES } from "@/lib/story/schema";
 import { shuffled } from "@/lib/learning/shuffle";
+import { DubForm, SearchForm, TalkForm } from "./story-forms";
 
 // The builder's right pane (18_quest_builder, "Инспектор узла"): the form of the selected scene, by
 // its kind, or — with nothing selected — the campaign's own properties, chapters and clues. Every
@@ -335,6 +336,9 @@ export function SceneInspector({
       {scene.kind === "question" ? <QuestionForm scene={scene} draft={draft} edit={edit} /> : null}
       {scene.kind === "puzzle" ? <PuzzleForm scene={scene} draft={draft} edit={edit} /> : null}
       {scene.kind === "evidence" ? <EvidenceForm scene={scene} draft={draft} edit={edit} /> : null}
+      {scene.kind === "talk" ? <TalkForm scene={scene} clues={clues} edit={edit} /> : null}
+      {scene.kind === "search" ? <SearchForm scene={scene} keys={draft.keys} clues={clues} edit={edit} /> : null}
+      {scene.kind === "dub" ? <DubForm scene={scene} clues={clues} edit={edit} /> : null}
 
       {scene.kind === "ending" ? (
         <>
@@ -740,9 +744,14 @@ function Method({ scene, draft, edit }: { scene: GradedScene; draft: Draft; edit
           />
           <Pick
             label={f.quizAnswer}
-            value={key?.grimoire ?? ""}
+            value={key && "grimoire" in key ? key.grimoire : ""}
             options={scene.grimoire.quiz.options.map((o) => ({ value: o, label: o }))}
-            onChange={(v) => g((s, keys) => keys[s.id] && (keys[s.id].grimoire = v))}
+            onChange={(v) =>
+              g((s, keys) => {
+                const k = keys[s.id];
+                if (k && "grimoire" in k) k.grimoire = v;
+              })
+            }
           />
         </div>
       </details>

@@ -20,7 +20,7 @@ import { Parchment, SceneImage, StoryHeading } from "./story-player";
 
 export type Frame = { chapter: string; cefr: string; storyTitle: string; location: string; image: string };
 
-type Common = {
+export type Common = {
   t: Dictionary;
   frame: Frame;
   backHref: string;
@@ -31,7 +31,7 @@ type Common = {
   glosses?: GlossView[];
 };
 
-function Page({
+export function Page({
   t,
   frame,
   backHref,
@@ -53,7 +53,7 @@ function Page({
   );
 }
 
-function GoldButton({
+export function GoldButton({
   label,
   onClick,
   disabled,
@@ -81,7 +81,7 @@ function GoldButton({
   );
 }
 
-function Failed({ t, error }: { t: Dictionary; error: boolean }) {
+export function Failed({ t, error }: { t: Dictionary; error: boolean }) {
   return error ? (
     <p role="alert" className="mt-space-sm font-caption text-caption text-status-error text-center">
       {t.common.actionFailed}
@@ -89,7 +89,7 @@ function Failed({ t, error }: { t: Dictionary; error: boolean }) {
   ) : null;
 }
 
-function TranslationToggle({ t, open, onToggle }: { t: Dictionary; open: boolean; onToggle: () => void }) {
+export function TranslationToggle({ t, open, onToggle }: { t: Dictionary; open: boolean; onToggle: () => void }) {
   return (
     <button
       type="button"

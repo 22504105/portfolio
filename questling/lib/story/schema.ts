@@ -71,7 +71,7 @@ const grimoire = z.object({
 const gloss = z
   .object({
     id,
-    field: z.string().regex(/^(text|parchment|question|line:[0-7])$/),
+    field: z.string().regex(/^(text|parchment|question|task|line:[0-7]|talk:[a-z0-9][a-z0-9-]{0,39})$/),
     start: z.number().int().min(0).max(600),
     end: z.number().int().min(1).max(600),
     phrase: line(80),
@@ -157,6 +157,74 @@ const scene = z.discriminatedUnion("kind", [
   }),
   z.object({
     ...base,
+    kind: z.literal("talk"),
+    character: z.object({ name: text(60), image }),
+    start: id,
+    lines: z
+      .array(
+        z.object({
+          id,
+          text: line(300),
+          translation: text(300),
+          responses: z
+            .array(
+              z.object({
+                id,
+                text: line(160),
+                gloss: text(160),
+                to: z.union([id, z.literal("end")]),
+                when: condition.optional(),
+                set: z.array(id).max(4).optional(),
+                clue: id.optional(),
+              }),
+            )
+            .min(1)
+            .max(4),
+        }),
+      )
+      .min(1)
+      .max(12),
+    xp: z.number().int().min(0).max(200),
+    clue: id.optional(),
+  }),
+  z.object({
+    ...base,
+    kind: z.literal("search"),
+    task: line(200),
+    translation: text(200),
+    // An app illustration; a teacher's own image once storage is connected (its id).
+    picture: z.union([image, z.string().uuid()]),
+    spots: z
+      .array(
+        z.object({
+          id,
+          label: line(60),
+          gloss: text(80),
+          x: z.number().min(0).max(1),
+          y: z.number().min(0).max(1),
+          w: z.number().min(0).max(1),
+          h: z.number().min(0).max(1),
+          found: optionalText(200),
+        }),
+      )
+      .min(2)
+      .max(10),
+    hint: text(200),
+    xp: z.number().int().min(0).max(200),
+    clue: id.optional(),
+    item: id.optional(),
+  }),
+  z.object({
+    ...base,
+    kind: z.literal("dub"),
+    exercise: z.string().regex(/^d-[a-z0-9-]{4,60}$/),
+    text: line(300),
+    translation: text(300),
+    optional: z.boolean(),
+    clue: id.optional(),
+  }),
+  z.object({
+    ...base,
     kind: z.literal("ending"),
     title: text(80),
     text: line(600),
@@ -220,6 +288,7 @@ export const keysSchema = z.record(
     z.object({ kind: z.literal("question"), correct: id, explanations, grimoire: line(40) }),
     z.object({ kind: z.literal("puzzle"), order: z.array(line(40)).min(2).max(10), explanation: text(300), grimoire: line(40) }),
     z.object({ kind: z.literal("evidence"), correct: z.array(id).min(1).max(6), explanations, grimoire: line(40) }),
+    z.object({ kind: z.literal("search"), targets: z.array(id).min(1).max(9), ordered: z.boolean() }),
   ]),
 );
 

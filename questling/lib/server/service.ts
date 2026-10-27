@@ -105,6 +105,8 @@ const actionSchema = z.discriminatedUnion("type", [
       z.object({ type: z.literal("choose"), scene: id, option: id }),
       z.object({ type: z.literal("answer"), scene: id, answer: z.union([id, z.array(z.string().max(40)).max(12)]) }),
       z.object({ type: z.literal("grimoire"), scene: id, word: z.string().min(1).max(40) }),
+      z.object({ type: z.literal("say"), scene: id, response: id }),
+      z.object({ type: z.literal("tap"), scene: id, spot: id }),
     ]),
   }),
   z.object({ type: z.literal("askMentor"), campaign: id, scene: id }),

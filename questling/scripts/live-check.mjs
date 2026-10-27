@@ -88,7 +88,12 @@ try {
   check(kept.status === 200 && kept.data.facts?.vocab?.length === 1, "the day's word is kept in the journal");
   const keptTwice = await call("POST", "actions", { action: { type: "keepWord", ref: `daily:${moscowDay}` } }, token);
   check(keptTwice.status === 409 && keptTwice.data.error === "already_done", "the same word is not kept twice");
-  const unreached = await call("POST", "actions", { action: { type: "keepWord", ref: "gloss:forgotten-academy:tower-4:tower-4-2" } }, token);
+  const unreached = await call(
+    "POST",
+    "actions",
+    { action: { type: "keepWord", ref: "gloss:forgotten-academy:tower-4:tower-4-2" } },
+    token,
+  );
   check(unreached.status === 409 && unreached.data.error === "not_available", "a word from a scene not reached is refused");
   const notDue = await call("POST", "actions", { action: { type: "reviewWord", ref: `daily:${moscowDay}`, option: "a" } }, token);
   check(notDue.status === 409, "a word is not reviewed (for XP) before it is due");
@@ -172,7 +177,10 @@ try {
     // itself is not tested today, which is said as such; the refusal for too few coins is.
     const cheapest = items.filter((i) => i.price > 0 && i.level <= 1 && !owned.has(i.id)).sort((x, y) => x.price - y.price)[0];
     const refused = await call("POST", "actions", { action: { type: "buy", itemId: cheapest.id } }, token);
-    check(refused.status === 409 && refused.data.error === "not_enough_coins", `with ${coins} coins, a ${cheapest.price}-coin item is refused`);
+    check(
+      refused.status === 409 && refused.data.error === "not_enough_coins",
+      `with ${coins} coins, a ${cheapest.price}-coin item is refused`,
+    );
     console.log(`SKIP  no level-1 item costs at most ${coins} coins today: the purchase itself was not tested`);
   }
 
@@ -340,6 +348,47 @@ try {
   const messages = (await call("GET", "state", undefined, token)).data.facts?.world?.messages ?? [];
   check(reply.status === 200 && messages.some((m) => m.body === "Перечитай свиток."), "the mentor's reply reaches the student");
 
+  // ——— Story scenes of features gate E: the forest search (version 2 of the first campaign) ———
+  {
+    const { campaignVersion } = await import("../lib/content/campaigns/index.ts");
+    const { keysOf } = await import("../lib/content/campaigns/keys.ts");
+    const { rightMove } = await import("../lib/story/autoplay.ts");
+    let facts = (await call("GET", "state", undefined, token)).data.facts;
+    for (let i = 0; i < 80; i++) {
+      const run = facts?.runs?.find((r) => r.campaign === "forgotten-academy");
+      if (!run || run.scene === "f-search") break;
+      const campaign = campaignVersion(run.campaign, run.version);
+      const next = await call(
+        "POST",
+        "actions",
+        { action: { type: "story", campaign: run.campaign, move: rightMove(campaign, keysOf(campaign), run) }, locale: "ru" },
+        token,
+      );
+      if (next.status !== 200) break;
+      facts = next.data.facts;
+    }
+    const at = facts?.runs?.find((r) => r.campaign === "forgotten-academy");
+    check(at?.scene === "f-search" && at?.version === 2, "a new run plays version 2 and reaches the forest's picture search");
+    const tap = (spot) =>
+      call(
+        "POST",
+        "actions",
+        { action: { type: "story", campaign: "forgotten-academy", move: { type: "tap", scene: "f-search", spot } } },
+        token,
+      );
+    const early = await tap("mushrooms");
+    check(
+      early.status === 200 && early.data.outcome?.tapped?.correct === false,
+      "the mushrooms before the stone are wrong (order kept on the server)",
+    );
+    await tap("stone-r");
+    const found = await tap("mushrooms");
+    check(
+      found.status === 200 && found.data.facts?.inventory?.some((o) => o.item === "sprite" && o.source === "story"),
+      "finding both gives the glow sprite, kept as a story reward",
+    );
+  }
+
   // ——— Voice acting with object storage (features gates B/C) ———
   const usageNow = await call("GET", "studio/objects/usage", undefined, tt);
   if (!usageNow.data.configured) console.log("SKIP  media storage is not configured on this deployment: voice acting uploads not checked");
@@ -354,7 +403,10 @@ try {
       return call("POST", "media/complete", { id: ask.data.id, ...extra }, who);
     };
     const video = await uploadAs(tt, "video", "video/mp4", fixture("ok.mp4"));
-    check(video.status === 200 && video.data.media?.durationMs > 2900, "a teacher's video goes to private storage and is checked by content");
+    check(
+      video.status === 200 && video.data.media?.durationMs > 2900,
+      "a teacher's video goes to private storage and is checked by content",
+    );
     const junk = await uploadAs(tt, "video", "video/mp4", fixture("clip.mov"));
     check(junk.status === 422 && junk.data.error === "type", "a MOV named as MP4 is refused after the upload, and deleted");
     const byStudentVideo = await call("POST", "media/upload", { kind: "video", mime: "video/mp4", size: 100, rights: true }, token);
@@ -378,7 +430,10 @@ try {
     check(published.status === 200 && assigned.status === 200, "the scene on that video is published and given to the group");
 
     const world = (await call("GET", "state", undefined, token)).data.facts?.world;
-    check(world?.dubs?.some((d) => d.exercise === slug), "the group's student sees the scene");
+    check(
+      world?.dubs?.some((d) => d.exercise === slug),
+      "the group's student sees the scene",
+    );
     const videoLink = await call("POST", "media/link", { id: video.data.media?.id }, token);
     const ranged = videoLink.data.url ? await fetch(videoLink.data.url, { headers: { Range: "bytes=0-99" } }) : null;
     check(ranged?.status === 206, "the student plays the video through a short-lived signed link, in ranges");
@@ -398,7 +453,10 @@ try {
     check(heardTake.status === 200, "the teacher hears the student's take");
     const approved = await studio({ type: "reviewDub", submissionId: toReview?.id, decision: "approve", rubric: { pacing: "good" } });
     const ledgerAfter = (await call("GET", "state", undefined, token)).data.facts?.ledger ?? [];
-    check(approved.status === 200 && ledgerAfter.some((l) => l.key === `dub:${slug}@1` && l.amount === 40), "the teacher approves, and the XP is granted once");
+    check(
+      approved.status === 200 && ledgerAfter.some((l) => l.key === `dub:${slug}@1` && l.amount === 40),
+      "the teacher approves, and the XP is granted once",
+    );
     const inUseVideo = await call("POST", "studio/objects/delete", { id: video.data.media?.id }, tt);
     check(inUseVideo.status === 409, "a video a published scene uses cannot be deleted");
   }
@@ -438,6 +496,11 @@ try {
     }
     console.log(`cleaned up ${stored.rowCount} stored object(s)`);
   }
+  // Without the storage settings here the files cannot be removed: say so loudly, never silently.
+  else if (stored.rowCount)
+    console.log(
+      `WARN  ${stored.rowCount} stored object(s) left in the bucket: run the check with the same MEDIA_S3_* as the site (${stored.rows.map((r) => r.storage_key).join(", ")})`,
+    );
   // Remove the test student and everything of theirs.
   const removed = await db.query(
     "delete from questling.users where id in (select user_id from questling.auth_identities where provider = 'telegram' and subject = any($1::text[]))",

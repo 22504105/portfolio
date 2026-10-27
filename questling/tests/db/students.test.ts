@@ -214,14 +214,14 @@ describe("story runs", () => {
     const run = runOf(stored, academy.id)!;
     expect(run).toMatchObject({
       campaign: "forgotten-academy",
-      version: 1,
+      version: academy.version, // new runs start on the latest version (2 since gate E)
       scene: "tower-2",
       chapters: ["prologue"],
       clues: ["prologue-tome", "seal"],
     });
     expect(run.progress["tower-2"]).toEqual({ used: 1, restored: 0, eliminated: ["garden"], solved: false });
     const row = await pg.db.query("select campaign, version from questling.story_runs where user_id = $1", [userId]);
-    expect(row.rows).toEqual([{ campaign: "forgotten-academy", version: 1 }]);
+    expect(row.rows).toEqual([{ campaign: "forgotten-academy", version: academy.version }]);
   });
 
   it("stores the grimoire's attempt, the help request, and the ending's reward once", async () => {
@@ -466,5 +466,29 @@ describe("the word journal on the database (gate D)", () => {
     await expect(tx((db) => act(db, userId, { action: { type: "reviewWord", ref: card.ref, option: right } }, due))).rejects.toThrow(
       ServiceError,
     );
+  });
+});
+
+describe("story rewards on the database (gate E)", () => {
+  it("a picture search found in order gives its item once, kept with the source 'story'", async () => {
+    const userId = await newStudent(51);
+    const academy = campaignById.get("forgotten-academy")!;
+    for (let i = 0; i < 80; i++) {
+      const facts = (await loadFacts(pg.db, userId))!;
+      const run = runOf(facts, academy.id) ?? startRun(academy);
+      if (run.scene === "f-search") break;
+      await tx((db) =>
+        act(db, userId, { action: { type: "story", campaign: academy.id, move: rightMove(academy, keysOf(academy), run)! } }),
+      );
+    }
+    const tap = (spot: string) =>
+      tx((db) => act(db, userId, { action: { type: "story", campaign: academy.id, move: { type: "tap", scene: "f-search", spot } } }));
+    expect((await tap("ferns")).outcome).toMatchObject({ kind: "story", tapped: { correct: false } });
+    // The mushrooms out of order (wrong), then in order (right): two attempts at the same spot.
+    expect((await tap("mushrooms")).outcome).toMatchObject({ kind: "story", tapped: { correct: false } });
+    await tap("stone-r");
+    expect((await tap("mushrooms")).outcome).toMatchObject({ kind: "story", items: ["sprite"], tapped: { done: true } });
+    const rows = await pg.db.query("select item, source from questling.inventory where user_id = $1 and item = 'sprite'", [userId]);
+    expect(rows.rows).toEqual([{ item: "sprite", source: "story" }]);
   });
 });

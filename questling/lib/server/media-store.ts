@@ -285,6 +285,19 @@ async function visible(db: Db, actor: Actor, id: string): Promise<Row | null> {
     );
     return ok.rowCount ? row : null;
   }
+  // A teacher's picture for a story search, to a student whose group was given a published campaign using it.
+  if (row.kind === "image") {
+    const pictured = await db.query(
+      `select 1 from questling.assignments a
+         join questling.group_members m on m.group_id = a.group_id and m.user_id = $2
+         join questling.quests q on q.slug = a.campaign
+         join questling.quest_versions v on v.quest_id = q.id and v.status = 'published' and (a.version is null or v.version = a.version)
+        where jsonb_path_exists(v.graph, '$.chapters[*].scenes[*] ? (@.kind == "search" && @.picture == $id)', jsonb_build_object('id', $1::text))
+        limit 1`,
+      [id, actor.userId],
+    );
+    return pictured.rowCount ? row : null;
+  }
   // A teacher's scene media, to a student whose group was given a published version using it.
   const ok = await db.query(
     `select 1 from questling.dub_assignments a

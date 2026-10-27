@@ -171,3 +171,43 @@ run (over the default 5 s); assertions now wait up to 10 s (`playwright.config.t
 Live check on the working database with a local storage stand-in: 63 passed, 1 skipped (the day's
 quests paid too few coins for a purchase); everything it stored was removed. **Not checked yet**: the
 real B2 bucket (keys needed) and real phones.
+
+## Gate E — story scenes and rewards (2026-10-27)
+
+Three new kinds of scene in the story graph (`lib/story/graph.ts`), played by the same rules on the
+server and in the demo (`lib/story/run.ts`), authored in the builder (`components/studio/story-forms.tsx`)
+and checked before publishing (`lib/story/validate.ts`):
+
+- **Talk** (`talk`): a character's lines and the student's English answers. An answer leads to another
+  line or ends the talk; it may need a flag or a clue, and may set flags and give clues. The current
+  line is kept in the run (resume after a reload). Deterministic, no chatbot. Checked: every line
+  reachable, an answer without a condition at every line, the talk ends, and — walking every way
+  through it with the flags and clues of each path — never a line with nothing to say. The validator's
+  story walk takes each way out of a talk, so later branches and evidence see its flags and clues.
+- **Picture search** (`search`): spots on an illustration as fractions of its size (so they hold at
+  any width), right ones (and their order) only in the keys. Taps on the picture hit the smallest spot
+  under the finger; every spot is also a button (the accessible way). A wrong tap costs nothing, the
+  hint comes after two; finding all gives XP, a clue and optionally a free item (once). Checked: targets
+  among the spots, something to tell apart, spots at least 6 % of the picture (≈20 px on a 360 px phone).
+  Teachers draw spots on the picture in the builder; their own pictures need storage (uploads not yet
+  verified on the real B2).
+- **Voice acting in the story** (`dub`): one of the teacher's published voice-acting scenes. The story
+  goes on once the recording is sent (or accepted), or without it when the teacher allows that — the
+  accessible equivalent for students whose devices cannot record. Publishing refuses a scene that is
+  not the teacher's own published one; assigning the campaign gives the group the scene too.
+- **Rewards**: XP once per scene (ledger keys), clues, and free story items (inventory source `story`,
+  migration 10 `20261029000100_story_rewards.sql`, applied after backup
+  `E:\Backups\questling\2026-10-27T11-00-22`, verified by restore, and a dry run). Picture-search taps
+  are answers (skill vocabulary) and feed the suggestions of gate D.
+- **Built-in content**: the first campaign has a version 2 with a search in the forest (the rune stone
+  with an R, then the glowing mushrooms; the glow sprite for finding both) and a talk with the forest
+  spirit whose owl line opens only for students who found the owl's note. Runs begun on version 1 keep
+  playing version 1 (it stays in the registry); new runs play version 2.
+
+Found and fixed: a picture-search tap on the same spot twice (wrong out of order, then right) recorded
+two answers with the same attempt number, and the database refused the second — seen only by the live
+check on the working database (the demo has no such key); attempts now count per spot.
+
+Tests: `tests/story-gate-e.test.ts` (10), DB test for the story item (1), `e2e/features-e.spec.ts` (5),
+the gate 3 walk now plays talks and searches. Full suites: unit/DB 188/188, e2e 118/118 twice. Live check
+on the working database (storage stand-in): 67/67, nothing left behind.

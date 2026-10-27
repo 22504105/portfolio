@@ -8,7 +8,20 @@ import type { Campaign, CampaignKeys, Next, Scene } from "@/lib/story/graph";
 export type Draft = { graph: Campaign; keys: CampaignKeys };
 
 export type PaletteKind =
-  "narration" | "dialogue" | "clue" | "question" | "fill" | "puzzle" | "listen" | "evidence" | "choice" | "condition" | "ending";
+  | "narration"
+  | "dialogue"
+  | "clue"
+  | "question"
+  | "fill"
+  | "puzzle"
+  | "listen"
+  | "evidence"
+  | "choice"
+  | "condition"
+  | "talk"
+  | "search"
+  | "dub"
+  | "ending";
 
 const t = (ru: string, en: string) => ({ ru, en });
 const base = (id: string) => ({ id, location: t("Библиотека", "The library"), image: "/images/grand-library.webp" });
@@ -171,6 +184,86 @@ export function newScene(graph: Campaign, kind: PaletteKind, after: Scene | unde
         },
       };
     }
+    case "talk":
+      return {
+        scene: {
+          ...base(id),
+          kind: "talk",
+          image: "/images/archive-mage.webp",
+          character: { name: t("Архивариус", "The Archivist"), image: "/images/archive-mage.webp" },
+          start: "hello",
+          lines: [
+            {
+              id: "hello",
+              text: "You again? What do you want to know?",
+              translation: t("Снова ты? Что ты хочешь узнать?", "You again? What do you want to know?"),
+              responses: [
+                {
+                  id: "ask",
+                  text: "Where were you last night?",
+                  gloss: t("Где вы были вчера ночью?", "Where were you last night?"),
+                  to: "night",
+                },
+                { id: "bye", text: "Nothing. Goodbye.", gloss: t("Ничего. До свидания.", "Nothing. Goodbye."), to: "end" },
+              ],
+            },
+            {
+              id: "night",
+              text: "I was in the archive until midnight.",
+              translation: t("Я была в архиве до полуночи.", "I was in the archive until midnight."),
+              responses: [{ id: "thanks", text: "Thank you.", gloss: t("Спасибо.", "Thank you."), to: "end" }],
+            },
+          ],
+          xp: 10,
+        },
+      };
+    case "search":
+      return {
+        scene: {
+          ...base(id),
+          kind: "search",
+          image: "/images/grand-library.webp",
+          task: "Find the open book.",
+          translation: t("Найди открытую книгу.", "Find the open book."),
+          picture: "/images/grand-library.webp",
+          spots: [
+            {
+              id: "book",
+              label: "the open book",
+              gloss: t("открытая книга", "the open book"),
+              x: 0.62,
+              y: 0.66,
+              w: 0.16,
+              h: 0.14,
+              found: t("Вот она!", "There it is!"),
+            },
+            {
+              id: "window",
+              label: "the window",
+              gloss: t("окно", "the window"),
+              x: 0.78,
+              y: 0.12,
+              w: 0.16,
+              h: 0.4,
+              found: t("Это окно.", "That is the window."),
+            },
+          ],
+          hint: t("Посмотри на стол у окна.", "Look at the desk by the window."),
+          xp: 15,
+        },
+        key: { kind: "search", targets: ["book"], ordered: false },
+      };
+    case "dub":
+      return {
+        scene: {
+          ...base(id),
+          kind: "dub",
+          exercise: "d-choose-a-scene",
+          text: "Speak for the archivist.",
+          translation: t("Озвучь архивариуса.", "Speak for the archivist."),
+          optional: true,
+        },
+      };
     case "ending":
       return {
         scene: {

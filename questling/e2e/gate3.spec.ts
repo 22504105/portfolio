@@ -33,7 +33,7 @@ async function step(page: Page, campaign: Campaign, choices: Record<string, stri
         break;
       case "question":
       case "evidence": {
-        if (key.kind === "puzzle") throw new Error(`${id} has a puzzle key`);
+        if (key.kind === "puzzle" || key.kind === "search") throw new Error(`${id} has a ${key.kind} key`);
         const options = key.kind === "question" ? [key.correct] : key.correct;
         // Evidence: whichever proving clue this path found is the one on screen.
         for (const option of options) {
@@ -53,6 +53,32 @@ async function step(page: Page, campaign: Campaign, choices: Record<string, stri
         for (const tile of key.order) await page.locator(`[data-tile="${tile}"]`).click();
         await page.locator("[data-action=check]").click();
         await expect(page.getByRole("status")).toContainText(/Шифр разгадан|Cipher solved/);
+        await page.locator("[data-action=next]").click();
+        break;
+      case "talk": {
+        // Gate E: the first answer on offer at each line (the choices name another as "scene:line").
+        for (let i = 0; i < 10 && (await sceneOn(page)) === id; i++) {
+          const line = await page.locator("[data-talk-line]").getAttribute("data-talk-line");
+          const wanted = choices[`${id}:${line}`];
+          await page
+            .locator(wanted ? `[data-response="${wanted}"]` : "[data-response]")
+            .first()
+            .click();
+          await expect
+            .poll(async () =>
+              (await sceneOn(page)) === id ? await page.locator("[data-talk-line]").getAttribute("data-talk-line") : "moved",
+            )
+            .not.toBe(line);
+        }
+        break;
+      }
+      case "search":
+        if (key.kind !== "search") throw new Error(`${id} has no search key`);
+        for (const spot of key.targets) await page.locator(`[data-spot="${spot}"]`).click();
+        await expect(page.getByText(/Всё найдено|Everything found/)).toBeVisible();
+        await page.locator("[data-action=next]").click();
+        break;
+      case "dub":
         await page.locator("[data-action=next]").click();
         break;
       case "ending":

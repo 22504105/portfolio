@@ -55,7 +55,7 @@ export type Completion = { kind: CompletionKind; ref: string; at: string };
 
 export type Saved = { kind: "word" | "fact"; ref: string; at: string };
 
-export type Owned = { item: string; source: "starter" | "purchase" | "achievement" | "chest" | "demo"; at: string };
+export type Owned = { item: string; source: "starter" | "purchase" | "achievement" | "chest" | "story" | "demo"; at: string };
 
 export type Facts = {
   profile: { heroName: string | null; characterId: CharacterId | null; joinedAt: string };

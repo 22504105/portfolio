@@ -24,6 +24,12 @@ export function sceneLine(scene: Scene): string {
       return scene.parchment;
     case "evidence":
       return scene.question;
+    case "talk":
+      return scene.lines.find((l) => l.id === scene.start)?.text ?? "";
+    case "search":
+      return scene.task;
+    case "dub":
+      return scene.text;
   }
 }
 

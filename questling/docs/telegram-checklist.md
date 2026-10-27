@@ -67,3 +67,6 @@ Record each item as passed, failed or not tested — never "passed" without havi
 | My words: review today's words; a mistake costs nothing | | | | |
 | Answer options are in a different order for another student; a reload keeps the order | | | | |
 | Teacher (desktop and phone): upload MP4 (accepted), MOV (refused with reason), publish, assign, review | | | | |
+| Forest search: tapping the picture finds the R stone and the mushrooms; wrong taps explained; hint after two | | | | |
+| Forest talk: answers on offer change with the owl's note; reload keeps the current line | | | | |
+| A story voice-acting scene: go on after sending; "go on without recording" when allowed | | | | |

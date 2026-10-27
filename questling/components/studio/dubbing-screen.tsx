@@ -655,14 +655,14 @@ function LineEditor({
   );
 }
 
-function Upload({
+export function Upload({
   kind,
   label,
   note,
   accept,
   onDone,
 }: {
-  kind: "video" | "background";
+  kind: "video" | "background" | "image";
   label: string;
   note?: string;
   accept: string;

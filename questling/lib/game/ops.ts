@@ -96,6 +96,8 @@ export type Outcome =
       chapterDone: string | null;
       ending: string | null;
       rewarded: { xp: number; coins: number };
+      tapped?: { spot: string; correct: boolean; done: boolean };
+      items?: string[];
     }
   | { kind: "chest"; item: string | null; coins: number }
   | { kind: "review"; correct: boolean; right: string; due: string; rewarded: number }
@@ -367,7 +369,10 @@ function perform(facts: Facts, action: Action, ctx: Context): OpResult {
       const campaign = playedCampaign(facts, latest);
       const before = existing ?? startRun(campaign, runSeed(facts.profile.joinedAt, campaign));
       const keys = ctx.keys?.(campaign) ?? keysOf(campaign);
-      const result = move(campaign, keys, before, action.move);
+      // A voice-acting scene goes on once the student sent their recording of it (or it was accepted).
+      const dubSent = (exercise: string) =>
+        (facts.dubs ?? []).some((d) => d.exercise === exercise && (d.status === "submitted" || d.status === "approved"));
+      const result = move(campaign, keys, before, action.move, { dubSent });
       if (!result.ok) return refuse(result.refusal);
 
       const after = result.run;
@@ -388,7 +393,24 @@ function perform(facts: Facts, action: Action, ctx: Context): OpResult {
       for (const chapter of after.chapters.filter((id) => !before.chapters.includes(id)))
         effects.push({ type: "completion", kind: "chapter", ref: `${campaign.id}/${chapter}` });
       if (after.ending && !before.ending) effects.push({ type: "completion", kind: "ending", ref: campaign.id });
+      // A tap in a picture search is an answer too (it trains words): first taps feed the suggestions.
+      if (result.tapped && scene.kind === "search")
+        effects.push({
+          type: "answer",
+          scope: "story",
+          ref: campaign.id,
+          question: `${scene.id}:${result.tapped.spot}`,
+          // The same spot may be tapped wrong (out of order) and later right: each is its own attempt.
+          attempt:
+            facts.answers.filter((x) => x.scope === "story" && x.ref === campaign.id && x.question === `${scene.id}:${result.tapped!.spot}`)
+              .length + 1,
+          correct: result.tapped.correct,
+          skill: "vocabulary",
+        });
       for (const grant of result.grants) effects.push({ type: "ledger", ...grant });
+      // Free cosmetics the story gives, once each.
+      for (const item of result.items ?? [])
+        if (itemById.has(item) && !owns(facts, item)) effects.push({ type: "own", item, source: "story" });
 
       const sum = (currency: "xp" | "coins") => result.grants.filter((g) => g.currency === currency).reduce((n, g) => n + g.amount, 0);
       return done(effects, {
@@ -398,6 +420,8 @@ function perform(facts: Facts, action: Action, ctx: Context): OpResult {
         chapterDone: result.chapterDone,
         ending: after.ending && !before.ending ? after.ending : null,
         rewarded: { xp: sum("xp"), coins: sum("coins") },
+        ...(result.tapped ? { tapped: result.tapped } : {}),
+        ...(result.items?.length ? { items: result.items } : {}),
       });
     }
 

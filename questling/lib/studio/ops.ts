@@ -152,6 +152,7 @@ export function studioRun(facts: StudioFacts, action: StudioAction, ctx: StudioC
       if (due !== null && (typeof due !== "string" || Number.isNaN(Date.parse(due)) || Date.parse(due) <= ctx.now.getTime()))
         return refuse("invalid");
       let version: number | null = null;
+      let graph: Campaign | null = campaignById.get(action.campaign) ?? null;
       if (!campaignById.has(action.campaign)) {
         // A teacher's own quest: a published version, the one named or the latest.
         const own = facts.quests.find((q) => q.slug === action.campaign);
@@ -161,6 +162,26 @@ export function studioRun(facts: StudioFacts, action: StudioAction, ctx: StudioC
         const chosen = action.version ? published.find((v) => v.version === action.version) : published.at(-1);
         if (!chosen) return refuse("not_published");
         version = chosen.version;
+        graph = chosen.graph;
+      }
+      // The voice-acting scenes the campaign uses go to the group with it (their latest published version).
+      const dubAssignments: StudioEffect[] = [];
+      for (const scene of graph?.chapters.flatMap((c) => c.scenes) ?? []) {
+        if (scene.kind !== "dub") continue;
+        const exercise = (facts.dubs ?? []).find((d) => d.slug === scene.exercise);
+        const published = exercise?.versions.filter((v) => v.status === "published").at(-1);
+        if (!exercise || !published) return refuse("not_published");
+        const existingDub = (facts.dubAssignments ?? []).find((a) => a.groupId === found.id && a.exercise === exercise.slug);
+        dubAssignments.push({
+          type: "dub.assign",
+          assignment: {
+            id: existingDub?.id ?? ctx.newId(),
+            groupId: found.id,
+            exercise: exercise.slug,
+            version: published.version,
+            dueAt: null,
+          },
+        });
       }
       const existing = facts.assignments.find((a) => a.groupId === found.id && a.campaign === action.campaign);
       const id = existing?.id ?? ctx.newId();
@@ -171,6 +192,7 @@ export function studioRun(facts: StudioFacts, action: StudioAction, ctx: StudioC
             assignment: { id, groupId: found.id, campaign: action.campaign, version, dueAt: due && new Date(due).toISOString() },
           },
           audit("assignment.set", id),
+          ...dubAssignments,
         ],
         { kind: "ok", id },
       );
@@ -263,6 +285,21 @@ export function studioRun(facts: StudioFacts, action: StudioAction, ctx: StudioC
       for (const scene of parsed.campaign.chapters.flatMap((c) => c.scenes))
         if ("audio" in scene && scene.audio && !facts.media.some((m) => m.id === scene.audio))
           problems.push(`${scene.id}: its recording is not one of yours`);
+      // A voice-acting scene must be one of the teacher's own, published (students play that version).
+      for (const scene of parsed.campaign.chapters.flatMap((c) => c.scenes))
+        if (
+          scene.kind === "dub" &&
+          !(facts.dubs ?? []).some((d) => d.slug === scene.exercise && !d.archivedAt && d.versions.some((v) => v.status === "published"))
+        )
+          problems.push(`${scene.id}: choose one of your published voice-acting scenes`);
+      // A teacher's own picture for a search needs storage, not connected in this build's checks yet.
+      for (const scene of parsed.campaign.chapters.flatMap((c) => c.scenes))
+        if (
+          scene.kind === "search" &&
+          !scene.picture.startsWith("/") &&
+          !(facts.objects ?? []).some((o) => o.id === scene.picture && o.kind === "image")
+        )
+          problems.push(`${scene.id}: its picture is not one of yours`);
       if (problems.length) return refuse("invalid_graph", problems);
       return done([
         { type: "version.publish", questId: found.id, version: draft.version },

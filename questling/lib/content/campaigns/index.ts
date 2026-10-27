@@ -1,13 +1,13 @@
 import type { Campaign, Clue } from "@/lib/story/graph";
 import { echoTower } from "./echo-tower";
-import { forgottenAcademy } from "./forgotten-academy";
+import { forgottenAcademy, forgottenAcademyV1 } from "./forgotten-academy";
 
 // Every campaign, in the order the map shows them. A campaign keeps each version it was
 // published in: a run plays the version it started on (lib/story/graph.ts), so an old version
 // stays here until no run uses it. Answer keys: ./keys.ts.
 
 /** Every version of every campaign. */
-const published: Campaign[] = [forgottenAcademy, echoTower];
+const published: Campaign[] = [forgottenAcademyV1, forgottenAcademy, echoTower];
 
 const byVersion = new Map(published.map((campaign) => [`${campaign.id}@${campaign.version}`, campaign]));
 

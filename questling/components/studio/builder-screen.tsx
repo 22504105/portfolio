@@ -37,6 +37,9 @@ const PALETTE: { section: "story" | "exercises" | "logic"; kind: PaletteKind | "
   { section: "story", kind: "narration", icon: "castle", tone: "text-tertiary" },
   { section: "story", kind: "dialogue", icon: "forum", tone: "text-secondary" },
   { section: "story", kind: "clue", icon: "mail", tone: "text-primary" },
+  { section: "story", kind: "talk", icon: "record_voice_over", tone: "text-secondary" },
+  { section: "story", kind: "search", icon: "image_search", tone: "text-primary" },
+  { section: "story", kind: "dub", icon: "mic", tone: "text-status-error" },
   { section: "exercises", kind: "question", icon: "quiz", tone: "text-primary" },
   { section: "exercises", kind: "fill", icon: "edit_note", tone: "text-text-ivory" },
   { section: "exercises", kind: "puzzle", icon: "swap_horiz", tone: "text-text-ivory" },
@@ -55,6 +58,9 @@ const KIND_ICON: Record<Scene["kind"], string> = {
   question: "quiz",
   puzzle: "swap_horiz",
   evidence: "fact_check",
+  talk: "record_voice_over",
+  search: "image_search",
+  dub: "mic",
   ending: "flag",
 };
 
@@ -576,7 +582,11 @@ function Builder({ quest }: { quest: Quest }) {
                       ? s.question
                       : s.kind === "dialogue"
                         ? s.lines[0]?.text
-                        : s.text;
+                        : s.kind === "talk"
+                          ? s.lines.find((l) => l.id === s.start)?.text
+                          : s.kind === "search"
+                            ? s.task
+                            : s.text;
                 const badge = mine.length
                   ? t.builder.problemTag
                   : s.id === start

@@ -13,6 +13,7 @@ import { locate, sceneProgress, runSeed, startRun, type Move } from "@/lib/story
 import { puzzleNode, questHref, questionNode, sceneGlosses } from "@/lib/student/story";
 import { PuzzleScreen } from "./puzzle-screen";
 import { ChapterDoneScreen, ChoiceScreen, DialogueScreen, EndingScreen, NarrationScreen, type Frame } from "./story-scenes";
+import { DubStoryScreen, SearchScreen, TalkScreen } from "./story-extra";
 import { StoryPlayer, type Help } from "./story-player";
 
 // The story player route: the scene the student's run is at, of whatever kind, played through
@@ -54,7 +55,12 @@ export function PlayScreen({ campaignId }: { campaignId?: string }) {
   if (!campaign || !run || !target) return <div className="bg-background min-h-dvh" aria-busy="true"></div>;
 
   const shownScene = shown ? locate(campaign, shown)?.scene : undefined;
-  const holding = shown !== target && !!shownScene && isGraded(shownScene) && sceneProgress(run, shownScene.id).solved;
+  // A solved picture search stays too, with what was found and its reward, until "next".
+  const holding =
+    shown !== target &&
+    !!shownScene &&
+    ((isGraded(shownScene) && sceneProgress(run, shownScene.id).solved) ||
+      (shownScene.kind === "search" && run.visited.includes(shownScene.id)));
   // Following the run: React allows this update during render, it settles at once.
   if (!holding && shown !== target) setShown(target);
   const interlude = !holding && !run.ending ? (run.chapters.find((c) => !seen.includes(c)) ?? null) : null;
@@ -174,6 +180,48 @@ export function PlayScreen({ campaignId }: { campaignId?: string }) {
             prompt={tr(scene.prompt, locale)}
             options={scene.options.map((o) => ({ id: o.id, label: o.label, gloss: tr(o.gloss, locale), icon: o.icon }))}
             onChoose={(option) => pass({ type: "choose", scene: scene.id, option })}
+          />
+        );
+      case "talk":
+        return (
+          <TalkScreen
+            key={scene.id}
+            {...common}
+            scene={scene}
+            run={run}
+            onSay={(response) => pass({ type: "say", scene: scene.id, response })}
+          />
+        );
+      case "search":
+        return (
+          <SearchScreen
+            key={scene.id}
+            {...common}
+            scene={scene}
+            run={run}
+            onTap={async (spot) => {
+              setError(false);
+              try {
+                const outcome = await send({ type: "tap", scene: scene.id, spot });
+                return outcome.tapped ?? null;
+              } catch {
+                setError(true);
+                return null;
+              }
+            }}
+            onNext={next}
+          />
+        );
+      case "dub":
+        return (
+          <DubStoryScreen
+            key={scene.id}
+            {...common}
+            exercise={scene.exercise}
+            text={scene.text}
+            translation={tr(scene.translation, locale)}
+            optional={scene.optional}
+            onNext={() => pass({ type: "advance", scene: scene.id })}
           />
         );
       case "ending": {
