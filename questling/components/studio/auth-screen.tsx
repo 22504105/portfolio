@@ -65,6 +65,10 @@ export function AuthScreen({ locale, mode: initial }: { locale: Locale; mode: Mo
         router.push(`/${locale}/studio`);
       } else if (mode === "signup") {
         const { ok, data } = await post("signup", { email, password, name, locale });
+        if (ok && data.status === "signed_in") {
+          keepStudioSession({ token: data.token as string, expiresAt: data.expiresAt as number });
+          return router.push(`/${locale}/studio`);
+        }
         setMessage(ok ? { ok: true, text: fill(t.auth.confirmEmail, { email }) } : failure(data));
         if (ok) setMode("signin");
       } else if (mode === "recover") {

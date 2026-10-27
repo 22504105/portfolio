@@ -162,7 +162,7 @@ const ROUTES: Record<string, [Route, Limit?]> = {
 
   // A new teacher: Supabase emails a confirmation link back to the studio's sign-in page.
   "POST studio/signup": [
-    async ({ request }) => {
+    async ({ request, db }) => {
       requireTeacherAuth();
       const input = await body(request);
       const name = typeof input.name === "string" ? input.name.trim() : "";
@@ -175,7 +175,11 @@ const ROUTES: Record<string, [Route, Limit?]> = {
       );
       if (!result.ok)
         throw new RequestError(result.reason, result.reason === "unavailable" ? 502 : result.reason === "rate_limited" ? 429 : 409);
-      return { status: "confirm_email" };
+      // With "Confirm email" off in Supabase the account is confirmed at once: sign the teacher in.
+      if (!result.account.confirmed) return { status: "confirm_email" };
+      const userId = await signInTeacher(db, result.account);
+      const session = issueSession(userId, serverEnv().sessionSecret);
+      return { status: "signed_in", token: session.token, expiresAt: session.expiresAt };
     },
     { scope: "studio-signup", by: "address", max: 5, seconds: 3600 },
   ],
