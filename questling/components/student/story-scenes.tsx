@@ -9,6 +9,8 @@ import { PronounceButton } from "./pronounce-button";
 import { LineAudioButton } from "./line-audio";
 import { useMediaLink } from "@/lib/client/student";
 import { BackHeader } from "./back-header";
+import type { GlossView } from "@/lib/learning/gloss";
+import { GlossedText } from "./glossed-text";
 import { Parchment, SceneImage, StoryHeading } from "./story-player";
 
 // The scenes that are read rather than graded: narration, dialogue, a choice, a chapter's end and
@@ -18,9 +20,18 @@ import { Parchment, SceneImage, StoryHeading } from "./story-player";
 
 export type Frame = { chapter: string; cefr: string; storyTitle: string; location: string; image: string };
 
-type Common = { t: Dictionary; frame: Frame; backHref: string; profileHref: string; pending: boolean; error: boolean };
+export type Common = {
+  t: Dictionary;
+  frame: Frame;
+  backHref: string;
+  profileHref: string;
+  pending: boolean;
+  error: boolean;
+  /** Word help on the scene's English texts (lib/learning/gloss.ts). */
+  glosses?: GlossView[];
+};
 
-function Page({
+export function Page({
   t,
   frame,
   backHref,
@@ -42,7 +53,7 @@ function Page({
   );
 }
 
-function GoldButton({
+export function GoldButton({
   label,
   onClick,
   disabled,
@@ -70,7 +81,7 @@ function GoldButton({
   );
 }
 
-function Failed({ t, error }: { t: Dictionary; error: boolean }) {
+export function Failed({ t, error }: { t: Dictionary; error: boolean }) {
   return error ? (
     <p role="alert" className="mt-space-sm font-caption text-caption text-status-error text-center">
       {t.common.actionFailed}
@@ -78,7 +89,7 @@ function Failed({ t, error }: { t: Dictionary; error: boolean }) {
   ) : null;
 }
 
-function TranslationToggle({ t, open, onToggle }: { t: Dictionary; open: boolean; onToggle: () => void }) {
+export function TranslationToggle({ t, open, onToggle }: { t: Dictionary; open: boolean; onToggle: () => void }) {
   return (
     <button
       type="button"
@@ -167,7 +178,7 @@ export function NarrationScreen({
   const [open, setOpen] = useState(false);
   return (
     <Page {...common} kind="narration">
-      <Parchment text={text} />
+      <Parchment text={text} glosses={common.glosses} />
       <SceneRecording text={text} audioId={audio} label={t.player.listen} />
       {open ? (
         <p className="px-margin mb-space-md font-body-md text-body-md text-on-surface-variant -mt-2 text-center">{translation}</p>
@@ -208,7 +219,9 @@ export function DialogueScreen({
               <span className="font-caption text-caption text-primary font-semibold tracking-wider uppercase">✦ {line.speaker}</span>
               <PronounceButton word={line.text} label={fill(t.player.listenLine, { speaker: line.speaker })} />
             </div>
-            <p className="font-georgia text-title-sm text-text-ivory leading-snug italic">“{line.text}”</p>
+            <p lang="en" className="font-georgia text-title-sm text-text-ivory leading-snug italic">
+              “<GlossedText text={line.text} glosses={common.glosses?.filter((g) => g.field === `line:${i}`)} />”
+            </p>
             {open ? <p className="font-caption text-caption text-text-muted">{line.translation}</p> : null}
           </div>
         ))}
@@ -244,7 +257,7 @@ export function ChoiceScreen({
   const [open, setOpen] = useState(false);
   return (
     <Page {...common} kind="choice">
-      <Parchment text={text} />
+      <Parchment text={text} glosses={common.glosses} />
       {open ? (
         <p className="px-margin mb-space-md font-body-md text-body-md text-on-surface-variant -mt-2 text-center">{translation}</p>
       ) : null}
@@ -357,7 +370,7 @@ export function EndingScreen({
         <h2 className="font-headline-lg text-headline-lg text-text-ivory mt-2 leading-tight">{title}</h2>
         <p className="font-caption text-caption text-text-muted mt-1">{fill(t.story.endingOf, { total: endings })}</p>
       </div>
-      <Parchment text={text} />
+      <Parchment text={text} glosses={common.glosses} />
       {open ? (
         <p className="px-margin mb-space-md font-body-md text-body-md text-on-surface-variant -mt-2 text-center">{translation}</p>
       ) : null}

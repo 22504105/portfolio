@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Icon } from "@/components/ui/icon";
 import { StudentProvider, type ActResult } from "@/lib/client/student";
+import { sendTake } from "@/lib/client/take-upload";
 import type { Facts } from "@/lib/game/facts";
 import type { Action, Outcome, Refusal } from "@/lib/game/ops";
 import { getDictionary, type Locale } from "@/lib/i18n";
@@ -227,12 +228,39 @@ export function LiveProvider({ locale, children }: { locale: Locale; children: R
     return "ok" as const;
   }, [session]);
 
+  // Large media: signed links from the server; a take goes up in three steps (ask, PUT to storage, confirm).
+  const media = useMemo(() => {
+    const post = (path: string, body: unknown) =>
+      session
+        ? fetch(`/api/v1/${path}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.token}` },
+            body: JSON.stringify(body),
+          }).catch(() => null)
+        : Promise.resolve(null);
+    return {
+      link: async (id: string) => {
+        const response = await post("media/link", { id });
+        if (!response?.ok) return null;
+        return ((await response.json()) as { url: string }).url;
+      },
+      uploadTake: async (exercise: string, line: string, take: { blob: Blob; mime: string }) => {
+        const sent = await sendTake(post, fetch, { exercise, line, blob: take.blob, mime: take.mime });
+        if (!sent.ok) return sent;
+        // The take is in the submission now: read the record again.
+        const state = await fetch("/api/v1/state", { headers: { Authorization: `Bearer ${session!.token}` } }).catch(() => null);
+        if (state?.ok) setFacts(((await state.json()) as { facts: Facts }).facts);
+        return { ok: true as const };
+      },
+    };
+  }, [session]);
+
   const api = useMemo(
     () =>
       facts && account
-        ? { mode: "live" as const, locale, t, base: `/${locale}/app`, facts, account, act, join, downloadData, deleteData }
+        ? { mode: "live" as const, locale, t, base: `/${locale}/app`, facts, account, act, join, downloadData, deleteData, media }
         : null,
-    [facts, account, locale, t, act, join, downloadData, deleteData],
+    [facts, account, locale, t, act, join, downloadData, deleteData, media],
   );
 
   if (status === "ready" && api)

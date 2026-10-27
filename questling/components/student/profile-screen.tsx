@@ -7,6 +7,7 @@ import { dayOf } from "@/lib/game/time";
 import { fill, plural } from "@/lib/i18n";
 import { xpPercent } from "@/lib/student/home";
 import { profileView } from "@/lib/student/profile";
+import { dueCards } from "@/lib/learning/vocab";
 import { BottomNav } from "./bottom-nav";
 import { HeroFigure } from "./hero-figure";
 
@@ -17,7 +18,7 @@ import { HeroFigure } from "./hero-figure";
 // figures are demo data is shown in the demo only. The pencil opens the hero choice (12).
 // Tailwind v3 → v4 renames: shadow-sm → shadow-xs, blur-sm → blur-xs.
 
-type QuickLinkIcon = "checkroom" | "backpack" | "account_balance" | "settings";
+type QuickLinkIcon = "checkroom" | "backpack" | "account_balance" | "settings" | "translate";
 
 const skillTones = {
   primary: { badge: "bg-primary/10 text-primary", value: "text-primary", bar: "bg-primary shadow-[0_0_6px_rgba(228,194,133,0.4)]" },
@@ -36,7 +37,8 @@ const skillTones = {
 
 export function ProfileScreen() {
   const { t, locale, base, facts, account, mode } = useStudent();
-  const view = profileView(facts, locale, t, account, dayOf(useNow()));
+  const today = dayOf(useNow());
+  const view = profileView(facts, locale, t, account, today);
   const { telegram, group } = view.account;
   return (
     <div data-scope="profile" className="bg-background text-text-ivory flex min-h-dvh flex-col">
@@ -216,6 +218,16 @@ export function ProfileScreen() {
             <div className="gap-space-xs flex flex-col">
               <QuickLink href={`${base}/wardrobe`} icon="checkroom" title={t.profile.wardrobe} note={view.wardrobeNote} />
               <QuickLink href={`${base}/inventory`} icon="backpack" title={t.profile.inventory} note={view.inventoryNote} />
+              <QuickLink
+                href={`${base}/words`}
+                icon="translate"
+                title={t.words.link}
+                note={
+                  facts.vocab.length
+                    ? fill(t.words.linkNote, { n: facts.vocab.length, due: dueCards(facts, today).length })
+                    : t.words.linkEmpty
+                }
+              />
               {/* The group screen is part of Teacher Studio (Gate 4): the row says which group, and opens nothing yet. */}
               <QuickLink
                 icon="account_balance"

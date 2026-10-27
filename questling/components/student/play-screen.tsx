@@ -9,10 +9,11 @@ import type { Outcome } from "@/lib/game/ops";
 import { campaignFinished, campaignOpen, completed, currentChapter, playedCampaign, runOf } from "@/lib/game/stats";
 import { findCampaign, studentCampaigns, worldOf } from "@/lib/game/world";
 import { isGraded, type Campaign } from "@/lib/story/graph";
-import { locate, sceneProgress, startRun, type Move } from "@/lib/story/run";
-import { puzzleNode, questHref, questionNode } from "@/lib/student/story";
+import { locate, sceneProgress, runSeed, startRun, type Move } from "@/lib/story/run";
+import { puzzleNode, questHref, questionNode, sceneGlosses } from "@/lib/student/story";
 import { PuzzleScreen } from "./puzzle-screen";
 import { ChapterDoneScreen, ChoiceScreen, DialogueScreen, EndingScreen, NarrationScreen, type Frame } from "./story-scenes";
+import { DubStoryScreen, SearchScreen, TalkScreen } from "./story-extra";
 import { StoryPlayer, type Help } from "./story-player";
 
 // The story player route: the scene the student's run is at, of whatever kind, played through
@@ -35,7 +36,7 @@ export function PlayScreen({ campaignId }: { campaignId?: string }) {
   const latest = id ? (findCampaign(facts, id) ?? undefined) : undefined;
   const open = latest ? campaignOpen(facts, latest) : false;
   const campaign = latest && open ? playedCampaign(facts, latest) : null;
-  const run = campaign ? (runOf(facts, campaign.id) ?? startRun(campaign)) : null;
+  const run = campaign ? (runOf(facts, campaign.id) ?? startRun(campaign, runSeed(facts.profile.joinedAt, campaign))) : null;
   const target = run ? (run.ending ?? run.scene) : null;
 
   // What is on screen is worked out from the run, never from the timing of an answer's reply:
@@ -54,7 +55,12 @@ export function PlayScreen({ campaignId }: { campaignId?: string }) {
   if (!campaign || !run || !target) return <div className="bg-background min-h-dvh" aria-busy="true"></div>;
 
   const shownScene = shown ? locate(campaign, shown)?.scene : undefined;
-  const holding = shown !== target && !!shownScene && isGraded(shownScene) && sceneProgress(run, shownScene.id).solved;
+  // A solved picture search stays too, with what was found and its reward, until "next".
+  const holding =
+    shown !== target &&
+    !!shownScene &&
+    ((isGraded(shownScene) && sceneProgress(run, shownScene.id).solved) ||
+      (shownScene.kind === "search" && run.visited.includes(shownScene.id)));
   // Following the run: React allows this update during render, it settles at once.
   if (!holding && shown !== target) setShown(target);
   const interlude = !holding && !run.ending ? (run.chapters.find((c) => !seen.includes(c)) ?? null) : null;
@@ -130,7 +136,7 @@ export function PlayScreen({ campaignId }: { campaignId?: string }) {
       );
     }
 
-    const common = { t, frame, backHref, profileHref, pending, error };
+    const common = { t, frame, backHref, profileHref, pending, error, glosses: sceneGlosses(campaign, chapter, scene, locale) };
     const clueTitle = (clue?: string) => {
       const found = clue ? campaign.clues.find((c) => c.id === clue) : null;
       return found ? tr(found.title, locale) : null;
@@ -176,6 +182,48 @@ export function PlayScreen({ campaignId }: { campaignId?: string }) {
             onChoose={(option) => pass({ type: "choose", scene: scene.id, option })}
           />
         );
+      case "talk":
+        return (
+          <TalkScreen
+            key={scene.id}
+            {...common}
+            scene={scene}
+            run={run}
+            onSay={(response) => pass({ type: "say", scene: scene.id, response })}
+          />
+        );
+      case "search":
+        return (
+          <SearchScreen
+            key={scene.id}
+            {...common}
+            scene={scene}
+            run={run}
+            onTap={async (spot) => {
+              setError(false);
+              try {
+                const outcome = await send({ type: "tap", scene: scene.id, spot });
+                return outcome.tapped ?? null;
+              } catch {
+                setError(true);
+                return null;
+              }
+            }}
+            onNext={next}
+          />
+        );
+      case "dub":
+        return (
+          <DubStoryScreen
+            key={scene.id}
+            {...common}
+            exercise={scene.exercise}
+            text={scene.text}
+            translation={tr(scene.translation, locale)}
+            optional={scene.optional}
+            onNext={() => pass({ type: "advance", scene: scene.id })}
+          />
+        );
       case "ending": {
         const following = studentCampaigns(facts).find((c) => c.requires === campaign.id);
         return (
@@ -187,6 +235,7 @@ export function PlayScreen({ campaignId }: { campaignId?: string }) {
             profileHref={profileHref}
             title={tr(scene.title, locale)}
             tone={scene.tone}
+            glosses={common.glosses}
             text={scene.text}
             translation={tr(scene.translation, locale)}
             endings={campaign.chapters.flatMap((c) => c.scenes).filter((s) => s.kind === "ending").length}

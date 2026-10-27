@@ -28,6 +28,7 @@ const REFUSAL_STATUS: Record<StudioRefusal, number> = {
   no_draft: 409,
   not_published: 409,
   invalid_graph: 422,
+  not_submitted: 409,
 };
 
 /** Readable invite codes: no 0/O or 1/I to mistake when typing one in. */
@@ -71,7 +72,13 @@ const cefr = z.enum(["A1", "A2", "B1", "B2", "C1"]);
 const short = z.string().max(200);
 const actionSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("createGroup"), name: short, cefr }),
-  z.object({ type: z.literal("updateGroup"), groupId: uuid, name: short.optional(), cefr: cefr.optional() }),
+  z.object({
+    type: z.literal("updateGroup"),
+    groupId: uuid,
+    name: short.optional(),
+    cefr: cefr.optional(),
+    recommend: z.boolean().optional(),
+  }),
   z.object({ type: z.literal("archiveGroup"), groupId: uuid, archived: z.boolean() }),
   z.object({ type: z.literal("renewInvite"), groupId: uuid }),
   z.object({ type: z.literal("removeMember"), groupId: uuid, userId: uuid }),
@@ -98,6 +105,19 @@ const actionSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("setDaily"), groupId: uuid, day: z.string().max(10), content: z.unknown() }),
   z.object({ type: z.literal("clearDaily"), entryId: uuid }),
   z.object({ type: z.literal("replyHelp"), userId: uuid, ref: z.string().max(120), body: z.string().max(1000) }),
+  z.object({ type: z.literal("createDub"), title: short, cefr }),
+  z.object({ type: z.literal("saveDub"), exerciseId: uuid, content: z.unknown() }),
+  z.object({ type: z.literal("publishDub"), exerciseId: uuid }),
+  z.object({ type: z.literal("archiveDub"), exerciseId: uuid, archived: z.boolean() }),
+  z.object({ type: z.literal("assignDub"), groupId: uuid, exerciseId: uuid, dueAt: z.string().max(40).nullable().optional() }),
+  z.object({ type: z.literal("unassignDub"), assignmentId: uuid }),
+  z.object({
+    type: z.literal("reviewDub"),
+    submissionId: uuid,
+    decision: z.enum(["approve", "retry"]),
+    feedback: z.string().max(1000).optional(),
+    rubric: z.record(z.string().max(20), z.string().max(10)).nullable().optional(),
+  }),
 ]);
 
 export async function studioAct(

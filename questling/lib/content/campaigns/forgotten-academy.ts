@@ -1,4 +1,5 @@
-import type { Campaign, Clue, Grimoire } from "@/lib/story/graph";
+import type { Campaign, Clue, Grimoire, Scene } from "@/lib/story/graph";
+import { withGlosses } from "@/lib/story/glosses";
 import type { Text } from "../text";
 
 // Campaign 1, "Забытая академия" (A1–A2): an investigation in three chapters. Chapter II branches
@@ -221,7 +222,7 @@ const clues: Clue[] = [
   },
 ];
 
-export const forgottenAcademy: Campaign = {
+const authored: Campaign = {
   id: "forgotten-academy",
   version: 1,
   title: t("Забытая академия", "The Forgotten Academy"),
@@ -927,3 +928,171 @@ export const forgottenAcademy: Campaign = {
     },
   ],
 };
+
+// Word help on the English texts (lib/learning/gloss.ts), placed by the words it marks.
+/** Version 1, as first published: runs begun on it keep playing it. */
+export const forgottenAcademyV1 = withGlosses(authored, {
+  "p-arrive": [
+    { phrase: "Forgotten", ru: "забытая", definition: "not remembered any more", cefr: "A2" },
+    { phrase: "Inside", ru: "внутри", cefr: "A1" },
+  ],
+  "p-greet": [
+    {
+      field: "line:0",
+      phrase: "archivist",
+      ru: "архивариус, хранитель архива",
+      definition: "a person who looks after old books and papers",
+      note: { ru: "Так зовут должность Элеоноры: она хранит книги академии.", en: "Eleanor's job: she looks after the academy's books." },
+      cefr: "B1",
+    },
+  ],
+  "prologue-1": [{ phrase: "quiet", ru: "тихий", definition: "making very little noise", example: "Please be quiet.", cefr: "A1" }],
+  "tower-1": [
+    { phrase: "seal", ru: "печать", definition: "a mark pressed into wax to close a letter", cefr: "B1" },
+    { phrase: "crescent moon", ru: "полумесяц", example: "A crescent moon hung over the tower.", cefr: "B1" },
+  ],
+  "tower-2": [
+    {
+      phrase: "never shines",
+      ru: "никогда не светит",
+      note: { ru: "Never — «никогда»: в комнате нет лунного света.", en: "Never: the moon's light does not reach that room." },
+      cefr: "A2",
+    },
+  ],
+  "tower-4": [
+    { phrase: "only", ru: "только", cefr: "A1" },
+    { phrase: "midnight", ru: "полночь", example: "The clock strikes twelve at midnight.", cefr: "A2", answer: true },
+  ],
+});
+
+/**
+ * Version 2 (features gate E): on the forest path, a search in the picture (the rune stone with an R,
+ * then the glowing mushrooms beside it; a glow sprite for finding both) and a talk with the forest
+ * spirit, where the owl's note opens a line of its own. New runs play this version.
+ */
+export const forgottenAcademy: Campaign = (() => {
+  const c = structuredClone(forgottenAcademyV1);
+  c.version = 2;
+  const chapter = c.chapters.find((ch) => ch.id === "forest")!;
+  const search: Scene = {
+    kind: "search",
+    id: "f-search",
+    location: forest,
+    image: "/images/forest.webp",
+    task: "Find the rune stone with the letter R, then the glowing mushrooms next to it.",
+    translation: t(
+      "Найди рунный камень с буквой R, а потом светящиеся грибы рядом с ним.",
+      "Find the stone with an R on it, then the glowing mushrooms beside it.",
+    ),
+    picture: "/images/forest.webp",
+    spots: [
+      {
+        id: "stone-r",
+        label: "the stone with K, O, R",
+        gloss: t("камень с рунами K, O, R", "the stone with K, O, R"),
+        x: 0.19,
+        y: 0.43,
+        w: 0.08,
+        h: 0.34,
+        found: t("Руна R светится под пальцами.", "The R rune glows under your fingers."),
+      },
+      {
+        id: "mushrooms",
+        label: "the glowing mushrooms",
+        gloss: t("светящиеся грибы", "the glowing mushrooms"),
+        x: 0.255,
+        y: 0.71,
+        w: 0.07,
+        h: 0.08,
+        found: t("Грибы вспыхивают — из них вылетает светлячок!", "The mushrooms flare up — a glow sprite flies out!"),
+      },
+      {
+        id: "stone-p",
+        label: "the stone with P, O, P",
+        gloss: t("камень с рунами P, O, P", "the stone with P, O, P"),
+        x: 0.715,
+        y: 0.47,
+        w: 0.07,
+        h: 0.3,
+        found: t("", ""),
+      },
+      {
+        id: "path",
+        label: "the misty path",
+        gloss: t("туманная тропа", "the misty path"),
+        x: 0.43,
+        y: 0.68,
+        w: 0.14,
+        h: 0.28,
+        found: t("", ""),
+      },
+      { id: "ferns", label: "the ferns", gloss: t("папоротник", "the ferns"), x: 0.79, y: 0.73, w: 0.15, h: 0.2, found: t("", "") },
+    ],
+    hint: t("Буква R есть только на одном камне — на том, что слева.", "Only one stone has an R: the one on the left."),
+    xp: 20,
+    item: "sprite",
+  };
+  const talk: Scene = {
+    kind: "talk",
+    id: "f-ask",
+    location: forest,
+    image: "/images/forest-spirit.webp",
+    character: { name: t("Дух леса", "The forest spirit"), image: "/images/forest-spirit.webp" },
+    start: "why",
+    lines: [
+      {
+        id: "why",
+        text: "Before my riddle, tell me: why did you come to the forest?",
+        translation: t("Прежде чем загадать загадку, скажи: зачем ты пришёл в лес?", "Before the riddle: why are you here?"),
+        responses: [
+          {
+            id: "letter",
+            text: "I want to know who wrote the letter.",
+            gloss: t("Я хочу узнать, кто написал письмо.", "To learn who wrote the letter."),
+            to: "letter",
+          },
+          { id: "lost", text: "I think I am lost.", gloss: t("Кажется, я заблудился.", "I do not know where I am."), to: "lost" },
+        ],
+      },
+      {
+        id: "letter",
+        text: "Many people write letters. What did yours say?",
+        translation: t("Письма пишут многие. Что было в твоём?", "Lots of people write letters. What was in yours?"),
+        responses: [
+          {
+            id: "owl",
+            text: "It said: trust the owl, not the crown.",
+            gloss: t("Там было: верь сове, а не короне.", "Trust the owl, not the crown."),
+            to: "owl",
+            when: { clue: "owl-note" },
+            set: ["owl-trust"],
+          },
+          { id: "forgot", text: "I don't remember, sorry.", gloss: t("Не помню, простите.", "I forgot."), to: "end" },
+        ],
+      },
+      {
+        id: "owl",
+        text: "Then you are wiser than the king's men. Listen well to my riddle.",
+        translation: t(
+          "Значит, ты мудрее людей короля. Слушай мою загадку внимательно.",
+          "You are wiser than the king's men. Listen well.",
+        ),
+        responses: [{ id: "ready", text: "Thank you. I am ready.", gloss: t("Спасибо. Я готов.", "I am ready."), to: "end" }],
+      },
+      {
+        id: "lost",
+        text: "Nobody is lost in my forest. Follow the path, and answer my riddle.",
+        translation: t(
+          "В моём лесу никто не теряется. Иди по тропе и отвечай на загадку.",
+          "No one is lost here. Follow the path and answer.",
+        ),
+        responses: [{ id: "ok", text: "All right. Ask me.", gloss: t("Хорошо. Спрашивай.", "Go on."), to: "end" }],
+      },
+    ],
+    xp: 15,
+  };
+  const at = (id: string) => chapter.scenes.findIndex((x) => x.id === id);
+  chapter.scenes.splice(at("f-spirit"), 0, search);
+  chapter.scenes.splice(at("f-riddle"), 0, talk);
+  return c;
+})();

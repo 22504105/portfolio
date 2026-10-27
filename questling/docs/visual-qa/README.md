@@ -186,3 +186,17 @@ appear nowhere else and change no block of an approved screen; a speaker's icon 
   own picture, as in the journal.
 - Playing a quick quest and the settings screen have no export: both are built only from parts of
   approved screens (owner's rule), listed in the components' headers.
+
+## Teacher Studio on a phone (2026-10-26)
+
+The approved studio designs are desktop only; the phone layout reuses their parts, nothing new.
+Checked by `e2e/studio-mobile.spec.ts` (no sideways scroll at 360/390/430 on every studio screen,
+drawer, search, builder tabs, axe). Desktop (`lg` and up) is unchanged.
+
+- The sidebar becomes a drawer from a menu button in the header (below `lg`); a tap on a section,
+  the backdrop or Escape closes it.
+- The header search folds into an icon below `md`; the breadcrumb hides, the title truncates.
+- The builder's three columns (palette, scenes, properties) become tabs; adding a scene from the
+  palette opens its properties.
+- Wide tables keep their columns (min 560px) and scroll sideways inside their card.
+- The demo badge moves to the bottom right corner in the studio, off the header buttons.

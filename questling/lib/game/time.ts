@@ -36,3 +36,6 @@ export function msUntilNextDay(now: Date): number {
   const nextMidnightUtc = (today + 1) * 86_400_000 - 3 * 3_600_000;
   return Math.max(0, nextMidnightUtc - now.getTime());
 }
+
+/** The day `n` days after `day` (before, when negative). */
+export const addDays = (day: string, n: number): string => dayFromNumber(dayNumber(day) + n);

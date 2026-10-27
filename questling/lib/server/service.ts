@@ -1,5 +1,5 @@
 import "server-only";
-import { randomInt } from "node:crypto";
+import { randomInt, randomUUID } from "node:crypto";
 import { z } from "zod";
 import { applyEffects, type Facts } from "@/lib/game/facts";
 import { run, type Action, type Outcome, type Refusal } from "@/lib/game/ops";
@@ -8,6 +8,8 @@ import type { Account } from "@/lib/student/profile";
 import type { Db } from "./db";
 import { loadFacts, persist } from "./store";
 import { joinGroup, loadWorld } from "./world-store";
+import { forgetStudentMedia } from "./media-store";
+import { storageConfigured } from "./storage";
 import type { TelegramUser } from "./telegram";
 
 // What a signed-in student can ask of the server. Every action runs the same rules as the demo
@@ -103,12 +105,30 @@ const actionSchema = z.discriminatedUnion("type", [
       z.object({ type: z.literal("choose"), scene: id, option: id }),
       z.object({ type: z.literal("answer"), scene: id, answer: z.union([id, z.array(z.string().max(40)).max(12)]) }),
       z.object({ type: z.literal("grimoire"), scene: id, word: z.string().min(1).max(40) }),
+      z.object({ type: z.literal("say"), scene: id, response: id }),
+      z.object({ type: z.literal("tap"), scene: id, spot: id }),
     ]),
   }),
   z.object({ type: z.literal("askMentor"), campaign: id, scene: id }),
   z.object({ type: z.literal("buy"), itemId: id }),
   z.object({ type: z.literal("saveLook"), equipped: z.partialRecord(slot, id.nullable()) }),
   z.object({ type: z.literal("openChest") }),
+  z.object({ type: z.literal("keepWord"), ref: z.string().min(1).max(120) }),
+  z.object({
+    type: z.literal("flagWord"),
+    ref: z.string().min(1).max(120),
+    favorite: z.boolean().optional(),
+    known: z.boolean().optional(),
+  }),
+  z.object({ type: z.literal("dropWord"), ref: z.string().min(1).max(120) }),
+  z.object({ type: z.literal("reviewWord"), ref: z.string().min(1).max(120), option: z.enum(["a", "b", "c", "d"]) }),
+  z.object({
+    type: z.literal("startDub"),
+    exercise: z.string().max(80),
+    role: z.string().max(40),
+    mode: z.enum(["listen", "voiceover", "roleplay"]),
+  }),
+  z.object({ type: z.literal("submitDub"), exercise: z.string().max(80) }),
 ]);
 
 export async function act(
@@ -134,6 +154,7 @@ export async function act(
     locale,
     demo: false,
     random: () => randomInt(1_000_000) / 1_000_000,
+    newId: randomUUID,
     // A teacher's campaign has its keys in the database; the built-in ones have their own.
     keys: (campaign) => keys.get(`${campaign.id}@${campaign.version}`) ?? null,
     dailyKeys: (id) => dailyKeys.get(id) ?? null,
@@ -154,6 +175,7 @@ const STUDENT_TABLES = [
   "inventory",
   "equipped",
   "story_runs",
+  "vocab",
   "group_members",
   "mentor_messages",
 ] as const;
@@ -178,6 +200,7 @@ export async function exportData(db: Db, userId: string): Promise<Record<string,
 export async function deleteStudent(db: Db, userId: string): Promise<void> {
   const teacher = await db.query("select 1 from questling.teachers where user_id = $1", [userId]);
   if (teacher.rowCount) throw new ServiceError("forbidden", 403);
+  if (storageConfigured()) await forgetStudentMedia(db, userId);
   const deleted = await db.query("delete from questling.users where id = $1", [userId]);
   if (deleted.rowCount === 0) throw new ServiceError("not_found", 404);
 }

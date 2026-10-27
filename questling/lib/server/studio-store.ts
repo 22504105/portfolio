@@ -21,7 +21,7 @@ export async function loadStudio(db: Db, teacherId: string): Promise<StudioFacts
   );
   if (teacher.rowCount === 0) return null;
   const groups = await db.query(
-    "select id, name, cefr, invite_code, created_at, archived_at from questling.groups where teacher_id = $1 order by created_at",
+    "select id, name, cefr, invite_code, created_at, archived_at, recommend from questling.groups where teacher_id = $1 order by created_at",
     [teacherId],
   );
   const groupIds = groups.rows.map((g) => g.id as string);
@@ -110,7 +110,10 @@ export async function loadStudio(db: Db, teacherId: string): Promise<StudioFacts
     [teacherId],
   );
 
+  const dubs = await loadDubs(db, teacherId, groupIds);
+
   return {
+    ...dubs,
     teacher: { userId: teacherId, displayName: teacher.rows[0].display_name, email: teacher.rows[0].email },
     groups: groups.rows.map((g) => ({
       id: g.id,
@@ -119,6 +122,7 @@ export async function loadStudio(db: Db, teacherId: string): Promise<StudioFacts
       inviteCode: g.invite_code,
       createdAt: iso(g.created_at),
       archivedAt: g.archived_at && iso(g.archived_at),
+      recommend: g.recommend,
     })),
     members,
     quests: quests.rows.map((q): Quest => ({
@@ -175,9 +179,19 @@ export async function persistStudio(db: Db, teacherId: string, effects: StudioEf
       case "group.update":
         await db.query(
           `update questling.groups set name = coalesce($3, name), cefr = coalesce($4, cefr), invite_code = coalesce($5, invite_code),
-             archived_at = case when $6::boolean is null then archived_at when $6 then $7 else null end
+             archived_at = case when $6::boolean is null then archived_at when $6 then $7 else null end,
+             recommend = coalesce($8, recommend)
            where id = $1 and teacher_id = $2`,
-          [effect.groupId, teacherId, effect.name ?? null, effect.cefr ?? null, effect.inviteCode ?? null, effect.archived ?? null, at],
+          [
+            effect.groupId,
+            teacherId,
+            effect.name ?? null,
+            effect.cefr ?? null,
+            effect.inviteCode ?? null,
+            effect.archived ?? null,
+            at,
+            effect.recommend ?? null,
+          ],
         );
         break;
       case "member.remove":
@@ -255,6 +269,88 @@ export async function persistStudio(db: Db, teacherId: string, effects: StudioEf
       case "daily.remove":
         await db.query("delete from questling.daily_entries where id = $1 and teacher_id = $2", [effect.entryId, teacherId]);
         break;
+      case "dub.create":
+        await db.query(
+          "insert into questling.dub_exercises (id, teacher_id, slug, title, cefr, created_at) values ($1, $2, $3, $4, $5, $6)",
+          [effect.exercise.id, teacherId, effect.exercise.slug, effect.exercise.title, effect.exercise.cefr, at],
+        );
+        break;
+      case "dub.update":
+        await db.query(
+          `update questling.dub_exercises set title = coalesce($3, title), cefr = coalesce($4, cefr),
+             archived_at = case when $5::boolean is null then archived_at when $5 then $6 else null end
+           where id = $1 and teacher_id = $2`,
+          [effect.exerciseId, teacherId, effect.title ?? null, effect.cefr ?? null, effect.archived ?? null, at],
+        );
+        break;
+      case "dub.saveDraft": {
+        const own = await db.query("update questling.dub_exercises set title = $3, cefr = $4 where id = $1 and teacher_id = $2", [
+          effect.exerciseId,
+          teacherId,
+          effect.content.title,
+          effect.content.cefr,
+        ]);
+        if (!own.rowCount) throw new Error("not this teacher's scene");
+        await db.query(
+          `insert into questling.dub_versions (exercise_id, version, status, content, updated_at) values ($1, $2, 'draft', $3, $4)
+           on conflict (exercise_id, version) do update set content = excluded.content, updated_at = excluded.updated_at`,
+          [effect.exerciseId, effect.version, JSON.stringify(effect.content), at],
+        );
+        break;
+      }
+      case "dub.publish":
+        await db.query(
+          `update questling.dub_versions v set status = 'published', published_at = $3, updated_at = $3
+             from questling.dub_exercises e where e.id = v.exercise_id and e.teacher_id = $2 and v.exercise_id = $1 and v.version = $4`,
+          [effect.exerciseId, teacherId, at, effect.version],
+        );
+        break;
+      case "dub.assign":
+        await db.query(
+          `insert into questling.dub_assignments (id, group_id, exercise_id, version, due_at, created_at)
+             select $1, g.id, e.id, $5, $6, $7 from questling.groups g, questling.dub_exercises e
+              where g.id = $2 and g.teacher_id = $3 and e.slug = $4 and e.teacher_id = $3
+           on conflict (group_id, exercise_id) do update set version = excluded.version, due_at = excluded.due_at`,
+          [
+            effect.assignment.id,
+            effect.assignment.groupId,
+            teacherId,
+            effect.assignment.exercise,
+            effect.assignment.version,
+            effect.assignment.dueAt,
+            at,
+          ],
+        );
+        break;
+      case "dub.unassign":
+        await db.query(
+          "delete from questling.dub_assignments a using questling.groups g where a.group_id = g.id and g.teacher_id = $2 and a.id = $1",
+          [effect.assignmentId, teacherId],
+        );
+        break;
+      case "dub.review": {
+        const reviewed = await db.query(
+          `update questling.dub_submissions s set status = $3, feedback = $4, rubric = $5, reviewed_at = $6, reviewer = $2
+             from questling.dub_exercises e where e.id = s.exercise_id and e.teacher_id = $2 and s.id = $1 and s.status = 'submitted'`,
+          [effect.submissionId, teacherId, effect.status, effect.feedback, effect.rubric ? JSON.stringify(effect.rubric) : null, at],
+        );
+        if (!reviewed.rowCount) throw new Error("submission not reviewable");
+        // The XP the scene promises, once: the ledger's unique key refuses a second grant.
+        if (effect.grant) {
+          await db.query(
+            "insert into questling.ledger (user_id, currency, amount, key, reason, at) values ($1, 'xp', $2, $3, 'dub', $4) on conflict do nothing",
+            [effect.grant.userId, effect.grant.xp, effect.grant.key, at],
+          );
+          await db.query("insert into questling.completions (user_id, kind, ref, at) values ($1, 'dub', $2, $3) on conflict do nothing", [
+            effect.grant.userId,
+            effect.grant.key.slice(4),
+            at,
+          ]);
+        }
+        break;
+      }
+      case "object.remove":
+        break;
       case "message.send":
         await db.query(
           "insert into questling.mentor_messages (id, teacher_id, user_id, ref, body, created_at) values ($1, $2, $3, $4, $5, $6)",
@@ -271,4 +367,91 @@ export async function persistStudio(db: Db, teacherId: string, effects: StudioEf
         break;
     }
   }
+}
+
+/** The teacher's voice-acting scenes, their assignments, the submissions of students in their groups, and their stored media. */
+async function loadDubs(db: Db, teacherId: string, groupIds: string[]) {
+  const exercises = await db.query(
+    "select id, slug, title, cefr, created_at, archived_at from questling.dub_exercises where teacher_id = $1 order by created_at",
+    [teacherId],
+  );
+  const ids = exercises.rows.map((e) => e.id as string);
+  const versions = await db.query(
+    "select exercise_id, version, status, content, updated_at, published_at from questling.dub_versions where exercise_id = any($1::uuid[]) order by version",
+    [ids],
+  );
+  const assignments = await db.query(
+    "select a.id, a.group_id, e.slug, a.version, a.due_at, a.created_at from questling.dub_assignments a join questling.dub_exercises e on e.id = a.exercise_id where a.group_id = any($1::uuid[]) and e.teacher_id = $2 order by a.created_at",
+    [groupIds, teacherId],
+  );
+  // Only students who are in one of this teacher's groups, for this teacher's scenes.
+  const submissions = await db.query(
+    `select s.id, s.user_id, e.slug, s.version, s.role, s.mode, s.status, s.attempts, s.submitted_at, s.reviewed_at, s.feedback, s.rubric
+       from questling.dub_submissions s join questling.dub_exercises e on e.id = s.exercise_id and e.teacher_id = $1
+      where exists (select 1 from questling.group_members m where m.user_id = s.user_id and m.group_id = any($2::uuid[]))
+      order by s.submitted_at nulls last`,
+    [teacherId, groupIds],
+  );
+  const takes = await db.query(
+    "select submission_id, line_id, media_id, created_at from questling.dub_takes where submission_id = any($1::uuid[]) order by created_at",
+    [submissions.rows.map((r) => r.id)],
+  );
+  const objects = await db.query(
+    "select id, kind, mime, size, duration_ms, width, height, created_at from questling.media_objects where teacher_id = $1 and status = 'ready' order by created_at desc",
+    [teacherId],
+  );
+  return {
+    dubs: exercises.rows.map((e) => ({
+      id: e.id,
+      slug: e.slug,
+      title: e.title,
+      cefr: e.cefr,
+      createdAt: iso(e.created_at),
+      archivedAt: e.archived_at && iso(e.archived_at),
+      versions: versions.rows
+        .filter((v) => v.exercise_id === e.id)
+        .map((v) => ({
+          version: v.version,
+          status: v.status,
+          content: v.content,
+          updatedAt: iso(v.updated_at),
+          publishedAt: v.published_at && iso(v.published_at),
+        })),
+    })),
+    dubAssignments: assignments.rows.map((a) => ({
+      id: a.id,
+      groupId: a.group_id,
+      exercise: a.slug,
+      version: a.version,
+      dueAt: a.due_at && iso(a.due_at),
+      createdAt: iso(a.created_at),
+    })),
+    dubSubmissions: submissions.rows.map((r) => ({
+      id: r.id,
+      userId: r.user_id,
+      exercise: r.slug,
+      version: r.version,
+      role: r.role,
+      mode: r.mode,
+      status: r.status,
+      attempts: r.attempts,
+      submittedAt: r.submitted_at && iso(r.submitted_at),
+      reviewedAt: r.reviewed_at && iso(r.reviewed_at),
+      feedback: r.feedback,
+      rubric: r.rubric,
+      takes: takes.rows
+        .filter((t) => t.submission_id === r.id)
+        .map((t) => ({ lineId: t.line_id, mediaId: t.media_id, createdAt: iso(t.created_at) })),
+    })),
+    objects: objects.rows.map((o) => ({
+      id: o.id,
+      kind: o.kind,
+      mime: o.mime,
+      size: Number(o.size),
+      durationMs: o.duration_ms,
+      width: o.width,
+      height: o.height,
+      createdAt: iso(o.created_at),
+    })),
+  };
 }

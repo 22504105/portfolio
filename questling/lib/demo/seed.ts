@@ -7,7 +7,7 @@ import { applyEffects, emptyFacts, type Facts } from "@/lib/game/facts";
 import { run, type Action } from "@/lib/game/ops";
 import { balance, dailyEntry, dailyQuests, runOf } from "@/lib/game/stats";
 import { rightMove } from "@/lib/story/autoplay";
-import { startRun } from "@/lib/story/run";
+import { runSeed, startRun } from "@/lib/story/run";
 import { dayFromNumber, dayNumber, dayOf } from "@/lib/game/time";
 
 // The demo student's past, played through the real actions: two weeks ago they chose the cat,
@@ -53,7 +53,7 @@ export function demoFacts(now: Date): Facts {
   const playStory = (until: string, at: Date) => {
     const campaign = forgottenAcademy;
     for (let step = 0; step < 50; step++) {
-      const run = runOf(facts, campaign.id) ?? startRun(campaign);
+      const run = runOf(facts, campaign.id) ?? startRun(campaign, runSeed(facts.profile.joinedAt, campaign));
       if (run.scene === until) return;
       const move = rightMove(campaign, keysOf(campaign), run);
       if (!move) return;
@@ -71,6 +71,11 @@ export function demoFacts(now: Date): Facts {
     act({ type: "claimDaily" }, at);
     // The prologue on one day; chapter II begun on another, up to the sealed letter of the story player screen.
     if (offset === -4) playStory("t-intro", at);
+    // A few words kept from the prologue and from yesterday's word: due for review today (lib/learning/vocab.ts).
+    if (offset === -4)
+      for (const ref of ["gloss:forgotten-academy:p-arrive:p-arrive-1", "gloss:forgotten-academy:p-greet:p-greet-1"])
+        act({ type: "keepWord", ref }, at);
+    if (offset === -1) act({ type: "keepWord", ref: `daily:${dayOf(at)}` }, at);
     if (offset === -2) playStory("tower-2", at);
   }
 

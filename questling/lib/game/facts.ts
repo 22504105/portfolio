@@ -2,6 +2,8 @@ import type { CharacterId } from "@/lib/content/characters";
 import type { Slot } from "@/lib/content/items";
 import type { Skill } from "@/lib/content/quick-quests";
 import type { RunState } from "@/lib/story/run";
+import type { VocabCard } from "@/lib/learning/vocab";
+import type { DubSubmission } from "@/lib/dub/model";
 import type { World } from "./world";
 
 // A student's record: everything the game knows about them, as plain facts. Balances,
@@ -26,6 +28,8 @@ export type LedgerReason =
   | "achievement"
   | "chest"
   | "purchase"
+  | "review"
+  | "dub"
   | "demo";
 
 export type LedgerEntry = { currency: Currency; amount: number; key: string; reason: LedgerReason; at: string };
@@ -51,7 +55,7 @@ export type Completion = { kind: CompletionKind; ref: string; at: string };
 
 export type Saved = { kind: "word" | "fact"; ref: string; at: string };
 
-export type Owned = { item: string; source: "starter" | "purchase" | "achievement" | "chest" | "demo"; at: string };
+export type Owned = { item: string; source: "starter" | "purchase" | "achievement" | "chest" | "story" | "demo"; at: string };
 
 export type Facts = {
   profile: { heroName: string | null; characterId: CharacterId | null; joinedAt: string };
@@ -63,6 +67,10 @@ export type Facts = {
   equipped: Partial<Record<Slot, string>>;
   /** One run per campaign started: where the student is in its story (lib/story/run.ts). */
   runs: RunState[];
+  /** The word journal (lib/learning/vocab.ts): words kept, with their review schedule. */
+  vocab: VocabCard[];
+  /** The student's voice-acting submissions, with their takes (lib/dub/model.ts). */
+  dubs?: DubSubmission[];
   /** Groups, assignments, teachers' campaigns and replies (lib/game/world.ts): loaded, never changed by effects. */
   world?: World;
 };
@@ -76,7 +84,13 @@ export type Effect =
   | { type: "unsave"; kind: Saved["kind"]; ref: string }
   | { type: "own"; item: string; source: Owned["source"] }
   | { type: "equip"; slot: Slot; item: string | null }
-  | { type: "run"; state: RunState };
+  | { type: "run"; state: RunState }
+  /** A card kept or changed (its schedule after a review, a flag). */
+  | { type: "vocab"; card: VocabCard }
+  | { type: "unvocab"; ref: string }
+  /** A submission started, changed or submitted (its takes are added by the upload route, or in the demo by "dubTake"). */
+  | { type: "dub"; submission: DubSubmission }
+  | { type: "dubTake"; submissionId: string; lineId: string; mediaId: string };
 
 export function emptyFacts(joinedAt: string): Facts {
   return {
@@ -88,6 +102,7 @@ export function emptyFacts(joinedAt: string): Facts {
     inventory: [],
     equipped: {},
     runs: [],
+    vocab: [],
   };
 }
 
@@ -102,6 +117,8 @@ export function applyEffects(facts: Facts, effects: Effect[], at: string): Facts
     inventory: [...facts.inventory],
     equipped: { ...facts.equipped },
     runs: [...facts.runs],
+    vocab: [...(facts.vocab ?? [])],
+    dubs: [...(facts.dubs ?? [])],
     world: facts.world,
   };
   for (const effect of effects) {
@@ -143,6 +160,22 @@ export function applyEffects(facts: Facts, effects: Effect[], at: string): Facts
         break;
       case "run":
         next.runs = [...next.runs.filter((r) => r.campaign !== effect.state.campaign), effect.state];
+        break;
+      case "vocab":
+        next.vocab = [...next.vocab.filter((c) => c.ref !== effect.card.ref), effect.card];
+        break;
+      case "unvocab":
+        next.vocab = next.vocab.filter((c) => c.ref !== effect.ref);
+        break;
+      case "dub":
+        next.dubs = [...(next.dubs ?? []).filter((d) => d.id !== effect.submission.id), effect.submission];
+        break;
+      case "dubTake":
+        next.dubs = (next.dubs ?? []).map((d) =>
+          d.id !== effect.submissionId
+            ? d
+            : { ...d, takes: [...d.takes, { lineId: effect.lineId, mediaId: effect.mediaId, createdAt: at }] },
+        );
         break;
     }
   }

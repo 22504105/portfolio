@@ -1,7 +1,9 @@
 import { tr } from "@/lib/content/text";
 import type { Locale } from "@/lib/i18n";
 import type { Campaign, Chapter, EvidenceScene, Grimoire, PuzzleScene, QuestionScene, Scene } from "@/lib/story/graph";
-import { isGraded } from "@/lib/story/graph";
+import { fieldText, isGraded } from "@/lib/story/graph";
+import { glossViews, type GlossView } from "@/lib/learning/gloss";
+import { shuffled } from "@/lib/learning/shuffle";
 import { attemptsAllowed, sceneProgress, type RunState } from "@/lib/story/run";
 import type { GrimoireView, PuzzleNode, QuestionNode } from "@/lib/story/types";
 
@@ -22,6 +24,12 @@ export function sceneLine(scene: Scene): string {
       return scene.parchment;
     case "evidence":
       return scene.question;
+    case "talk":
+      return scene.lines.find((l) => l.id === scene.start)?.text ?? "";
+    case "search":
+      return scene.task;
+    case "dub":
+      return scene.text;
   }
 }
 
@@ -43,11 +51,31 @@ export function grimoireView(grimoire: Grimoire, locale: Locale): GrimoireView {
   };
 }
 
+/** The word help a scene offers the student, in the interface language. */
+export function sceneGlosses(campaign: Campaign, chapter: Chapter, scene: Scene, locale: Locale, solved = false): GlossView[] {
+  return glossViews(scene.glosses, (field) => fieldText(scene, field), {
+    locale,
+    cefr: chapter.cefr,
+    support: campaign.support,
+    solved,
+  }).map((g) => ({ ...g, ref: `gloss:${campaign.id}:${scene.id}:${g.id}` }));
+}
+
+/** Options in this run's order: shuffled once per run (seeded), unless the author keeps their order or the run predates shuffling. */
+function inRunOrder<T>(items: T[], scene: QuestionScene | EvidenceScene, run: RunState): T[] {
+  return scene.shuffle !== false && run.seed ? shuffled(items, `${run.seed}|${scene.id}`) : items;
+}
+
+function inRunOrderGrimoire(view: GrimoireView, sceneId: string, run: RunState): GrimoireView {
+  return run.seed ? { ...view, quiz: { ...view.quiz, options: shuffled(view.quiz.options, `${run.seed}|${sceneId}|grimoire`) } } : view;
+}
+
 function frame(campaign: Campaign, chapter: Chapter, scene: QuestionScene | PuzzleScene | EvidenceScene, run: RunState, locale: Locale) {
   const clue = scene.clue ? campaign.clues.find((c) => c.id === scene.clue) : null;
   const text = scene.kind === "evidence" ? scene.question : scene.parchment;
   return {
     id: scene.id,
+    glosses: sceneGlosses(campaign, chapter, scene, locale, sceneProgress(run, scene.id).solved),
     chapter: tr(chapter.label, locale),
     cefr: chapter.cefr,
     storyTitle: tr(chapter.title, locale),
@@ -58,7 +86,7 @@ function frame(campaign: Campaign, chapter: Chapter, scene: QuestionScene | Puzz
     translation: tr(scene.translation, locale),
     maxAttempts: attemptsAllowed(scene, sceneProgress(run, scene.id)),
     reward: { xp: scene.xp },
-    grimoire: grimoireView(scene.grimoire, locale),
+    grimoire: inRunOrderGrimoire(grimoireView(scene.grimoire, locale), scene.id, run),
   };
 }
 
@@ -75,7 +103,11 @@ export function questionNode(
       ...frame(campaign, chapter, scene, run, locale),
       kind: "question",
       prompt: { lead: tr(scene.prompt.lead, locale), task: tr(scene.prompt.task, locale) },
-      options: scene.options.map((o) => ({ id: o.id, label: o.label, gloss: tr(o.gloss, locale), icon: o.icon })),
+      options: inRunOrder(
+        scene.options.map((o) => ({ id: o.id, label: o.label, gloss: tr(o.gloss, locale), icon: o.icon })),
+        scene,
+        run,
+      ),
       hint,
       evidence: false,
       listen: !!scene.listen,
@@ -87,13 +119,17 @@ export function questionNode(
     ...frame(campaign, chapter, scene, run, locale),
     kind: "question",
     prompt: { lead: tr(scene.prompt, locale), task: "" },
-    options: found.map((clue) => ({
-      id: clue.id,
-      label: clue.english,
-      gloss: tr(clue.title, locale),
-      icon: "local_library",
-      image: clue.image,
-    })),
+    options: inRunOrder(
+      found.map((clue) => ({
+        id: clue.id,
+        label: clue.english,
+        gloss: tr(clue.title, locale),
+        icon: "local_library",
+        image: clue.image,
+      })),
+      scene,
+      run,
+    ),
     hint,
     evidence: true,
     listen: false,

@@ -9,7 +9,8 @@ import { useNow, useStudent } from "@/lib/client/student";
 import { completed, passed, QUESTION_ATTEMPTS, questRef, runState } from "@/lib/game/stats";
 import { dayOf } from "@/lib/game/time";
 import { fill } from "@/lib/i18n";
-import type { Answer, Question } from "@/lib/learning/questions";
+import { inAttemptOrder, type Answer, type Question } from "@/lib/learning/questions";
+import { attemptSeed } from "@/lib/learning/shuffle";
 import { LineAudioButton } from "./line-audio";
 import { BackHeader } from "./back-header";
 import { TileBoard } from "./tile-board";
@@ -35,7 +36,9 @@ export function QuestRunner({ questId }: { questId: string }) {
   // While the last answer's feedback is shown, the question it answered stays on screen.
   const [shownIndex, setShownIndex] = useState(run.current);
   const index = feedback ? shownIndex : run.current;
-  const question = quest.questions[index] as Question | undefined;
+  const authored = quest.questions[index] as Question | undefined;
+  // In this attempt's order: the same after a reload, mixed afresh for another day's attempt.
+  const question = authored && inAttemptOrder(authored, attemptSeed(facts.profile.joinedAt, `${ref}|${authored.id}`));
 
   function submit(answer: Answer) {
     if (!question) return;

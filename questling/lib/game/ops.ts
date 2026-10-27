@@ -10,8 +10,10 @@ import type { Text } from "@/lib/content/text";
 import type { Locale } from "@/lib/i18n";
 import { gradeAnswer, validAnswer, type Graded } from "@/lib/learning/questions";
 import { isGraded, type Campaign, type CampaignKeys } from "@/lib/story/graph";
-import { isExhausted, locate, move, sceneProgress, startRun, type Move } from "@/lib/story/run";
+import { isExhausted, locate, move, sceneProgress, runSeed, startRun, type Move } from "@/lib/story/run";
 import { applyEffects, type Effect, type Facts } from "./facts";
+import { newSchedule, review } from "@/lib/learning/srs";
+import { cardContent, duplicateOf, REVIEW_XP, REVIEW_XP_PER_DAY, reviewOptions } from "@/lib/learning/vocab";
 import {
   assignedQuests,
   balance,
@@ -32,6 +34,8 @@ import {
   runState,
 } from "./stats";
 import { dayOf, weekOf } from "./time";
+import { isRole, latestTakes, SUBMITTED_MODES, type DubSubmission } from "@/lib/dub/model";
+import { worldOf } from "./world";
 import { findCampaign } from "./world";
 
 // What a student can do, as pure functions: (facts, input) → effects, or a refusal.
@@ -52,7 +56,17 @@ export type Action =
   | { type: "askMentor"; campaign: string; scene: string }
   | { type: "buy"; itemId: string }
   | { type: "saveLook"; equipped: Partial<Record<Slot, string | null>> }
-  | { type: "openChest" };
+  | { type: "openChest" }
+  /** The word journal (lib/learning/vocab.ts): keep a word, flag it, drop it, review it. */
+  | { type: "keepWord"; ref: string }
+  | { type: "flagWord"; ref: string; favorite?: boolean; known?: boolean }
+  | { type: "dropWord"; ref: string }
+  | { type: "reviewWord"; ref: string; option: string }
+  /** Voice acting (lib/dub/model.ts): pick a role and mode, then submit the recorded lines. */
+  | { type: "startDub"; exercise: string; role: string; mode: string }
+  | { type: "submitDub"; exercise: string }
+  /** The demo's stand-in for an upload: a take kept in this browser. Refused anywhere but the demo. */
+  | { type: "demoTake"; exercise: string; line: string; media: string };
 
 export type Refusal =
   | "invalid"
@@ -82,8 +96,11 @@ export type Outcome =
       chapterDone: string | null;
       ending: string | null;
       rewarded: { xp: number; coins: number };
+      tapped?: { spot: string; correct: boolean; done: boolean };
+      items?: string[];
     }
   | { kind: "chest"; item: string | null; coins: number }
+  | { kind: "review"; correct: boolean; right: string; due: string; rewarded: number }
   | { kind: "ok" };
 
 /**
@@ -96,6 +113,8 @@ export type Context = {
   demo: boolean;
   random?: () => number;
   keys?: (campaign: Campaign) => CampaignKeys | null;
+  /** New ids (the server's are random UUIDs); without it the demo makes its own. */
+  newId?: () => string;
   /** A teacher's word of the day's quiz key, by entry id (the server holds them). */
   dailyKeys?: (entryId: string) => { correct: string; explanation: Text } | null;
 };
@@ -239,15 +258,121 @@ function perform(facts: Facts, action: Action, ctx: Context): OpResult {
       return done([{ type: saved ? "unsave" : "save", kind: "fact", ref: id }]);
     }
 
+    case "keepWord": {
+      const content = cardContent(facts, action.ref, today);
+      if (!content) return refuse("not_available");
+      // The same word in the same sense is one card, wherever it was met; another sense is another card.
+      if (facts.vocab.some((c) => c.ref === action.ref) || duplicateOf(facts, content)) return refuse("already_done");
+      if (facts.vocab.length >= 2000) return refuse("invalid");
+      return done([
+        {
+          type: "vocab",
+          card: {
+            ref: action.ref,
+            ...content,
+            savedAt: ctx.now.toISOString(),
+            favorite: false,
+            known: false,
+            schedule: newSchedule(today),
+          },
+        },
+      ]);
+    }
+
+    case "flagWord": {
+      const card = facts.vocab.find((c) => c.ref === action.ref);
+      if (!card) return refuse("not_available");
+      if (action.favorite !== undefined && typeof action.favorite !== "boolean") return refuse("invalid");
+      if (action.known !== undefined && typeof action.known !== "boolean") return refuse("invalid");
+      return done([{ type: "vocab", card: { ...card, favorite: action.favorite ?? card.favorite, known: action.known ?? card.known } }]);
+    }
+
+    case "dropWord": {
+      if (!facts.vocab.some((c) => c.ref === action.ref)) return refuse("not_available");
+      return done([{ type: "unvocab", ref: action.ref }]);
+    }
+
+    case "reviewWord": {
+      const card = facts.vocab.find((c) => c.ref === action.ref);
+      // Only a card that is due: a review cannot be repeated for XP, and is never a penalty.
+      if (!card || card.known) return refuse("not_available");
+      if (card.schedule.due > today) return refuse("already_done");
+      const options = reviewOptions(facts, card, today);
+      const chosen = options.find((o) => o.id === action.option);
+      if (!chosen) return refuse("invalid");
+      const correct = chosen.text === card.ru;
+      const schedule = review(card.schedule, correct, today);
+      const effects: Effect[] = [{ type: "vocab", card: { ...card, schedule } }];
+      const paidToday = facts.ledger.filter((l) => l.reason === "review" && l.key.startsWith(`review:${today}:`)).length;
+      const rewarded = correct && paidToday < REVIEW_XP_PER_DAY ? REVIEW_XP : 0;
+      if (rewarded)
+        effects.push({ type: "ledger", currency: "xp", amount: rewarded, key: `review:${today}:${card.ref}`, reason: "review" });
+      return done(effects, { kind: "review", correct, right: options.find((o) => o.text === card.ru)!.id, due: schedule.due, rewarded });
+    }
+
+    case "startDub": {
+      const assigned = worldOf(facts).dubs?.find((d) => d.exercise === action.exercise);
+      if (!assigned) return refuse("not_available");
+      const mode = action.mode as DubSubmission["mode"];
+      if (!SUBMITTED_MODES.includes(mode) || !assigned.content.modes.includes(mode)) return refuse("invalid");
+      const role = assigned.content.speakers.length === 1 ? assigned.content.speakers[0].id : action.role;
+      if (!isRole(assigned.content, role)) return refuse("invalid");
+      const existing = (facts.dubs ?? []).find((d) => d.exercise === assigned.exercise && d.version === assigned.version);
+      // The role and mode can change until the first take is kept; after that, the recording is theirs.
+      if (existing && (existing.takes.length || (existing.status !== "recording" && existing.status !== "retry")))
+        return existing.role === role && existing.mode === mode ? done([]) : refuse("already_done");
+      const submission: DubSubmission = existing
+        ? { ...existing, role, mode }
+        : {
+            id: ctx.newId?.() ?? `demo-${assigned.exercise}-${assigned.version}`,
+            userId: "",
+            exercise: assigned.exercise,
+            version: assigned.version,
+            role,
+            mode,
+            status: "recording",
+            attempts: 0,
+            submittedAt: null,
+            reviewedAt: null,
+            feedback: null,
+            rubric: null,
+            takes: [],
+          };
+      return done([{ type: "dub", submission }]);
+    }
+
+    case "submitDub": {
+      const assigned = worldOf(facts).dubs?.find((d) => d.exercise === action.exercise);
+      const own = assigned && (facts.dubs ?? []).find((d) => d.exercise === assigned.exercise && d.version === assigned.version);
+      if (!assigned || !own) return refuse("not_available");
+      if (own.status !== "recording" && own.status !== "retry") return refuse("already_done");
+      if (own.attempts >= assigned.content.submissions) return refuse("exhausted");
+      // Every line of the student's part needs a kept take.
+      if (!latestTakes(assigned.content, own)) return refuse("not_ready");
+      return done([
+        { type: "dub", submission: { ...own, status: "submitted", attempts: own.attempts + 1, submittedAt: ctx.now.toISOString() } },
+      ]);
+    }
+
+    case "demoTake": {
+      if (!ctx.demo) return refuse("invalid");
+      const own = (facts.dubs ?? []).find((d) => d.exercise === action.exercise);
+      if (!own || (own.status !== "recording" && own.status !== "retry")) return refuse("not_available");
+      return done([{ type: "dubTake", submissionId: own.id, lineId: action.line, mediaId: action.media }]);
+    }
+
     case "story": {
       const latest = findCampaign(facts, action.campaign);
       if (!latest) return refuse("not_available");
       const existing = runOf(facts, latest.id);
       if (!existing && !campaignOpen(facts, latest)) return refuse("not_available");
       const campaign = playedCampaign(facts, latest);
-      const before = existing ?? startRun(campaign);
+      const before = existing ?? startRun(campaign, runSeed(facts.profile.joinedAt, campaign));
       const keys = ctx.keys?.(campaign) ?? keysOf(campaign);
-      const result = move(campaign, keys, before, action.move);
+      // A voice-acting scene goes on once the student sent their recording of it (or it was accepted).
+      const dubSent = (exercise: string) =>
+        (facts.dubs ?? []).some((d) => d.exercise === exercise && (d.status === "submitted" || d.status === "approved"));
+      const result = move(campaign, keys, before, action.move, { dubSent });
       if (!result.ok) return refuse(result.refusal);
 
       const after = result.run;
@@ -268,7 +393,24 @@ function perform(facts: Facts, action: Action, ctx: Context): OpResult {
       for (const chapter of after.chapters.filter((id) => !before.chapters.includes(id)))
         effects.push({ type: "completion", kind: "chapter", ref: `${campaign.id}/${chapter}` });
       if (after.ending && !before.ending) effects.push({ type: "completion", kind: "ending", ref: campaign.id });
+      // A tap in a picture search is an answer too (it trains words): first taps feed the suggestions.
+      if (result.tapped && scene.kind === "search")
+        effects.push({
+          type: "answer",
+          scope: "story",
+          ref: campaign.id,
+          question: `${scene.id}:${result.tapped.spot}`,
+          // The same spot may be tapped wrong (out of order) and later right: each is its own attempt.
+          attempt:
+            facts.answers.filter((x) => x.scope === "story" && x.ref === campaign.id && x.question === `${scene.id}:${result.tapped!.spot}`)
+              .length + 1,
+          correct: result.tapped.correct,
+          skill: "vocabulary",
+        });
       for (const grant of result.grants) effects.push({ type: "ledger", ...grant });
+      // Free cosmetics the story gives, once each.
+      for (const item of result.items ?? [])
+        if (itemById.has(item) && !owns(facts, item)) effects.push({ type: "own", item, source: "story" });
 
       const sum = (currency: "xp" | "coins") => result.grants.filter((g) => g.currency === currency).reduce((n, g) => n + g.amount, 0);
       return done(effects, {
@@ -278,6 +420,8 @@ function perform(facts: Facts, action: Action, ctx: Context): OpResult {
         chapterDone: result.chapterDone,
         ending: after.ending && !before.ending ? after.ending : null,
         rewarded: { xp: sum("xp"), coins: sum("coins") },
+        ...(result.tapped ? { tapped: result.tapped } : {}),
+        ...(result.items?.length ? { items: result.items } : {}),
       });
     }
 

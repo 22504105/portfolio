@@ -3,6 +3,8 @@
 // cannot read the answer out of the page. (In the demo the keys live in the browser too, which is
 // why the demo is labelled and never writes anything to the server.)
 
+import type { GlossView } from "@/lib/learning/gloss";
+
 export type OptionIcon =
   "stairs" | "park" | "fort" | "castle" | "local_library" | "restaurant" | "nightlight" | "skull" | "water_drop" | "door_front";
 
@@ -30,6 +32,8 @@ export type GrimoireView = {
 
 /** What every graded scene shows about where it is in the story. */
 type NodeFrame = {
+  /** Word help on the scene's English text (already offered by level, answers held back until solved). */
+  glosses: GlossView[];
   id: string;
   chapter: string;
   cefr: string;

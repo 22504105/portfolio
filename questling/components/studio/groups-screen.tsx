@@ -217,14 +217,14 @@ export function Modal({
 }) {
   return (
     <div
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-6 backdrop-blur-sm"
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-3 backdrop-blur-sm sm:p-6"
       role="dialog"
       aria-modal="true"
       aria-label={title}
       onKeyDown={(e) => e.key === "Escape" && onClose()}
     >
       <div
-        className={`bg-surface p-space-lg gap-space-md flex max-h-[90vh] w-full flex-col overflow-y-auto rounded-xl shadow-2xl ${wide ? "max-w-3xl" : "max-w-md"}`}
+        className={`bg-surface p-space-md sm:p-space-lg gap-space-md flex max-h-[90vh] w-full flex-col overflow-y-auto rounded-xl shadow-2xl ${wide ? "max-w-3xl" : "max-w-md"}`}
       >
         <div className="flex items-center justify-between">
           <h2 className="font-title-sm text-title-sm text-text-ivory">{title}</h2>
@@ -343,6 +343,19 @@ function GroupPage({ group, openDialog, today, now }: { group: Group; openDialog
             <p className="font-body-md text-body-md text-text-muted">
               {fill(t.groups.meta, { students: plural(locale, members.length, t.common.students), mentor: facts.teacher.displayName })}
             </p>
+            <label className="font-caption text-caption text-on-surface-variant flex items-start gap-2">
+              <input
+                type="checkbox"
+                data-field="recommend"
+                checked={group.recommend !== false}
+                disabled={archived || pending}
+                onChange={(e) => run({ type: "updateGroup", groupId: group.id, recommend: e.target.checked })}
+              />
+              <span>
+                <span className="text-text-ivory font-label-sm text-label-sm block">{t.groups.recommend}</span>
+                {t.groups.recommendNote}
+              </span>
+            </label>
           </div>
           <div className="gap-space-sm relative flex flex-wrap items-center">
             <a
@@ -520,7 +533,7 @@ function GroupPage({ group, openDialog, today, now }: { group: Group; openDialog
               </div>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full border-collapse text-left">
+              <table className="w-full min-w-[560px] border-collapse text-left">
                 <thead>
                   <tr className="bg-surface-container-low text-text-muted font-caption text-caption tracking-wider uppercase">
                     <th className="py-space-sm px-space-md">{t.groups.colStudent}</th>

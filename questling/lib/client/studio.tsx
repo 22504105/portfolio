@@ -33,6 +33,28 @@ export type StudioApi = {
     upload: (file: File) => Promise<{ ok: true; item: MediaItem } | { ok: false; reason: MediaRefusal }>;
     remove: (id: string) => Promise<"deleted" | "in_use" | "not_found" | "network">;
   };
+  objects?: StudioObjects;
+  /** A short-lived link to any media the teacher may see (their videos, students' takes); built-in files need none. */
+  link: (id: string) => Promise<string | null>;
+};
+
+/** Large media in object storage (videos, background sound, images): signed-in studio only. */
+export type StudioObjects = {
+  upload: (
+    kind: "video" | "background" | "image",
+    file: File,
+    rights: boolean,
+  ) => Promise<{ ok: true; id: string; durationMs: number | null } | { ok: false; reason: string }>;
+  link: (id: string) => Promise<string | null>;
+  remove: (id: string) => Promise<"deleted" | "in_use" | "not_found" | "network">;
+  usage: () => Promise<StorageUsage | null>;
+};
+
+export type StorageUsage = {
+  configured: boolean;
+  own: Partial<Record<"video" | "image" | "background", { bytes: number; count: number }>>;
+  limits: { video: number; image: number; background: number };
+  global: { bytes: number; cap: number; ratio: number; warning: number | null };
 };
 
 export type MediaRefusal = "type" | "too_large" | "too_long" | "too_short" | "unreadable" | "quota" | "not_teacher" | "network";

@@ -5,7 +5,8 @@ import { balance, dailyQuests } from "@/lib/game/stats";
 import { dayOf } from "@/lib/game/time";
 import { handle } from "@/lib/server/api";
 import { resetPool } from "@/lib/server/db";
-import { act, ServiceError, signInWithTelegram } from "@/lib/server/service";
+import { act, deleteStudent, exportData, ServiceError, signInWithTelegram } from "@/lib/server/service";
+import { reviewOptions } from "@/lib/learning/vocab";
 import { loadFacts } from "@/lib/server/store";
 import { campaignById } from "@/lib/content/campaigns";
 import { keysOf } from "@/lib/content/campaigns/keys";
@@ -213,14 +214,14 @@ describe("story runs", () => {
     const run = runOf(stored, academy.id)!;
     expect(run).toMatchObject({
       campaign: "forgotten-academy",
-      version: 1,
+      version: academy.version, // new runs start on the latest version (2 since gate E)
       scene: "tower-2",
       chapters: ["prologue"],
       clues: ["prologue-tome", "seal"],
     });
     expect(run.progress["tower-2"]).toEqual({ used: 1, restored: 0, eliminated: ["garden"], solved: false });
     const row = await pg.db.query("select campaign, version from questling.story_runs where user_id = $1", [userId]);
-    expect(row.rows).toEqual([{ campaign: "forgotten-academy", version: 1 }]);
+    expect(row.rows).toEqual([{ campaign: "forgotten-academy", version: academy.version }]);
   });
 
   it("stores the grimoire's attempt, the help request, and the ending's reward once", async () => {
@@ -419,5 +420,75 @@ describe("the API", () => {
     expect(fresh.facts.profile.characterId).toBeNull();
     // The other student is untouched.
     expect((await handle(request("GET", "state", { token: theirs.token }), ["state"])).status).toBe(200);
+  });
+});
+
+describe("the word journal on the database (gate D)", () => {
+  it("keeps a word as the rules decided, reads it back the same, exports it, and deletes it with the student", async () => {
+    const userId = await newStudent(41);
+    const now = new Date();
+    const today = dayOf(now);
+    const kept = await tx((db) => act(db, userId, { action: { type: "keepWord", ref: `daily:${today}` } }, now));
+    expect(kept.facts.vocab).toHaveLength(1);
+    const card = kept.facts.vocab[0];
+    expect(card.source).toBe("daily");
+
+    const flagged = await tx((db) => act(db, userId, { action: { type: "flagWord", ref: card.ref, favorite: true } }, now));
+    const stored = await loadFacts(pg.db, userId);
+    expect(stored!.vocab).toEqual(flagged.facts.vocab);
+    expect(stored!.vocab[0]).toMatchObject({ favorite: true, known: false, schedule: { due: card.schedule.due, ease: 250 } });
+
+    // Kept twice: refused, nothing changes. A made-up reference: refused.
+    await expect(tx((db) => act(db, userId, { action: { type: "keepWord", ref: `daily:${today}` } }, now))).rejects.toThrow(ServiceError);
+    await expect(tx((db) => act(db, userId, { action: { type: "keepWord", ref: "gloss:t-x:y:z" } }, now))).rejects.toThrow(ServiceError);
+    await expect(tx((db) => act(db, userId, { action: { type: "reviewWord", ref: card.ref, option: "e" } }, now))).rejects.toThrow(
+      ServiceError,
+    );
+
+    const exported = await exportData(pg.db, userId);
+    expect((exported.vocab as { ref: string }[]).map((r) => r.ref)).toEqual([card.ref]);
+
+    await tx((db) => deleteStudent(db, userId));
+    expect((await pg.db.query("select count(*)::int as n from questling.vocab where user_id = $1", [userId])).rows[0].n).toBe(0);
+  });
+
+  it("pays a review once per card and day, through the ledger's unique key", async () => {
+    const userId = await newStudent(42);
+    const now = new Date();
+    const card = (await tx((db) => act(db, userId, { action: { type: "keepWord", ref: `daily:${dayOf(now)}` } }, now))).facts.vocab[0];
+    const due = new Date(now.getTime() + 86_400_000);
+    const facts = (await loadFacts(pg.db, userId))!;
+    const right = reviewOptions(facts, card, dayOf(due)).find((o) => o.text === card.ru)!.id;
+    const done = await tx((db) => act(db, userId, { action: { type: "reviewWord", ref: card.ref, option: right } }, due));
+    expect(done.outcome).toMatchObject({ kind: "review", correct: true, rewarded: 2 });
+    const rows = await pg.db.query("select amount, reason from questling.ledger where user_id = $1 and reason = 'review'", [userId]);
+    expect(rows.rows).toEqual([{ amount: 2, reason: "review" }]);
+    await expect(tx((db) => act(db, userId, { action: { type: "reviewWord", ref: card.ref, option: right } }, due))).rejects.toThrow(
+      ServiceError,
+    );
+  });
+});
+
+describe("story rewards on the database (gate E)", () => {
+  it("a picture search found in order gives its item once, kept with the source 'story'", async () => {
+    const userId = await newStudent(51);
+    const academy = campaignById.get("forgotten-academy")!;
+    for (let i = 0; i < 80; i++) {
+      const facts = (await loadFacts(pg.db, userId))!;
+      const run = runOf(facts, academy.id) ?? startRun(academy);
+      if (run.scene === "f-search") break;
+      await tx((db) =>
+        act(db, userId, { action: { type: "story", campaign: academy.id, move: rightMove(academy, keysOf(academy), run)! } }),
+      );
+    }
+    const tap = (spot: string) =>
+      tx((db) => act(db, userId, { action: { type: "story", campaign: academy.id, move: { type: "tap", scene: "f-search", spot } } }));
+    expect((await tap("ferns")).outcome).toMatchObject({ kind: "story", tapped: { correct: false } });
+    // The mushrooms out of order (wrong), then in order (right): two attempts at the same spot.
+    expect((await tap("mushrooms")).outcome).toMatchObject({ kind: "story", tapped: { correct: false } });
+    await tap("stone-r");
+    expect((await tap("mushrooms")).outcome).toMatchObject({ kind: "story", items: ["sprite"], tapped: { done: true } });
+    const rows = await pg.db.query("select item, source from questling.inventory where user_id = $1 and item = 'sprite'", [userId]);
+    expect(rows.rows).toEqual([{ item: "sprite", source: "story" }]);
   });
 });

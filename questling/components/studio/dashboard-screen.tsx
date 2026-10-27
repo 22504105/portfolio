@@ -326,7 +326,7 @@ export function DashboardScreen() {
                 </span>
               </div>
               <div className="w-full overflow-x-auto">
-                <table className="font-body-md text-body-md w-full text-left">
+                <table className="font-body-md text-body-md w-full min-w-[560px] text-left">
                   <thead>
                     <tr className="bg-surface-container-lowest text-text-muted font-caption text-caption tracking-wider uppercase">
                       <th className="py-space-sm px-space-md rounded-l-lg">{t.dashboard.colStudent}</th>

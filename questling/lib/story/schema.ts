@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { OBJECTIVE_IDS, type Objective } from "@/lib/learning/objectives";
 import type { Campaign, CampaignKeys } from "./graph";
 
 // The shape of a teacher-authored campaign and its keys, checked on the way in (Teacher Studio's
@@ -67,7 +68,22 @@ const grimoire = z.object({
   quiz: z.object({ sentence: line(160).refine((s) => s.split("___").length === 2, "one ___"), options: z.array(line(40)).min(2).max(4) }),
 });
 
-const base = { id, location: text(80), image, next: next.optional() };
+const gloss = z
+  .object({
+    id,
+    field: z.string().regex(/^(text|parchment|question|task|line:[0-7]|talk:[a-z0-9][a-z0-9-]{0,39})$/),
+    start: z.number().int().min(0).max(600),
+    end: z.number().int().min(1).max(600),
+    phrase: line(80),
+    ru: line(120),
+    definition: z.string().trim().max(200).optional(),
+    example: z.string().trim().max(160).optional(),
+    note: optionalText(200).optional(),
+    cefr: z.enum(CEFR).optional(),
+    answer: z.boolean().optional(),
+  })
+  .refine((g) => g.end > g.start && g.end - g.start === g.phrase.length, "the mark's place and words disagree");
+const base = { id, location: text(80), image, next: next.optional(), glosses: z.array(gloss).max(30).optional() };
 /** A teacher's recording of the scene (its id in the teacher's media, lib/server/media.ts). */
 const audio = z.string().uuid().optional();
 const graded = {
@@ -76,6 +92,7 @@ const graded = {
   hint: z.object({ topic: text(60), text: text(300) }),
   grimoire,
   clue: id.optional(),
+  objective: z.enum(OBJECTIVE_IDS as [Objective, ...Objective[]]).optional(),
 };
 
 const scene = z.discriminatedUnion("kind", [
@@ -110,6 +127,7 @@ const scene = z.discriminatedUnion("kind", [
     listen: z.boolean().optional(),
     audio,
     prompt: z.object({ lead: text(200), task: text(200) }),
+    shuffle: z.boolean().optional(),
     options: z
       .array(z.object({ id, label: line(80), gloss: text(120), icon: z.enum(OPTION_ICONS) }))
       .min(2)
@@ -135,6 +153,75 @@ const scene = z.discriminatedUnion("kind", [
     translation: text(300),
     prompt: text(200),
     clues: z.array(id).min(2).max(6),
+    shuffle: z.boolean().optional(),
+  }),
+  z.object({
+    ...base,
+    kind: z.literal("talk"),
+    character: z.object({ name: text(60), image }),
+    start: id,
+    lines: z
+      .array(
+        z.object({
+          id,
+          text: line(300),
+          translation: text(300),
+          responses: z
+            .array(
+              z.object({
+                id,
+                text: line(160),
+                gloss: text(160),
+                to: z.union([id, z.literal("end")]),
+                when: condition.optional(),
+                set: z.array(id).max(4).optional(),
+                clue: id.optional(),
+              }),
+            )
+            .min(1)
+            .max(4),
+        }),
+      )
+      .min(1)
+      .max(12),
+    xp: z.number().int().min(0).max(200),
+    clue: id.optional(),
+  }),
+  z.object({
+    ...base,
+    kind: z.literal("search"),
+    task: line(200),
+    translation: text(200),
+    // An app illustration; a teacher's own image once storage is connected (its id).
+    picture: z.union([image, z.string().uuid()]),
+    spots: z
+      .array(
+        z.object({
+          id,
+          label: line(60),
+          gloss: text(80),
+          x: z.number().min(0).max(1),
+          y: z.number().min(0).max(1),
+          w: z.number().min(0).max(1),
+          h: z.number().min(0).max(1),
+          found: optionalText(200),
+        }),
+      )
+      .min(2)
+      .max(10),
+    hint: text(200),
+    xp: z.number().int().min(0).max(200),
+    clue: id.optional(),
+    item: id.optional(),
+  }),
+  z.object({
+    ...base,
+    kind: z.literal("dub"),
+    exercise: z.string().regex(/^d-[a-z0-9-]{4,60}$/),
+    text: line(300),
+    translation: text(300),
+    optional: z.boolean(),
+    clue: id.optional(),
   }),
   z.object({
     ...base,
@@ -190,6 +277,7 @@ export const campaignSchema = z.object({
   chapters: z.array(chapter).min(1).max(8),
   clues: z.array(clue).max(30),
   caseNumber: z.number().int().min(1).max(999),
+  support: z.enum(["auto", "all", "none"]).optional(),
   layout: z.record(id, z.object({ x: z.number().min(-5000).max(20000), y: z.number().min(-5000).max(20000) })).optional(),
 });
 
@@ -200,6 +288,7 @@ export const keysSchema = z.record(
     z.object({ kind: z.literal("question"), correct: id, explanations, grimoire: line(40) }),
     z.object({ kind: z.literal("puzzle"), order: z.array(line(40)).min(2).max(10), explanation: text(300), grimoire: line(40) }),
     z.object({ kind: z.literal("evidence"), correct: z.array(id).min(1).max(6), explanations, grimoire: line(40) }),
+    z.object({ kind: z.literal("search"), targets: z.array(id).min(1).max(9), ordered: z.boolean() }),
   ]),
 );
 

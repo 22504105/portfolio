@@ -6,6 +6,7 @@ import { signInTeacher, StudioError, studioAct, studioState } from "./studio-ser
 import { recover, signIn, signUp, teacherAuthConfigured, updatePassword } from "./teacher-auth";
 import { deleteAudio, loadAudio, MAX_AUDIO_BYTES, mediaUrl, saveAudio, ticketOpens } from "./media";
 import { verifyInitData } from "./telegram";
+import { actorOf, cleanup, completeUpload, MediaError, mediaLink, removeMedia, requestUpload, usage } from "./media-store";
 
 // The API, /api/v1/…: the student app's routes and Teacher Studio's (studio/…). Each request is
 // parsed, the session read, and the work handed to the service inside one transaction. Errors carry
@@ -14,6 +15,8 @@ import { verifyInitData } from "./telegram";
 // (Same shape as Splitly's, which is already reviewed and deployed.)
 
 const MAX_BODY_BYTES = 16 * 1024;
+/** Studio actions carry whole campaign graphs: up to what the database keeps (graph 256 KB + keys 64 KB). */
+const STUDIO_BODY_BYTES = 384 * 1024;
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
@@ -32,10 +35,10 @@ class RequestError extends Error {
   }
 }
 
-async function body(request: Request): Promise<Record<string, unknown>> {
+async function body(request: Request, max = MAX_BODY_BYTES): Promise<Record<string, unknown>> {
   if (!(request.headers.get("content-type") ?? "").toLowerCase().startsWith("application/json")) throw new RequestError("unsupported", 415);
   const text = await request.text();
-  if (text.length > MAX_BODY_BYTES) throw new RequestError("too_large", 413);
+  if (text.length > max) throw new RequestError("too_large", 413);
   try {
     const parsed = JSON.parse(text);
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("not an object");
@@ -159,7 +162,7 @@ const ROUTES: Record<string, [Route, Limit?]> = {
 
   // A new teacher: Supabase emails a confirmation link back to the studio's sign-in page.
   "POST studio/signup": [
-    async ({ request }) => {
+    async ({ request, db }) => {
       requireTeacherAuth();
       const input = await body(request);
       const name = typeof input.name === "string" ? input.name.trim() : "";
@@ -172,7 +175,11 @@ const ROUTES: Record<string, [Route, Limit?]> = {
       );
       if (!result.ok)
         throw new RequestError(result.reason, result.reason === "unavailable" ? 502 : result.reason === "rate_limited" ? 429 : 409);
-      return { status: "confirm_email" };
+      // With "Confirm email" off in Supabase the account is confirmed at once: sign the teacher in.
+      if (!result.account.confirmed) return { status: "confirm_email" };
+      const userId = await signInTeacher(db, result.account);
+      const session = issueSession(userId, serverEnv().sessionSecret);
+      return { status: "signed_in", token: session.token, expiresAt: session.expiresAt };
     },
     { scope: "studio-signup", by: "address", max: 5, seconds: 3600 },
   ],
@@ -237,9 +244,45 @@ const ROUTES: Record<string, [Route, Limit?]> = {
     },
     { scope: "studio-media", by: "user", max: 60, seconds: 3600 },
   ],
+  // Large media in object storage (lib/server/media-store.ts): a signed upload, its check, a signed link.
+  "POST media/upload": [
+    async ({ request, db }) => requestUpload(db, await actorOf(db, sessionUser(request)), await body(request)),
+    { scope: "media-upload", by: "user", max: 60, seconds: 3600 },
+  ],
+  "POST media/complete": [
+    async ({ request, db }) => {
+      const done = await completeUpload(db, await actorOf(db, sessionUser(request)), await body(request));
+      // A refused upload was already deleted: answer with the reason and keep that (commit).
+      return done.ok ? { media: done.media } : fail(done.error.code, done.error.status);
+    },
+    { scope: "media-upload", by: "user", max: 60, seconds: 3600 },
+  ],
+  "POST media/link": [
+    async ({ request, db }) => mediaLink(db, await actorOf(db, sessionUser(request)), await body(request)),
+    { scope: "media-link", by: "user", max: 600, seconds: 3600 },
+  ],
+  "POST studio/objects/delete": [
+    async ({ request, db }) => removeMedia(db, await actorOf(db, sessionUser(request)), await body(request)),
+    { scope: "studio-media", by: "user", max: 60, seconds: 3600 },
+  ],
+  "GET studio/objects/usage": [
+    async ({ request, db }) => {
+      const actor = await actorOf(db, sessionUser(request));
+      if (!actor.teacher) throw new RequestError("forbidden", 403);
+      return usage(db, actor);
+    },
+  ],
+  // Daily housekeeping (abandoned uploads, recordings past 180 days), called by Vercel Cron (a GET with "Bearer CRON_SECRET").
+  "GET cron/media-cleanup": [
+    async ({ request, db }) => {
+      const secret = process.env.CRON_SECRET ?? "";
+      if (secret.length < 16 || request.headers.get("authorization") !== `Bearer ${secret}`) throw new RequestError("forbidden", 403);
+      return cleanup(db);
+    },
+  ],
   "GET studio/state": [async ({ request, db }) => ({ facts: await studioState(db, sessionUser(request)) })],
   "POST studio/actions": [
-    async ({ request, db }) => studioAct(db, sessionUser(request), await body(request)),
+    async ({ request, db }) => studioAct(db, sessionUser(request), await body(request, STUDIO_BODY_BYTES)),
     { scope: "studio-action", by: "user", max: 900, seconds: 3600 },
   ],
 };
@@ -296,6 +339,7 @@ export async function handle(request: Request, path: string[]): Promise<Response
     if (error instanceof RequestError) return fail(error.code, error.status);
     if (error instanceof ServiceError) return fail(error.code, error.status);
     if (error instanceof StudioError) return json({ error: error.code, problems: error.problems }, error.status);
+    if (error instanceof MediaError) return fail(error.code, error.status);
     // The database refusing a second grant or a negative balance: the request was wrong, not the server.
     const code = (error as { code?: string }).code;
     if (code === "23505") return fail("already_done", 409);

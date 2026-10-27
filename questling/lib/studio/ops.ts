@@ -5,6 +5,7 @@ import type { Campaign, CampaignKeys } from "@/lib/story/graph";
 import { parseAuthored } from "@/lib/story/schema";
 import { validateCampaign } from "@/lib/story/validate";
 import { CEFR_LEVELS, type Cefr, type DailyContent, type StudioEffect, type StudioFacts } from "./model";
+import { dubProblems, dubSchema, RUBRIC, starterDub, type DubContent, type Rubric, type RubricItem } from "@/lib/dub/model";
 import { starterCampaign } from "./starter";
 
 // What a teacher can do, as pure functions: (facts, action) → effects, or a refusal. Every action
@@ -14,7 +15,7 @@ import { starterCampaign } from "./starter";
 
 export type StudioAction =
   | { type: "createGroup"; name: string; cefr: Cefr }
-  | { type: "updateGroup"; groupId: string; name?: string; cefr?: Cefr }
+  | { type: "updateGroup"; groupId: string; name?: string; cefr?: Cefr; recommend?: boolean }
   | { type: "archiveGroup"; groupId: string; archived: boolean }
   | { type: "renewInvite"; groupId: string }
   | { type: "removeMember"; groupId: string; userId: string }
@@ -28,9 +29,17 @@ export type StudioAction =
   | { type: "publish"; questId: string }
   | { type: "setDaily"; groupId: string; day: string; content: unknown }
   | { type: "clearDaily"; entryId: string }
-  | { type: "replyHelp"; userId: string; ref: string; body: string };
+  | { type: "replyHelp"; userId: string; ref: string; body: string }
+  /** Voice-acting scenes (lib/dub/model.ts). */
+  | { type: "createDub"; title: string; cefr: Cefr }
+  | { type: "saveDub"; exerciseId: string; content: unknown }
+  | { type: "publishDub"; exerciseId: string }
+  | { type: "archiveDub"; exerciseId: string; archived: boolean }
+  | { type: "assignDub"; groupId: string; exerciseId: string; dueAt?: string | null }
+  | { type: "unassignDub"; assignmentId: string }
+  | { type: "reviewDub"; submissionId: string; decision: "approve" | "retry"; feedback?: string; rubric?: unknown };
 
-export type StudioRefusal = "invalid" | "not_found" | "archived" | "no_draft" | "not_published" | "invalid_graph";
+export type StudioRefusal = "invalid" | "not_found" | "archived" | "no_draft" | "not_published" | "invalid_graph" | "not_submitted";
 
 export type StudioOutcome = { kind: "ok"; id?: string } | { kind: "problems"; problems: string[] };
 
@@ -89,6 +98,7 @@ function slugOf(title: string, code: string): string {
 export function studioRun(facts: StudioFacts, action: StudioAction, ctx: StudioContext): StudioResult {
   const group = (id: string) => facts.groups.find((g) => g.id === id) ?? null;
   const quest = (id: string) => facts.quests.find((q) => q.id === id) ?? null;
+  const dub = (id: string) => (facts.dubs ?? []).find((d) => d.id === id) ?? null;
   const audit = (what: string, target: string | null): StudioEffect => ({ type: "audit", action: what, target });
 
   switch (action.type) {
@@ -107,7 +117,11 @@ export function studioRun(facts: StudioFacts, action: StudioAction, ctx: StudioC
       if (found.archivedAt) return refuse("archived");
       const groupName = action.name === undefined ? undefined : name(action.name);
       if (groupName === null || (action.cefr !== undefined && !isCefr(action.cefr))) return refuse("invalid");
-      return done([{ type: "group.update", groupId: found.id, name: groupName, cefr: action.cefr }, audit("group.update", found.id)]);
+      if (action.recommend !== undefined && typeof action.recommend !== "boolean") return refuse("invalid");
+      return done([
+        { type: "group.update", groupId: found.id, name: groupName, cefr: action.cefr, recommend: action.recommend },
+        audit("group.update", found.id),
+      ]);
     }
     case "archiveGroup": {
       const found = group(action.groupId);
@@ -138,6 +152,7 @@ export function studioRun(facts: StudioFacts, action: StudioAction, ctx: StudioC
       if (due !== null && (typeof due !== "string" || Number.isNaN(Date.parse(due)) || Date.parse(due) <= ctx.now.getTime()))
         return refuse("invalid");
       let version: number | null = null;
+      let graph: Campaign | null = campaignById.get(action.campaign) ?? null;
       if (!campaignById.has(action.campaign)) {
         // A teacher's own quest: a published version, the one named or the latest.
         const own = facts.quests.find((q) => q.slug === action.campaign);
@@ -147,6 +162,26 @@ export function studioRun(facts: StudioFacts, action: StudioAction, ctx: StudioC
         const chosen = action.version ? published.find((v) => v.version === action.version) : published.at(-1);
         if (!chosen) return refuse("not_published");
         version = chosen.version;
+        graph = chosen.graph;
+      }
+      // The voice-acting scenes the campaign uses go to the group with it (their latest published version).
+      const dubAssignments: StudioEffect[] = [];
+      for (const scene of graph?.chapters.flatMap((c) => c.scenes) ?? []) {
+        if (scene.kind !== "dub") continue;
+        const exercise = (facts.dubs ?? []).find((d) => d.slug === scene.exercise);
+        const published = exercise?.versions.filter((v) => v.status === "published").at(-1);
+        if (!exercise || !published) return refuse("not_published");
+        const existingDub = (facts.dubAssignments ?? []).find((a) => a.groupId === found.id && a.exercise === exercise.slug);
+        dubAssignments.push({
+          type: "dub.assign",
+          assignment: {
+            id: existingDub?.id ?? ctx.newId(),
+            groupId: found.id,
+            exercise: exercise.slug,
+            version: published.version,
+            dueAt: null,
+          },
+        });
       }
       const existing = facts.assignments.find((a) => a.groupId === found.id && a.campaign === action.campaign);
       const id = existing?.id ?? ctx.newId();
@@ -157,6 +192,7 @@ export function studioRun(facts: StudioFacts, action: StudioAction, ctx: StudioC
             assignment: { id, groupId: found.id, campaign: action.campaign, version, dueAt: due && new Date(due).toISOString() },
           },
           audit("assignment.set", id),
+          ...dubAssignments,
         ],
         { kind: "ok", id },
       );
@@ -249,6 +285,21 @@ export function studioRun(facts: StudioFacts, action: StudioAction, ctx: StudioC
       for (const scene of parsed.campaign.chapters.flatMap((c) => c.scenes))
         if ("audio" in scene && scene.audio && !facts.media.some((m) => m.id === scene.audio))
           problems.push(`${scene.id}: its recording is not one of yours`);
+      // A voice-acting scene must be one of the teacher's own, published (students play that version).
+      for (const scene of parsed.campaign.chapters.flatMap((c) => c.scenes))
+        if (
+          scene.kind === "dub" &&
+          !(facts.dubs ?? []).some((d) => d.slug === scene.exercise && !d.archivedAt && d.versions.some((v) => v.status === "published"))
+        )
+          problems.push(`${scene.id}: choose one of your published voice-acting scenes`);
+      // A teacher's own picture for a search needs storage, not connected in this build's checks yet.
+      for (const scene of parsed.campaign.chapters.flatMap((c) => c.scenes))
+        if (
+          scene.kind === "search" &&
+          !scene.picture.startsWith("/") &&
+          !(facts.objects ?? []).some((o) => o.id === scene.picture && o.kind === "image")
+        )
+          problems.push(`${scene.id}: its picture is not one of yours`);
       if (problems.length) return refuse("invalid_graph", problems);
       return done([
         { type: "version.publish", questId: found.id, version: draft.version },
@@ -278,6 +329,105 @@ export function studioRun(facts: StudioFacts, action: StudioAction, ctx: StudioC
       if (!found) return refuse("not_found");
       return done([{ type: "daily.remove", entryId: found.id }, audit("daily.remove", found.id)]);
     }
+    case "createDub": {
+      const title = name(action.title, 2, 80);
+      if (!title || !isCefr(action.cefr)) return refuse("invalid");
+      const id = ctx.newId();
+      const slug = `d-${slugOf(title, ctx.newCode()).slice(2)}`;
+      return done(
+        [
+          { type: "dub.create", exercise: { id, slug, title, cefr: action.cefr } },
+          { type: "dub.saveDraft", exerciseId: id, version: 1, content: starterDub(title, action.cefr) },
+          audit("dub.create", id),
+        ],
+        { kind: "ok", id },
+      );
+    }
+    case "saveDub": {
+      const found = dub(action.exerciseId);
+      if (!found) return refuse("not_found");
+      if (found.archivedAt) return refuse("archived");
+      const parsed = dubSchema.safeParse(action.content);
+      if (!parsed.success) return refuse("invalid", [`${parsed.error.issues[0]?.path.join(".")} ${parsed.error.issues[0]?.message}`]);
+      const content = parsed.data as DubContent;
+      // Only the teacher's own media, or a built-in clip.
+      for (const ref of [content.video, content.background].filter((r): r is string => !!r))
+        if (!ref.startsWith("demo:") && !(facts.objects ?? []).some((o) => o.id === ref && (o.kind === "video" || o.kind === "background")))
+          return refuse("invalid", [`media ${ref} is not yours`]);
+      const latest = found.versions.at(-1);
+      const version = !latest ? 1 : latest.status === "draft" ? latest.version : latest.version + 1;
+      return done([{ type: "dub.saveDraft", exerciseId: found.id, version, content }, audit("dub.save", found.id)], {
+        kind: "ok",
+        id: found.id,
+      });
+    }
+    case "publishDub": {
+      const found = dub(action.exerciseId);
+      if (!found) return refuse("not_found");
+      const draft = found.versions.at(-1);
+      if (!draft || draft.status !== "draft") return refuse("no_draft");
+      const video = (facts.objects ?? []).find((o) => o.id === draft.content.video);
+      const problems = dubProblems(draft.content, video?.durationMs ?? (draft.content.video.startsWith("demo:") ? undefined : 0));
+      if (problems.length) return refuse("invalid_graph", problems);
+      return done([{ type: "dub.publish", exerciseId: found.id, version: draft.version }, audit("dub.publish", found.id)]);
+    }
+    case "archiveDub": {
+      const found = dub(action.exerciseId);
+      if (!found) return refuse("not_found");
+      return done([{ type: "dub.update", exerciseId: found.id, archived: !!action.archived }, audit("dub.archive", found.id)]);
+    }
+    case "assignDub": {
+      const g = group(action.groupId);
+      const found = dub(action.exerciseId);
+      if (!g || !found) return refuse("not_found");
+      if (g.archivedAt || found.archivedAt) return refuse("archived");
+      const published = found.versions.filter((v) => v.status === "published").at(-1);
+      if (!published) return refuse("not_published");
+      const dueAt = action.dueAt ?? null;
+      if (dueAt !== null && (typeof dueAt !== "string" || Number.isNaN(Date.parse(dueAt)))) return refuse("invalid");
+      const existing = (facts.dubAssignments ?? []).find((a) => a.groupId === g.id && a.exercise === found.slug);
+      const id = existing?.id ?? ctx.newId();
+      return done(
+        [
+          { type: "dub.assign", assignment: { id, groupId: g.id, exercise: found.slug, version: published.version, dueAt } },
+          audit("dub.assign", id),
+        ],
+        { kind: "ok", id },
+      );
+    }
+    case "unassignDub": {
+      const found = (facts.dubAssignments ?? []).find((a) => a.id === action.assignmentId);
+      if (!found) return refuse("not_found");
+      return done([{ type: "dub.unassign", assignmentId: found.id }, audit("dub.unassign", found.id)]);
+    }
+    case "reviewDub": {
+      const submission = (facts.dubSubmissions ?? []).find((x) => x.id === action.submissionId);
+      if (!submission) return refuse("not_found");
+      if (submission.status !== "submitted") return refuse("not_submitted");
+      if (action.decision !== "approve" && action.decision !== "retry") return refuse("invalid");
+      const feedback = typeof action.feedback === "string" ? action.feedback.trim() : "";
+      if (feedback.length > 1000) return refuse("invalid");
+      const rubric = rubricOf(action.rubric);
+      if (rubric === undefined) return refuse("invalid");
+      const exercise = (facts.dubs ?? []).find((d) => d.slug === submission.exercise);
+      const content = exercise?.versions.find((v) => v.version === submission.version)?.content;
+      if (!content) return refuse("not_found");
+      const approve = action.decision === "approve";
+      return done([
+        {
+          type: "dub.review",
+          submissionId: submission.id,
+          status: approve ? "approved" : "retry",
+          feedback: feedback || null,
+          rubric,
+          grant:
+            approve && content.xp > 0
+              ? { userId: submission.userId, xp: content.xp, key: `dub:${submission.exercise}@${submission.version}` }
+              : null,
+        },
+        audit(approve ? "dub.approve" : "dub.retry", submission.id),
+      ]);
+    }
     case "replyHelp": {
       const member = facts.members.find((m) => m.userId === action.userId);
       const body = typeof action.body === "string" ? action.body.trim() : "";
@@ -291,4 +441,16 @@ export function studioRun(facts: StudioFacts, action: StudioAction, ctx: StudioC
       );
     }
   }
+}
+
+/** A rubric as sent: each item "good", "work" or left out; anything else is refused (undefined). */
+function rubricOf(value: unknown): Rubric | null | undefined {
+  if (value === undefined || value === null) return null;
+  if (typeof value !== "object" || Array.isArray(value)) return undefined;
+  const out: Rubric = {};
+  for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+    if (!(RUBRIC as readonly string[]).includes(k) || (v !== "good" && v !== "work")) return undefined;
+    out[k as RubricItem] = v;
+  }
+  return Object.keys(out).length ? out : null;
 }

@@ -9,6 +9,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { act, join, signInWithTelegram, state } from "@/lib/server/service";
 import { signInTeacher, studioAct, studioState } from "@/lib/server/studio-service";
+import { loadWorld } from "@/lib/server/world-store";
 import { loadStudio, persistStudio } from "@/lib/server/studio-store";
 import type { StudioAction } from "@/lib/studio/ops";
 import { sign, TOKEN } from "../telegram-fixture";
@@ -585,5 +586,23 @@ describe("teachers' recordings", () => {
 
     // Published and played: it cannot be deleted under the students.
     expect((await remove(token(alice), asset.id)).status).toBe(409);
+  });
+});
+
+describe("practice suggestions switch (gate D)", () => {
+  it("is on by default, the teacher turns it off for their group, and the student's world says so", async () => {
+    const alice = await newTeacher(31);
+    const bob = await newTeacher(32);
+    const groupId = idOf(await studio(alice, { type: "createGroup", name: "Советы", cefr: "A2" }));
+    const code = (await tx((db) => studioState(db, alice))).groups[0].inviteCode;
+    const student = await newStudent(31);
+    await tx((db) => join(db, student, code));
+    expect((await tx((db) => studioState(db, alice))).groups[0].recommend).toBe(true);
+    expect((await loadWorld(pg.db, student)).world.groups[0].recommend).toBe(true);
+
+    await studio(alice, { type: "updateGroup", groupId, recommend: false });
+    expect((await tx((db) => studioState(db, alice))).groups[0].recommend).toBe(false);
+    expect((await loadWorld(pg.db, student)).world.groups[0].recommend).toBe(false);
+    await expect(studio(bob, { type: "updateGroup", groupId, recommend: true })).rejects.toMatchObject({ code: "not_found" });
   });
 });

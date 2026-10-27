@@ -1,6 +1,7 @@
 import { campaignById, campaigns, campaignVersion } from "@/lib/content/campaigns";
 import type { DailyEntry } from "@/lib/content/daily";
 import type { Campaign } from "@/lib/story/graph";
+import type { AssignedDub } from "@/lib/dub/model";
 import type { Facts } from "./facts";
 
 // What surrounds a student's own record: the groups they joined, what their teachers assigned, the
@@ -9,7 +10,8 @@ import type { Facts } from "./facts";
 // Campaign graphs here carry no answer keys: those stay on the server.
 
 export type World = {
-  groups: { id: string; name: string; cefr: string; mentor: string }[];
+  /** `recommend: false`: the teacher turned practice suggestions off for the group. */
+  groups: { id: string; name: string; cefr: string; mentor: string; recommend?: boolean }[];
   /** Active assignments of the student's groups, in the order they were given. */
   assignments: { groupId: string; campaign: string; version: number | null; dueAt: string | null }[];
   /** Teachers' campaigns (exact versions) this student may play or has a run on. */
@@ -19,6 +21,8 @@ export type World = {
   daily?: { day: string; entry: DailyEntry }[];
   /** Links to the teachers' recordings this student may hear, by recording id (scene.audio, word.audio). */
   media?: Record<string, string>;
+  /** Voice-acting scenes assigned to the student's groups (published versions; lib/dub/model.ts). */
+  dubs?: AssignedDub[];
 };
 
 export const emptyWorld = (): World => ({ groups: [], assignments: [], campaigns: [], messages: [] });
