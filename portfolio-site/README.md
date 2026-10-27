@@ -55,29 +55,29 @@ npm run check:links   # every internal page and image, every external link (need
 
 ## Deployment
 
-Not deployed yet. The output in `out/` is plain HTML, CSS and images and can be served by any
-static host. Planned: a separate Vercel project on the free Hobby plan, deployed with the CLI from
-this folder (the same way as the five projects), not connected to GitHub.
+Live at https://portfolio-site-nu-brown.vercel.app (first deployed 2026-10-27). The output in `out/`
+is plain HTML, CSS and images and can be served by any static host. It runs as a separate Vercel
+project on the free Hobby plan, deployed with the CLI from this folder (the same way as the five
+projects).
 
 | Setting | Value |
 |---|---|
-| Project | new project `portfolio-site` in the existing Vercel team; no other project is touched |
+| Project | `portfolio-site` in the existing Vercel team; no other project is touched |
 | Root directory | `portfolio-site` (the CLI is run from it, so only this folder is uploaded) |
 | Framework preset | Next.js (`vercel.json`) |
 | Install / build command | `npm ci` / `npm run build` (`vercel.json`) |
 | Output | static export; Vercel serves it as static files, no server functions |
-| Node.js | 22.x (Next.js 16 needs 20.9 or newer) |
+| Node.js | 24.x, the Vercel default (Next.js 16 needs 20.9 or newer) |
 | Environment variables | none |
-| Git connection | none: pushes and merges do not deploy anything |
+| Git connection | the CLI linked the repository on the first deploy, but Git deployments are disabled for this project: pushes and merges deploy nothing |
 | Headers | `nosniff`, referrer policy, no framing, no camera/microphone/location (`vercel.json`) |
 
-First deploy (run by the owner after approval):
+Deploy an update (run by the owner):
 
 ```bash
 cd portfolio-site
 npx vercel deploy --prod --yes --scope riddle6
 ```
 
-`--yes` creates and links the project on the first run (the link is stored in `.vercel/`, which is
-not committed). Hobby is meant for personal, non-commercial use; a personal portfolio fits it,
+The link to the project is stored in `.vercel/`, which is not committed. Hobby is meant for personal, non-commercial use; a personal portfolio fits it,
 but check Vercel's current terms.
