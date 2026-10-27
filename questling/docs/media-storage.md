@@ -85,4 +85,22 @@ download links (`MEDIA_DAILY_DOWNLOADS`, default 2000). Operations are counted p
   `scripts/fake-s3.ts` (endpoint `http://localhost:54330`, bucket `questling-media`).
 - On the working database: `npx tsx scripts/live-check.mjs <site>` — with storage configured it uploads a
   video and a take, checks links and refusals, approves, and removes everything it stored.
-- **Not yet done**: the same against the real B2 bucket (needs the keys), and real phones.
+- Against the real bucket: `npx tsx scripts/storage-check.mts` (signed upload with its type, size read back,
+  byte range, unsigned/tampered/expired links refused, CORS from the site only, deletion).
+- **Not yet done**: real phones.
+
+## Connected (2026-10-27)
+
+- Bucket `-questling-media-ev26` (the leading hyphen is part of its name), EU Central
+  (`https://s3.eu-central-003.backblazeb2.com`, region `eu-central-003`), private. CORS rule
+  `questling` (PUT/GET/HEAD from the production site, the staging site and localhost 3100/3300) and the
+  lifecycle "keep only the last version" were set through the B2 API with the master key.
+- The app uses the key `questling-app`: this bucket only; listBuckets, listFiles, readFiles, writeFiles,
+  deleteFiles. It is in `.env.local` (not in Vercel yet: that is part of the deployment, by the owner's word).
+- Checked: `scripts/storage-check.mts` 11/11; the live check on the working database with the real
+  bucket 67/67, nothing visible left (deletes leave "hide" markers that the lifecycle removes a day later,
+  so the bucket may briefly hold a little more than `media_objects` counts).
+- B2 answers 401 (not 403) for an expired link, after a few seconds of allowed clock difference.
+- To tidy (owner): remove `B2_MASTER_KEY_ID`/`B2_MASTER_KEY` from `.env.local` (only the setup needed them),
+  and delete the earlier key `questling-media` in Application Keys — it is not limited to the bucket and
+  can change bucket settings; the app does not use it.

@@ -211,3 +211,10 @@ check on the working database (the demo has no such key); attempts now count per
 Tests: `tests/story-gate-e.test.ts` (10), DB test for the story item (1), `e2e/features-e.spec.ts` (5),
 the gate 3 walk now plays talks and searches. Full suites: unit/DB 188/188, e2e 118/118 twice. Live check
 on the working database (storage stand-in): 67/67, nothing left behind.
+
+## Backblaze B2 connected (2026-10-27)
+
+The real bucket is in use locally: `scripts/storage-check.mts` 11/11, live check on the working database
+with real storage 67/67 (uploads, content checks, signed links, access refusals, takes, review, XP,
+cleanup). Media uploads are no longer "unverified" on the server side; phones remain unverified. Setup
+and what is left to tidy: `docs/media-storage.md`, "Connected".
