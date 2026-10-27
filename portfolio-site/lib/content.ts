@@ -5,8 +5,8 @@ import type { Lang } from "./i18n";
 
 export type Section = { title: string; html: string };
 
-// Sections the site shows in its own way (gallery, contact block) or that repeat the tagline.
-const skipped = new Set(["Screenshots", "Short summary", "Contact", "Скриншоты", "Коротко", "Контакты"]);
+// Sections the site shows in its own way (gallery, contact block, demo note) or that repeat the tagline.
+const skipped = new Set(["Screenshots", "Short summary", "Contact", "About this demo", "Скриншоты", "Коротко", "Контакты", "О демо"]);
 
 /** Reads a case study copied from `showcase/` by `npm run sync` and splits it into sections. */
 export async function caseStudy(slug: string, lang: Lang): Promise<Section[]> {

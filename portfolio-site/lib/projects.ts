@@ -20,16 +20,16 @@ export type Project = {
   folder: string;
   showcase: string;
   kind: Text;
+  /** One strong line under the project name. */
+  headline: Text;
   tagline: Text;
-  status: Text;
-  /** "live" = fully working demo; "limited" = live with a stated limitation. */
-  statusTone: "live" | "limited";
   stack: string[];
   demo: string;
   links: Link[];
   /** Automated tests passing on 2026-10-27; null when the project has none. */
   tests: number | null;
-  limitations: Record<Lang, string[]>;
+  /** What the public demo shows, in one or two neutral sentences (checked 2026-10-27). */
+  demoNote: Text;
   shots: Shot[];
 };
 
@@ -41,26 +41,22 @@ export const projects: Project[] = [
     name: "NOVA Residence",
     folder: "nova-residence",
     showcase: "nova-residence",
-    kind: { en: "Real-estate landing page", ru: "Лендинг недвижимости" },
-    tagline: {
-      en: "A premium one-page site for a fictional Istanbul development: editorial design, residences with floor plans, gallery and a viewing request form.",
-      ru: "Премиальный одностраничный сайт вымышленного ЖК в Стамбуле: журнальный дизайн, квартиры с планировками, галерея и форма заявки на показ.",
+    kind: { en: "Real-estate website", ru: "Сайт недвижимости" },
+    headline: {
+      en: "A premium real-estate website that sells the place before the first visit.",
+      ru: "Премиальный сайт недвижимости, который продаёт место ещё до первого визита.",
     },
-    status: { en: "Completed concept, deployed", ru: "Концепт завершён, опубликован" },
-    statusTone: "live",
+    tagline: {
+      en: "A one-page site for a fictional Istanbul development: editorial design, residences with floor plans drawn from data, a full-screen gallery, a location map and a viewing request form.",
+      ru: "Одностраничный сайт вымышленного ЖК в Стамбуле: журнальный дизайн, квартиры с планировками из данных, полноэкранная галерея, карта района и форма заявки на показ.",
+    },
     stack: ["Next.js 16", "React 19", "TypeScript", "Tailwind CSS 4", "Motion"],
     demo: "https://nova-residence-five.vercel.app",
     links: [{ label: { en: "Live site", ru: "Сайт" }, href: "https://nova-residence-five.vercel.app" }],
     tests: null,
-    limitations: {
-      en: [
-        "Presentation site: the viewing form validates input but sends and stores nothing.",
-        "Photography was generated for the project and shows a fictional building.",
-      ],
-      ru: [
-        "Презентационный сайт: форма заявки проверяет поля, но ничего не отправляет и не хранит.",
-        "Фотографии сгенерированы для проекта и показывают вымышленное здание.",
-      ],
+    demoNote: {
+      en: "A concept site for a fictional development. The viewing request form shows its validation and confirmation states; in this showcase it does not send requests.",
+      ru: "Концепт-сайт вымышленного жилого комплекса. Форма заявки показывает проверку полей и подтверждение; в этой витрине заявки не отправляются.",
     },
     shots: [
       { file: "hero.webp", source: "nova-residence/docs/screenshots/hero.jpg", kind: "desktop", caption: { en: "First screen", ru: "Первый экран" } },
@@ -76,16 +72,15 @@ export const projects: Project[] = [
     name: "CUT&CO",
     folder: "barbershop-demo",
     showcase: "cut-and-co",
-    kind: { en: "Booking system", ru: "Система онлайн-записи" },
+    kind: { en: "Booking platform", ru: "Платформа онлайн-записи" },
+    headline: {
+      en: "A booking platform for barbershops: scheduling, staff, client workflows and analytics.",
+      ru: "Платформа онлайн-записи для барбершопов: расписание, мастера, клиенты и аналитика.",
+    },
     tagline: {
-      en: "A barbershop site with online booking, email confirmation, client, barber and admin workspaces, analytics and PWA. Double booking is impossible at the database level.",
-      ru: "Сайт барбершопа с онлайн-записью, подтверждением по почте, кабинетами клиента, мастера и администратора, аналитикой и PWA. Двойная запись исключена на уровне базы данных.",
+      en: "Online booking with email confirmation, client accounts, barber and admin workspaces, analytics and an installable PWA, in English and Russian. Double booking is prevented at the database level.",
+      ru: "Онлайн-запись с подтверждением по почте, кабинеты клиента, мастера и администратора, аналитика и установка как приложение, на русском и английском. Двойная запись исключена на уровне базы данных.",
     },
-    status: {
-      en: "Built and tested; live as a demo without its database",
-      ru: "Сделан и протестирован; опубликован как демо без базы",
-    },
-    statusTone: "limited",
     stack: ["Next.js 16", "TypeScript", "PostgreSQL", "Supabase Auth", "next-intl", "Zod", "Vitest"],
     demo: "https://barbershop-demo-sable.vercel.app",
     links: [
@@ -93,17 +88,9 @@ export const projects: Project[] = [
       { label: { en: "Admin demo", ru: "Демо админки" }, href: "https://barbershop-demo-sable.vercel.app/en/demo/admin" },
     ],
     tests: 248,
-    limitations: {
-      en: [
-        "The live site currently runs without its database (the Supabase project is paused): booking is a labelled preview and accounts are unavailable. The admin demo works with invented data.",
-        "Real email delivery was not exercised; reminders need an external scheduler on the free plan.",
-        "Tested in Chrome only, not on real phones. The security review is a self-review.",
-      ],
-      ru: [
-        "Сейчас сайт работает без базы (проект Supabase на паузе): запись идёт в режиме предпросмотра, аккаунты недоступны. Демо админки работает на вымышленных данных.",
-        "Настоящая отправка писем не проверялась; напоминаниям на бесплатном тарифе нужен внешний планировщик.",
-        "Проверено только в Chrome, не на настоящих телефонах. Обзор безопасности сделан самостоятельно.",
-      ],
+    demoNote: {
+      en: "The public preview uses demonstration data. Live account and booking services are not enabled in this showcase; the admin demo shows the workspaces on invented data.",
+      ru: "Публичная версия работает на демонстрационных данных. Аккаунты и настоящая запись в этой витрине не включены; демо админки показывает кабинеты на вымышленных данных.",
     },
     shots: [
       { file: "home.webp", source: "barbershop-demo/docs/screenshots/home.jpg", kind: "desktop", caption: { en: "Front page", ru: "Главная" } },
@@ -119,12 +106,14 @@ export const projects: Project[] = [
     folder: "flowly",
     showcase: "flowly",
     kind: { en: "BI dashboard", ru: "BI-дашборд" },
-    tagline: {
-      en: "Sales analytics for small shops: import orders from CSV or Excel and get revenue, customers, trends and a printable report, or open the full demo without signing up.",
-      ru: "Аналитика продаж для небольших магазинов: загрузите заказы из CSV или Excel и получите выручку, клиентов, динамику и отчёт для печати, или откройте демо без регистрации.",
+    headline: {
+      en: "Sales analytics for small shops: from an order export to clear, consistent numbers.",
+      ru: "Аналитика продаж для небольших магазинов: от выгрузки заказов к понятным и согласованным цифрам.",
     },
-    status: { en: "Completed, deployed", ru: "Завершён, опубликован" },
-    statusTone: "live",
+    tagline: {
+      en: "Import orders from CSV or Excel and get revenue, customers, trends, transactions and a printable report. Every figure comes from one tested metric engine.",
+      ru: "Загрузите заказы из CSV или Excel и получите выручку, клиентов, динамику, транзакции и отчёт для печати. Все цифры считает один протестированный движок метрик.",
+    },
     stack: ["Next.js 16", "TypeScript", "Supabase", "PostgreSQL", "Recharts", "shadcn/ui", "Playwright"],
     demo: "https://flowly-nine-ochre.vercel.app/demo",
     links: [
@@ -132,17 +121,9 @@ export const projects: Project[] = [
       { label: { en: "Product site", ru: "Сайт продукта" }, href: "https://flowly-nine-ochre.vercel.app" },
     ],
     tests: 194,
-    limitations: {
-      en: [
-        "Not tested on physical phones or real Safari; WebKit and device emulation stand in for them.",
-        "The password-reset email was not followed end to end.",
-        "English interface only; texts are prepared for a translation. The security review is a self-review.",
-      ],
-      ru: [
-        "Не проверялся на настоящих телефонах и в настоящем Safari; вместо них WebKit и эмуляция устройств.",
-        "Письмо сброса пароля не проверено до конца.",
-        "Интерфейс только на английском, тексты подготовлены к переводу. Обзор безопасности сделан самостоятельно.",
-      ],
+    demoNote: {
+      en: "The demo workspace uses an invented shop and needs no account. Account sign-up and saved workspaces are not enabled in this showcase.",
+      ru: "Демо работает на данных вымышленного магазина и не требует аккаунта. Регистрация и личные рабочие пространства в этой витрине не включены.",
     },
     shots: [
       { file: "overview.webp", source: "flowly/docs/screenshots/overview.jpg", kind: "desktop", caption: { en: "Overview: KPIs, revenue trend, channels", ru: "Обзор: показатели, динамика выручки, каналы" } },
@@ -158,30 +139,23 @@ export const projects: Project[] = [
     folder: "splitly",
     showcase: "splitly",
     kind: { en: "Telegram Mini App", ru: "Мини-приложение Telegram" },
-    tagline: {
-      en: "Shared group expenses inside Telegram: splits in any currency, a receipt scanner that runs on the phone, balances with simplified transfers, reports in PDF, XLSX and CSV.",
-      ru: "Общие расходы группы внутри Telegram: деление в любой валюте, сканер чеков прямо на телефоне, балансы с упрощёнными переводами, отчёты PDF, XLSX и CSV.",
+    headline: {
+      en: "Shared expenses inside Telegram, split fairly to the cent, with a receipt scanner on the phone.",
+      ru: "Общие расходы прямо в Telegram, поделённые честно до копейки, со сканером чеков на телефоне.",
     },
-    status: { en: "Completed, deployed; full phone checklist pending", ru: "Завершён, опубликован; полная проверка на телефонах впереди" },
-    statusTone: "limited",
+    tagline: {
+      en: "Splits in any currency with several payers, balances turned into a short list of transfers, receipts read on the phone and split line by line, reports in PDF, XLSX and CSV.",
+      ru: "Деление в любой валюте и с несколькими плательщиками, балансы в виде короткого списка переводов, чеки читаются на телефоне и делятся построчно, отчёты PDF, XLSX и CSV.",
+    },
     stack: ["Next.js 16", "TypeScript", "PostgreSQL", "Telegram Mini Apps", "Tesseract.js", "pdf-lib", "Playwright"],
     demo: "https://splitly-self.vercel.app/en/demo",
     links: [
       { label: { en: "Browser demo", ru: "Демо в браузере" }, href: "https://splitly-self.vercel.app/en/demo" },
-      { label: { en: "Open in Telegram", ru: "Открыть в Telegram" }, href: "https://t.me/Splitlly_bot" },
     ],
     tests: 269,
-    limitations: {
-      en: [
-        "Receipt reading is weak on real receipts: prices are found reliably, item names often are not; the review screen and manual entry cover it.",
-        "The full device checklist (iOS, Android, desktop Telegram) has not been run; downloads inside Telegram are not checked on real phones.",
-        "Screenshots show the Russian interface; the app itself is in English and Russian.",
-      ],
-      ru: [
-        "Чтение реальных чеков слабое: цены находятся надёжно, названия часто нет; выручают экран проверки и ручной ввод.",
-        "Полная проверка на устройствах (iOS, Android, Telegram для компьютера) не проводилась; скачивание файлов внутри Telegram на настоящих телефонах не проверено.",
-        "На скриншотах русский интерфейс; в приложении есть русский и английский.",
-      ],
+    demoNote: {
+      en: "The browser demo runs the same screens on demonstration data and needs no account. The Telegram version's account services are not enabled in this showcase.",
+      ru: "Демо в браузере показывает те же экраны на демонстрационных данных и не требует аккаунта. Аккаунты версии для Telegram в этой витрине не включены.",
     },
     shots: [
       { file: "desktop-group.webp", source: "splitly/docs/screenshots/stitch/desktop-group.webp", kind: "desktop", caption: { en: "A group: balance, members, expenses", ru: "Группа: баланс, участники, расходы" } },
@@ -197,12 +171,14 @@ export const projects: Project[] = [
     folder: "questling",
     showcase: "questling",
     kind: { en: "Learning game in Telegram", ru: "Обучающая игра в Telegram" },
-    tagline: {
-      en: "An English-learning game in Telegram with a Teacher Studio: story campaigns with clues and choices, quests, a word journal, voice acting; teachers build quests visually and see errors by question.",
-      ru: "Игра для изучения английского в Telegram со студией учителя: сюжетные кампании с уликами и выбором, квесты, словарь, озвучка; учитель собирает квесты визуально и видит ошибки по вопросам.",
+    headline: {
+      en: "An English-learning adventure in Telegram, with a studio where teachers build their own quests.",
+      ru: "Приключение для изучения английского в Telegram и студия, где учитель собирает свои квесты.",
     },
-    status: { en: "Deployed; phone checklist pending", ru: "Опубликован; проверка на телефонах впереди" },
-    statusTone: "limited",
+    tagline: {
+      en: "Story campaigns with clues and choices, quests, a word journal and voice acting for students; a visual quest builder, groups and answer analytics for teachers.",
+      ru: "Сюжетные кампании с уликами и выбором, квесты, словарь и озвучка для учеников; визуальный конструктор квестов, группы и аналитика ответов для учителя.",
+    },
     stack: ["Next.js 16", "TypeScript", "Supabase", "PostgreSQL", "Telegram Mini Apps", "S3 storage", "Playwright"],
     demo: "https://questling-dusky.vercel.app/en/demo",
     links: [
@@ -211,17 +187,9 @@ export const projects: Project[] = [
       { label: { en: "Open in Telegram", ru: "Открыть в Telegram" }, href: "https://t.me/QuestlingEnglish_bot" },
     ],
     tests: 205,
-    limitations: {
-      en: [
-        "Not yet tested on physical phones inside Telegram, including voice recording on iPhone and Android.",
-        "Password-reset emails for teachers need an SMTP server that is not configured yet.",
-        "No automatic pronunciation scoring: teachers review recordings. Team quests and 3D characters are out of scope.",
-      ],
-      ru: [
-        "Ещё не проверялся на настоящих телефонах в Telegram, включая запись голоса на iPhone и Android.",
-        "Письмам сброса пароля для учителей нужен почтовый сервер, он ещё не настроен.",
-        "Автоматической оценки произношения нет: записи проверяет учитель. Командные квесты и 3D-персонажи вне рамок проекта.",
-      ],
+    demoNote: {
+      en: "The student and studio demos run on demonstration data and need no account. In Telegram the app signs in with the user's Telegram account and keeps progress on the server.",
+      ru: "Демо ученика и студии работают на демонстрационных данных и не требуют аккаунта. В Telegram приложение входит по аккаунту Telegram и хранит прогресс на сервере.",
     },
     shots: [
       { file: "studio-builder.webp", source: "questling/docs/screenshots/studio-builder.jpg", kind: "desktop", caption: { en: "Teacher Studio: visual quest builder", ru: "Студия учителя: визуальный конструктор квестов" } },

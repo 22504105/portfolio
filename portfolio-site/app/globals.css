@@ -11,10 +11,6 @@
   --accent-hover: #1f43bd;
   --accent-soft: #e6ecfd;
   --on-accent: #ffffff;
-  --warn-soft: #fdf1dc;
-  --warn-ink: #7a4b00;
-  --ok-soft: #e1f3e8;
-  --ok-ink: #135c33;
   color-scheme: light;
 }
 
@@ -30,10 +26,6 @@
     --accent-hover: #a8bcff;
     --accent-soft: #1b2440;
     --on-accent: #0d0f12;
-    --warn-soft: #33270f;
-    --warn-ink: #f3c879;
-    --ok-soft: #12291c;
-    --ok-ink: #8fdcaf;
     color-scheme: dark;
   }
 }
@@ -49,10 +41,6 @@
   --color-accent-hover: var(--accent-hover);
   --color-accent-soft: var(--accent-soft);
   --color-on-accent: var(--on-accent);
-  --color-warn-soft: var(--warn-soft);
-  --color-warn-ink: var(--warn-ink);
-  --color-ok-soft: var(--ok-soft);
-  --color-ok-ink: var(--ok-ink);
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-display: var(--font-manrope), var(--font-inter), ui-sans-serif, system-ui, sans-serif;
 }

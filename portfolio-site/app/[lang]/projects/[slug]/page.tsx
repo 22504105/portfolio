@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ContactSection, Chips, ExternalLink, Footer, Header, Icon, Shot, StatusBadge, container } from "@/components/ui";
+import { ContactSection, Chips, ExternalLink, Footer, Header, Icon, Shot, container } from "@/components/ui";
 import { caseStudy } from "@/lib/content";
 import { dict, isLang, langs, localizeDemo } from "@/lib/i18n";
 import { codeUrl, getProject, projects } from "@/lib/projects";
@@ -39,13 +39,10 @@ export default async function ProjectPage({ params }: PageProps<"/[lang]/project
             <Icon name="arrow" className="size-4 rotate-180" />
             {t.detail.back}
           </Link>
-          <div className="mt-6 flex flex-wrap items-center gap-2">
-            <span className="text-sm font-semibold text-accent">{p.kind[lang]}</span>
-            <StatusBadge project={p} lang={lang} />
-          </div>
+          <p className="mt-6 text-sm font-semibold text-accent">{p.kind[lang]}</p>
           <h1 className="mt-3 font-display text-4xl font-extrabold tracking-tight sm:text-5xl">{p.name}</h1>
-          <p className="mt-4 max-w-3xl text-lg text-pretty text-muted">{p.tagline[lang]}</p>
-          <p className="mt-2 text-sm text-muted">{t.detail.concept}</p>
+          <p className="mt-4 max-w-3xl font-display text-xl font-semibold text-pretty sm:text-2xl">{p.headline[lang]}</p>
+          <p className="mt-3 max-w-3xl text-lg text-pretty text-muted">{p.tagline[lang]}</p>
           <div className="mt-6 flex flex-wrap gap-2">
             {p.links.map((l, i) => (
               <ExternalLink
@@ -62,6 +59,9 @@ export default async function ProjectPage({ params }: PageProps<"/[lang]/project
               {t.detail.code}
             </ExternalLink>
           </div>
+          <p className="mt-4 max-w-3xl text-sm text-pretty text-muted">
+            <span className="font-semibold text-ink">{t.detail.demoNote}:</span> {p.demoNote[lang]} {t.detail.concept}
+          </p>
           <div className="mt-10 overflow-hidden rounded-2xl border border-line bg-surface-2 p-2 sm:p-4">
             <div className="overflow-hidden rounded-xl border border-line">
               <Shot slug={p.slug} shot={desktop[0]} lang={lang} priority />
@@ -73,8 +73,8 @@ export default async function ProjectPage({ params }: PageProps<"/[lang]/project
           <aside className="lg:col-span-4 lg:order-2">
             <dl className="grid gap-6 rounded-2xl border border-line bg-surface p-6 lg:sticky lg:top-24">
               <div>
-                <dt className="text-xs font-semibold tracking-wide text-muted uppercase">{t.detail.status}</dt>
-                <dd className="mt-1.5 font-medium">{p.status[lang]}</dd>
+                <dt className="text-xs font-semibold tracking-wide text-muted uppercase">{t.detail.type}</dt>
+                <dd className="mt-1.5 font-medium">{p.kind[lang]}</dd>
               </div>
               <div>
                 <dt className="text-xs font-semibold tracking-wide text-muted uppercase">{t.detail.role}</dt>
@@ -102,14 +102,6 @@ export default async function ProjectPage({ params }: PageProps<"/[lang]/project
                 <div className="prose-cs" dangerouslySetInnerHTML={{ __html: s.html }} />
               </section>
             ))}
-            <section className="rounded-2xl border border-line bg-warn-soft/60 p-6">
-              <h2 className="font-display text-xl font-bold tracking-tight">{t.detail.limitations}</h2>
-              <ul className="mt-3 list-disc space-y-2 pl-5">
-                {p.limitations[lang].map((l) => (
-                  <li key={l}>{l}</li>
-                ))}
-              </ul>
-            </section>
           </article>
         </div>
 

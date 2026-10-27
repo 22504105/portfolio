@@ -1,7 +1,7 @@
 import Link from "next/link";
 import shotSizes from "@/content/shots.json";
 import { contact, dict, type Lang } from "@/lib/i18n";
-import type { Project, Shot as ShotData } from "@/lib/projects";
+import type { Shot as ShotData } from "@/lib/projects";
 
 const sizes: Record<string, number[]> = shotSizes;
 
@@ -169,16 +169,6 @@ export function Footer({ lang }: { lang: Lang }) {
         </ExternalLink>
       </div>
     </footer>
-  );
-}
-
-export function StatusBadge({ project, lang }: { project: Project; lang: Lang }) {
-  const tone = project.statusTone === "live" ? "bg-ok-soft text-ok-ink" : "bg-warn-soft text-warn-ink";
-  return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${tone}`}>
-      <span aria-hidden className="size-1.5 rounded-full bg-current" />
-      {project.status[lang]}
-    </span>
   );
 }
 

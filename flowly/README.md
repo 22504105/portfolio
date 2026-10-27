@@ -32,6 +32,10 @@ browser and never uploaded as a whole.
 against a live Supabase project; the demo needs no backend. What was verified
 and what was not is stated below and in [`docs/security.md`](docs/security.md).
 
+On the public deployment the Supabase project is currently paused (checked
+2026-10-27): the demo works, sign-in and accounts do not until the project is
+resumed.
+
 ## Features
 
 | Area         | What it does                                                                                                                                                              |

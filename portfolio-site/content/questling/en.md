@@ -1,8 +1,8 @@
 # Questling
 
-**Status:** deployed with database, Telegram sign-in, Teacher Studio and media storage; not yet
-tested on physical phones inside Telegram · **Live demo:** student app
-https://questling-dusky.vercel.app/en/demo, Teacher Studio
+**An English-learning adventure in Telegram, with a studio where teachers build their own quests.**
+
+**Live demo:** student app https://questling-dusky.vercel.app/en/demo, Teacher Studio
 https://questling-dusky.vercel.app/en/demo/studio, Telegram https://t.me/QuestlingEnglish_bot ·
 **Code:** https://github.com/22504105/portfolio/tree/main/questling
 
@@ -23,7 +23,25 @@ Homework apps compete with everything else on a student's phone and usually lose
 practice that students open on their own, but they also need control: what each group gets at its
 level, where students get stuck, and the ability to write their own material without a developer.
 
-## Solution
+## Key features
+
+- Telegram Mini App with a browser demo; Teacher Studio for desktop and phone
+- Two story campaigns (A1-A2, B1-B2) with choices, evidence and three endings
+- Quick quests of eight kinds, daily quests, word and fact of the day
+- Tap-to-translate word help and fair answer order
+- Word journal with spaced repetition
+- Voice acting: record your lines over a scene, teacher approves
+- Hero wardrobe, shop and inventory (cosmetic only, no real money)
+- Visual quest builder, versioned library, analytics by question
+
+## Design and user experience
+
+A dark-fantasy world designed for phones first: illustrated heroes, clues on parchment, Cinzel
+headings and one bottom navigation bar on the main screens. The screens implement an approved
+20-screen design. The Teacher Studio is a clean desktop workspace that also adapts to phones, with a
+slide-out menu and a builder split into tabs.
+
+## How it works
 
 The game runs where students already are, in Telegram, so there is nothing to install. Learning is
 wrapped in stories built as validated graphs: each choice, puzzle and piece of evidence is a node,
@@ -32,7 +50,7 @@ are cosmetic only and granted once by the server. The Teacher Studio exposes the
 through a visual builder, keeps published versions fixed for students already playing, and turns
 real answers into analytics by question.
 
-## Work done
+## What was built
 
 - Implementation of an approved 20-screen design (four story-player states) as a working app, with
   a screen-to-route map and visual comparison against the design.
@@ -49,17 +67,6 @@ real answers into analytics by question.
 - Private media storage with signed links, quotas and nightly cleanup.
 - Student data export and deletion, security review, 205 unit and database tests, Playwright
   end-to-end and accessibility tests, a live check against the deployed site.
-
-## Key features
-
-- Telegram Mini App with a browser demo; Teacher Studio for desktop and phone
-- Two story campaigns (A1-A2, B1-B2) with choices, evidence and three endings
-- Quick quests of eight kinds, daily quests, word and fact of the day
-- Tap-to-translate word help and fair answer order
-- Word journal with spaced repetition
-- Voice acting: record your lines over a scene, teacher approves
-- Hero wardrobe, shop and inventory (cosmetic only, no real money)
-- Visual quest builder, versioned library, analytics by question
 
 ## Technology
 
@@ -86,6 +93,11 @@ Blender for asset work. Vercel hosting.
 ## Screenshots
 
 See [`screenshots.md`](screenshots.md).
+
+## About this demo
+
+The student and studio demos run on demonstration data and need no account. In Telegram the app
+signs in with the user's Telegram account and keeps progress on the server.
 
 ## Short summary
 

@@ -115,6 +115,9 @@ npm run test:e2e    # Playwright on a phone and a desktop, including axe accessi
 
 ## Status and limitations
 
+- **Public deployment, 2026-10-27:** the Supabase project is paused, so the
+  browser demo works and the Telegram app cannot sign in until the project is
+  resumed.
 - **Complete and deployed**; the Mini App has been opened in Telegram on a
   phone. The full device checklist (iOS, Android, desktop Telegram) has not
   been run.

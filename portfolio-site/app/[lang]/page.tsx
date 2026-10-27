@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ContactButtons, ContactSection, Chips, ExternalLink, Footer, Header, Icon, Shot, StatusBadge, buttonSecondary, container } from "@/components/ui";
+import { ContactButtons, ContactSection, Chips, ExternalLink, Footer, Header, Icon, Shot, buttonSecondary, container } from "@/components/ui";
 import { contact, dict, isLang, localizeDemo } from "@/lib/i18n";
 import { codeUrl, getProject, projects } from "@/lib/projects";
 
@@ -59,15 +59,13 @@ export default async function Home({ params }: PageProps<"/[lang]">) {
                       )}
                     </Link>
                     <div className="flex flex-col gap-4 p-6 sm:p-8 lg:col-span-5">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-sm font-semibold text-accent">{p.kind[lang]}</span>
-                        <StatusBadge project={p} lang={lang} />
-                      </div>
+                      <span className="text-sm font-semibold text-accent">{p.kind[lang]}</span>
                       <h3 className="font-display text-2xl font-extrabold tracking-tight">
                         <Link href={detail} className="hover:text-accent">
                           {p.name}
                         </Link>
                       </h3>
+                      <p className="text-lg leading-snug font-medium text-pretty">{p.headline[lang]}</p>
                       <p className="text-pretty text-muted">{p.tagline[lang]}</p>
                       <Chips items={p.stack} />
                       {p.tests && (

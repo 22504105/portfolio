@@ -22,7 +22,7 @@ for (const file of await htmlFiles(out)) {
   const html = await readFile(file, "utf8");
   for (const [, url] of html.matchAll(/(?:href|src)="([^"#]+)/g)) {
     if (url.startsWith("http")) external.add(url.replace(/&amp;/g, "&"));
-    else if (url.startsWith("/") && !url.startsWith("/_next/")) internal.add(url);
+    else if (url.startsWith("/") && !url.startsWith("/_next/")) internal.add(url.split("?")[0]);
   }
 }
 

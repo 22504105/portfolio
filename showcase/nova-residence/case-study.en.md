@@ -1,6 +1,8 @@
 # NOVA Residence
 
-**Status:** completed concept, deployed · **Live demo:** https://nova-residence-five.vercel.app ·
+**A premium real-estate website that sells the place before the first visit.**
+
+**Live demo:** https://nova-residence-five.vercel.app ·
 **Code:** https://github.com/22504105/portfolio/tree/main/nova-residence
 
 **Role:** Full-Stack Developer responsible for implementing application functionality,
@@ -18,14 +20,32 @@ Property developers need a site that sells a place before it can be visited. It 
 premium without the usual clichés (gold, gradients, stock templates), stay fast on a phone, and
 keep the visitor moving toward a viewing request instead of getting lost in effects.
 
-## Solution
+## Key features
+
+- Hero with separate crops for landscape and portrait screens
+- Residences with detail drawer and data-driven floor plans
+- Editorial gallery with full-screen lightbox
+- Location map with travel times
+- Viewing request form with validation and confirmation states
+- Section-aware fixed header, full-screen mobile menu
+- Reduced-motion support, keyboard access throughout
+
+## Design and user experience
+
+Editorial and restrained: the photography carries the warmth while the interface stays quiet.
+A light Newsreader serif for headings and Hanken Grotesk for text, with no gradients, shadows or
+rounded corners. The first screen has separate image crops for landscape and portrait screens, the
+mobile menu takes the full screen, the gallery works with the keyboard and with swipes, and motion
+switches off for visitors who prefer reduced motion.
+
+## How it works
 
 A restrained editorial site where typography, spacing and photography carry the brand. Residences
 open in a detail drawer with facts and a floor plan drawn from data; a gallery opens in a
 full-screen lightbox; a stylised map shows travel times; every section ends close to the
 "Book a Viewing" action. Motion is light and switches off for visitors who ask for reduced motion.
 
-## Work done
+## What was built
 
 - Design system: palette, type scale, spacing, motion rules (`docs/design-system.md`).
 - Page sections as components, with all copy, facts and floor plans in data files.
@@ -33,16 +53,6 @@ full-screen lightbox; a stylised map shows travel times; every section ends clos
   validated viewing form with submitting and success states.
 - Image pipeline that processes source renders into consistent, responsive images.
 - Accessibility pass (native dialogs, focus management, visible focus) and deployment to Vercel.
-
-## Key features
-
-- Hero with separate crops for landscape and portrait screens
-- Residences with detail drawer and data-driven floor plans
-- Editorial gallery with full-screen lightbox
-- Location map with travel times
-- Viewing request form (simulated: nothing is sent)
-- Section-aware fixed header, full-screen mobile menu
-- Reduced-motion support, keyboard access throughout
 
 ## Technology
 
@@ -61,6 +71,11 @@ backend, no UI kit.
 ## Screenshots
 
 See [`screenshots.md`](screenshots.md).
+
+## About this demo
+
+A concept site for a fictional development. The viewing request form shows its validation and
+confirmation states; in this showcase it does not send requests.
 
 ## Short summary
 
