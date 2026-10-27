@@ -260,7 +260,7 @@ export function PuzzleScreen({ node, attemptsUsed, grade, onNext, help }: Props)
 
 function PuzzleHeader({ t, base }: { t: Dictionary; base: string }) {
   return (
-    <header className="bg-surface/90 pt-safe fixed inset-x-0 top-0 z-50 shadow-[0_1px_8px_rgba(0,0,0,0.4)] backdrop-blur-xl">
+    <header className="bg-surface/90 pt-safe fixed inset-x-0 top-(--demo-bar) z-50 shadow-[0_1px_8px_rgba(0,0,0,0.4)] backdrop-blur-xl">
       <div className="px-gutter mx-auto flex h-16 w-full max-w-md items-center justify-between">
         <div className="gap-space-xs flex items-center">
           <Link

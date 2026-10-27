@@ -88,8 +88,9 @@ export function AppShell({ root, workspaceName, calendar, messages, account, chi
               )}
             </div>
           </div>
-          {/* Below the desktop width the period and the demo label take a row of their own, always in view. */}
-          <div className="border-line flex items-center gap-2.5 overflow-x-auto border-t px-5 py-2.5 md:px-7 lg:hidden">
+          {/* Below the desktop width the period and the demo label take a row of their own, always in view;
+              on a narrow phone the label wraps under the period instead of being cut off at the edge. */}
+          <div className="border-line flex flex-wrap items-center gap-2.5 border-t px-5 py-2.5 md:px-7 lg:hidden">
             <PeriodPicker calendar={calendar} labels={messages.period} />
             {demoBadge}
           </div>

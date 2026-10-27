@@ -9,7 +9,7 @@ import { tr } from "@/lib/content/text";
 import { useNow } from "@/lib/client/student";
 import { useStudio } from "@/lib/client/studio";
 import { dayOf } from "@/lib/game/time";
-import { fill, plural } from "@/lib/i18n";
+import { fill, plural, type Locale } from "@/lib/i18n";
 import { download, timeAgo } from "@/lib/studio/format";
 import type { Member, StudioFacts } from "@/lib/studio/model";
 import {
@@ -47,14 +47,18 @@ type Kind = "all" | "question" | "puzzle" | "evidence";
 const keyOf = (h: Pick<HelpRequest, "ref"> & { member: Pick<Member, "userId"> }) => `${h.member.userId}|${h.ref}`;
 
 /** The scene a help request is about, in the version the student plays, and its answer key. */
-function sceneOf(facts: StudioFacts, h: HelpRequest): { scene: GradedScene; chapter: string; campaign: string; keys: CampaignKeys } | null {
+function sceneOf(
+  facts: StudioFacts,
+  h: HelpRequest,
+  locale: Locale,
+): { scene: GradedScene; chapter: string; campaign: string; keys: CampaignKeys } | null {
   const version = h.member.runs.find((r) => r.campaign === h.campaign)?.version;
   const campaign = campaignFor(facts, h.campaign, version);
   const found = campaign && locate(campaign, h.scene);
   if (!campaign || !found || !isGraded(found.scene)) return null;
   const own = facts.quests.find((q) => q.slug === h.campaign)?.versions.find((v) => v.version === campaign.version);
   const keys = campaignById.has(campaign.id) ? keysOf(campaign) : (own?.keys ?? {});
-  return { scene: found.scene, chapter: found.chapter.label.ru, campaign: campaign.title.ru, keys };
+  return { scene: found.scene, chapter: tr(found.chapter.label, locale), campaign: tr(campaign.title, locale), keys };
 }
 
 export function AnalyticsScreen() {
@@ -80,7 +84,7 @@ export function AnalyticsScreen() {
   const all = useMemo(() => helpRequests(facts, groupId), [facts, groupId]);
   const requests = all
     .filter((h) => showAnswered || !h.answered || keyOf(h) === selected)
-    .filter((h) => kind === "all" || sceneOf(facts, h)?.scene.kind === kind)
+    .filter((h) => kind === "all" || sceneOf(facts, h, locale)?.scene.kind === kind)
     .sort((a, b) => (sort === "urgent" ? a.at.localeCompare(b.at) : b.at.localeCompare(a.at)));
   const waiting = all.filter((h) => !h.answered).length;
   const current = requests.find((h) => keyOf(h) === selected) ?? requests[0] ?? null;
@@ -253,7 +257,7 @@ export function AnalyticsScreen() {
                 ) : null}
                 {requests.map((h) => {
                   const on = current && keyOf(h) === keyOf(current);
-                  const info = sceneOf(facts, h);
+                  const info = sceneOf(facts, h, locale);
                   const used = sceneProgress(
                     h.member.runs.find((r) => r.campaign === h.campaign) ?? ({ progress: {} } as never),
                     h.scene,
@@ -367,7 +371,7 @@ function Review({
   const [body, setBody] = useState("");
   const [state, setState] = useState<"idle" | "sent" | "error">("idle");
   const [pending, start] = useTransition();
-  const info = sceneOf(facts, request);
+  const info = sceneOf(facts, request, locale);
   const run = request.member.runs.find((r) => r.campaign === request.campaign);
   const progress = run ? sceneProgress(run, request.scene) : { used: 0, eliminated: [] as string[] };
   const before = facts.messages

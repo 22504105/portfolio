@@ -311,6 +311,25 @@
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
+/* Student demo screens give the "Demo" badge its own strip at the top instead of laying it over the screen
+   titles: --demo-bar pushes the page, the fixed and sticky headers (top-(--demo-bar)) and the full-height
+   screens down by the strip's height. It is 0 in the real app and in Teacher Studio, so nothing moves there. */
+:root {
+  --demo-bar: 0px;
+}
+:root:has([data-demo-badge]):not(:has([data-studio-section])) {
+  --demo-bar: 26px;
+}
+body {
+  padding-top: var(--demo-bar);
+}
+.h-dvh {
+  height: calc(100dvh - var(--demo-bar));
+}
+.min-h-dvh {
+  min-height: calc(100dvh - var(--demo-bar));
+}
+
 /* The demo badge sits over the middle of the header; in Teacher Studio on a phone that is where the
    title and the menu button are, so there it moves to the bottom right corner (the studio has no bottom bar). */
 @media (max-width: 1023px) {

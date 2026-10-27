@@ -57,7 +57,7 @@ export function MapScreen() {
 
   return (
     <div className="bg-background font-body-md text-body-md text-on-surface flex min-h-dvh flex-col antialiased">
-      <header className="pt-safe bg-surface/85 fixed top-0 z-50 w-full shadow-[0_4px_20px_rgba(0,0,0,0.4)] backdrop-blur-xl">
+      <header className="pt-safe bg-surface/85 fixed top-(--demo-bar) z-50 w-full shadow-[0_4px_20px_rgba(0,0,0,0.4)] backdrop-blur-xl">
         <div className="px-margin mx-auto flex h-16 w-full max-w-[420px] items-center justify-between">
           <div className="gap-space-sm flex items-center">
             <div className="text-primary flex h-11 w-11 items-center justify-center rounded-full">

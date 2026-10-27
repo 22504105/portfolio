@@ -6,7 +6,7 @@ import type { Dictionary } from "@/lib/i18n";
 // title, the profile button. Screens opened from somewhere else (settings) use it too.
 export function BackHeader({ title, backHref, profileHref, t }: { title: string; backHref: string; profileHref: string; t: Dictionary }) {
   return (
-    <header className="bg-surface/85 pt-safe fixed top-0 z-50 w-full shadow-[0_4px_20px_rgba(0,0,0,0.4)] backdrop-blur-xl">
+    <header className="bg-surface/85 pt-safe fixed top-(--demo-bar) z-50 w-full shadow-[0_4px_20px_rgba(0,0,0,0.4)] backdrop-blur-xl">
       <div className="px-margin mx-auto flex h-16 w-full max-w-[420px] items-center justify-between">
         <div className="gap-space-xs flex items-center">
           <Link
