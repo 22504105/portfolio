@@ -6,7 +6,8 @@ public browser demo, in English and Russian. Receipts are read on the device.
 
 **Live demo:** https://splitly-self.vercel.app (browser demo with invented
 data: [`/en/demo`](https://splitly-self.vercel.app/en/demo)). Inside Telegram:
-the bot [@Splitlly_bot](https://t.me/Splitlly_bot).
+the bot [@Splitlly_bot](https://t.me/Splitlly_bot); it needs the database,
+which is paused at the moment (see Status and limitations).
 
 **Concept project.** Demo names, groups and amounts are invented.
 
