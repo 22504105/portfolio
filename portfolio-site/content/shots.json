@@ -1,0 +1,110 @@
+{
+  "nova-residence/hero.webp": [
+    1425,
+    900
+  ],
+  "nova-residence/residence-details.webp": [
+    1425,
+    900
+  ],
+  "nova-residence/gallery.webp": [
+    1425,
+    900
+  ],
+  "nova-residence/contact.webp": [
+    1425,
+    900
+  ],
+  "nova-residence/mobile-hero.webp": [
+    640,
+    1385
+  ],
+  "nova-residence/mobile-residences.webp": [
+    640,
+    1385
+  ],
+  "cut-and-co/home.webp": [
+    1440,
+    900
+  ],
+  "cut-and-co/booking.webp": [
+    1440,
+    900
+  ],
+  "cut-and-co/admin-calendar.webp": [
+    1440,
+    900
+  ],
+  "cut-and-co/admin-analytics.webp": [
+    1440,
+    900
+  ],
+  "cut-and-co/mobile-booking.webp": [
+    640,
+    1385
+  ],
+  "flowly/overview.webp": [
+    1440,
+    900
+  ],
+  "flowly/analytics.webp": [
+    1440,
+    900
+  ],
+  "flowly/import-map.webp": [
+    1440,
+    900
+  ],
+  "flowly/report.webp": [
+    1440,
+    900
+  ],
+  "flowly/mobile-overview.webp": [
+    640,
+    1385
+  ],
+  "splitly/desktop-group.webp": [
+    1440,
+    900
+  ],
+  "splitly/desktop-dark-analytics.webp": [
+    1440,
+    900
+  ],
+  "splitly/phone-home.webp": [
+    412,
+    838
+  ],
+  "splitly/phone-scan-2-review.webp": [
+    412,
+    838
+  ],
+  "splitly/phone-scan-3-assign.webp": [
+    412,
+    838
+  ],
+  "questling/studio-builder.webp": [
+    1440,
+    900
+  ],
+  "questling/studio-analytics.webp": [
+    1440,
+    900
+  ],
+  "questling/home.webp": [
+    640,
+    1385
+  ],
+  "questling/story-player.webp": [
+    640,
+    1385
+  ],
+  "questling/story-map.webp": [
+    640,
+    1385
+  ],
+  "questling/word-journal.webp": [
+    640,
+    1385
+  ]
+}

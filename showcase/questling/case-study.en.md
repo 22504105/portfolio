@@ -6,6 +6,9 @@ https://questling-dusky.vercel.app/en/demo, Teacher Studio
 https://questling-dusky.vercel.app/en/demo/studio, Telegram https://t.me/QuestlingEnglish_bot ·
 **Code:** https://github.com/22504105/portfolio/tree/main/questling
 
+**Role:** Full-Stack Developer responsible for implementing application functionality,
+integrating frontend and backend components, and testing the resulting software.
+
 ## Overview
 
 An English-learning game for children and teenagers in a dark-fantasy setting. Students play
@@ -90,3 +93,13 @@ An English-learning game in Telegram with a Teacher Studio: story campaigns with
 choices, quests, word journal, voice acting and a hero to dress up; teachers build quests visually
 and see errors by question. Server-checked rewards, versioned stories, private media storage.
 Next.js, TypeScript, Supabase.
+
+## Contact
+
+Evgeniy, Full-Stack Web Developer
+
+- Telegram: [@Maybemol](https://t.me/Maybemol)
+- Email: [evgeniyshade@gmail.com](mailto:evgeniyshade@gmail.com)
+- GitHub: [github.com/22504105](https://github.com/22504105)
+
+Pricing and timelines are discussed individually based on project requirements.

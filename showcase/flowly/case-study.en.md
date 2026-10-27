@@ -4,6 +4,9 @@
 workspace, no account: https://flowly-nine-ochre.vercel.app/demo) ·
 **Code:** https://github.com/22504105/portfolio/tree/main/flowly
 
+**Role:** Full-Stack Developer responsible for implementing application functionality,
+integrating frontend and backend components, and testing the resulting software.
+
 ## Overview
 
 A business intelligence web app for small online shops and independent operators. Visitors explore
@@ -78,3 +81,13 @@ See [`screenshots.md`](screenshots.md).
 A BI dashboard for small shops: import orders from CSV or Excel and get revenue, customers, trends
 and a printable report, or try the full demo without signing up. Consistent metrics from one
 tested engine, safe spreadsheet import, row level security. Next.js, TypeScript, Supabase.
+
+## Contact
+
+Evgeniy, Full-Stack Web Developer
+
+- Telegram: [@Maybemol](https://t.me/Maybemol)
+- Email: [evgeniyshade@gmail.com](mailto:evgeniyshade@gmail.com)
+- GitHub: [github.com/22504105](https://github.com/22504105)
+
+Pricing and timelines are discussed individually based on project requirements.

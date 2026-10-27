@@ -142,3 +142,10 @@ npm run test:e2e    # Playwright on a phone and a desktop, including axe accessi
 All MIT unless noted: Next.js, React, Tailwind CSS, Lucide (ISC), decimal.js,
 Zod, clsx, tailwind-merge, qrcode-generator, Tesseract.js (Apache-2.0), pdf-lib, Inter typeface
 (SIL OFL). No paid services, assets or licences.
+
+## Author
+
+Built by Evgeniy, Full-Stack Web Developer: implementing application functionality, integrating
+frontend and backend components, and testing the resulting software. Contact:
+[Telegram @Maybemol](https://t.me/Maybemol) · [evgeniyshade@gmail.com](mailto:evgeniyshade@gmail.com) ·
+[GitHub](https://github.com/22504105). Other projects: [portfolio overview](../showcase/README.md).

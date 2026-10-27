@@ -1,5 +1,10 @@
 # Portfolio overview
 
+**Evgeniy, Full-Stack Web Developer.** Full-Stack Developer responsible for implementing application
+functionality, integrating frontend and backend components, and testing the resulting software.
+Telegram [@Maybemol](https://t.me/Maybemol) · [evgeniyshade@gmail.com](mailto:evgeniyshade@gmail.com) ·
+[GitHub](https://github.com/22504105)
+
 Five web projects, each in its own folder of this repository with its own stack and deployment.
 All are concept projects: the businesses and data are invented, the software is real and running.
 Case studies in English and Russian are in the folders below.
@@ -54,4 +59,15 @@ word journal, voice acting; teachers build quests visually and see errors by que
 | Splitly | Done | Done | EN + RU | 29, retaken from live site (Russian UI) | Live, verified 2026-10-27 |
 | Questling | Done | Done | EN + RU | 9, new, from live demo | Live, verified 2026-10-27 |
 
-Screenshot lists: `*/screenshots.md` in each folder.
+Screenshot lists: `*/screenshots.md` in each folder. A one-page portfolio site with all five
+projects in English and Russian is in [`../portfolio-site`](../portfolio-site).
+
+## Contact
+
+Evgeniy, Full-Stack Web Developer. Telegram [@Maybemol](https://t.me/Maybemol), email
+[evgeniyshade@gmail.com](mailto:evgeniyshade@gmail.com). Pricing and timelines are discussed
+individually based on project requirements.
+
+Евгений, Full-Stack веб-разработчик. Telegram [@Maybemol](https://t.me/Maybemol), почта
+[evgeniyshade@gmail.com](mailto:evgeniyshade@gmail.com). Стоимость и сроки обсуждаются
+индивидуально, в зависимости от требований проекта.

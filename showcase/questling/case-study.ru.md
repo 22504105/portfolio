@@ -6,6 +6,9 @@ https://questling-dusky.vercel.app/ru/demo, студия учителя
 https://questling-dusky.vercel.app/ru/demo/studio, Telegram https://t.me/QuestlingEnglish_bot ·
 **Код:** https://github.com/22504105/portfolio/tree/main/questling
 
+**Роль:** Full-Stack разработчик, отвечающий за реализацию функциональности приложения,
+интеграцию фронтенда и бэкенда и тестирование готового программного обеспечения.
+
 ## Обзор
 
 Игра для изучения английского для детей и подростков в стиле тёмного фэнтези. Ученики играют
@@ -93,3 +96,13 @@ Telegram Mini App API, S3-совместимое хранилище (Backblaze B
 выбором, квесты, словарь, озвучка сцен и герой, которого можно наряжать; учитель собирает квесты
 визуально и видит ошибки по вопросам. Награды проверяет сервер, истории с версиями, закрытое
 хранилище медиа. Next.js, TypeScript, Supabase.
+
+## Контакты
+
+Евгений (Evgeniy), Full-Stack веб-разработчик
+
+- Telegram: [@Maybemol](https://t.me/Maybemol)
+- Почта: [evgeniyshade@gmail.com](mailto:evgeniyshade@gmail.com)
+- GitHub: [github.com/22504105](https://github.com/22504105)
+
+Стоимость и сроки обсуждаются индивидуально, в зависимости от требований проекта.

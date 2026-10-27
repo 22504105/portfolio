@@ -103,3 +103,10 @@ a subfolder of a repository, set the Vercel project's Root Directory to it.
 
 - [`docs/requirements.md`](docs/requirements.md): what the site had to do
 - [`docs/design-system.md`](docs/design-system.md): colour, type, spacing, motion
+
+## Author
+
+Built by Evgeniy, Full-Stack Web Developer: implementing application functionality, integrating
+frontend and backend components, and testing the resulting software. Contact:
+[Telegram @Maybemol](https://t.me/Maybemol) · [evgeniyshade@gmail.com](mailto:evgeniyshade@gmail.com) ·
+[GitHub](https://github.com/22504105). Other projects: [portfolio overview](../showcase/README.md).

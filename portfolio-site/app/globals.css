@@ -1,0 +1,118 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #f6f6f3;
+  --surface: #ffffff;
+  --surface-2: #eeeee9;
+  --ink: #15171b;
+  --muted: #565c66;
+  --line: #e0e0d9;
+  --accent: #2b55e0;
+  --accent-hover: #1f43bd;
+  --accent-soft: #e6ecfd;
+  --on-accent: #ffffff;
+  --warn-soft: #fdf1dc;
+  --warn-ink: #7a4b00;
+  --ok-soft: #e1f3e8;
+  --ok-ink: #135c33;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0d0f12;
+    --surface: #15181d;
+    --surface-2: #1c2026;
+    --ink: #eceef2;
+    --muted: #a1a8b3;
+    --line: #272b33;
+    --accent: #86a2ff;
+    --accent-hover: #a8bcff;
+    --accent-soft: #1b2440;
+    --on-accent: #0d0f12;
+    --warn-soft: #33270f;
+    --warn-ink: #f3c879;
+    --ok-soft: #12291c;
+    --ok-ink: #8fdcaf;
+    color-scheme: dark;
+  }
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-soft: var(--accent-soft);
+  --color-on-accent: var(--on-accent);
+  --color-warn-soft: var(--warn-soft);
+  --color-warn-ink: var(--warn-ink);
+  --color-ok-soft: var(--ok-soft);
+  --color-ok-ink: var(--ok-ink);
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-manrope), var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 5rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+/* Case-study text rendered from Markdown. */
+.prose-cs {
+  color: var(--ink);
+  line-height: 1.7;
+}
+.prose-cs p {
+  margin: 0 0 1rem;
+}
+.prose-cs ul {
+  margin: 0 0 1rem;
+  padding-left: 1.25rem;
+  list-style: disc;
+}
+.prose-cs li {
+  margin: 0.35rem 0;
+}
+.prose-cs li::marker {
+  color: var(--accent);
+}
+.prose-cs strong {
+  font-weight: 600;
+}
+.prose-cs code {
+  font-size: 0.875em;
+  background: var(--surface-2);
+  border-radius: 4px;
+  padding: 0.1rem 0.3rem;
+  overflow-wrap: anywhere;
+}
+.prose-cs a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  overflow-wrap: anywhere;
+}

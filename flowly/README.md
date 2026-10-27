@@ -217,3 +217,10 @@ All MIT unless noted: Next.js, React, Tailwind CSS, shadcn/ui components
 (copied in) on Base UI, Lucide (ISC), Recharts, Papa Parse, read-excel-file,
 write-excel-file, Supabase JS, decimal.js, Zod, class-variance-authority
 (Apache-2.0), Geist typeface (SIL OFL). No paid services, assets or licences.
+
+## Author
+
+Built by Evgeniy, Full-Stack Web Developer: implementing application functionality, integrating
+frontend and backend components, and testing the resulting software. Contact:
+[Telegram @Maybemol](https://t.me/Maybemol) · [evgeniyshade@gmail.com](mailto:evgeniyshade@gmail.com) ·
+[GitHub](https://github.com/22504105). Other projects: [portfolio overview](../showcase/README.md).

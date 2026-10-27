@@ -5,6 +5,9 @@
 in Telegram: https://t.me/Splitlly_bot) ·
 **Code:** https://github.com/22504105/portfolio/tree/main/splitly
 
+**Role:** Full-Stack Developer responsible for implementing application functionality,
+integrating frontend and backend components, and testing the resulting software.
+
 ## Overview
 
 A Telegram Mini App for sharing expenses in a group: trips, flats, dinners. It records who paid
@@ -83,3 +86,13 @@ A Telegram Mini App for splitting group expenses: flexible splits in any currenc
 scanner that runs on the phone, balances and simplified transfers, reports in PDF, XLSX and CSV.
 Money rules enforced in code and in the database, 269 automated tests. Next.js, TypeScript,
 PostgreSQL.
+
+## Contact
+
+Evgeniy, Full-Stack Web Developer
+
+- Telegram: [@Maybemol](https://t.me/Maybemol)
+- Email: [evgeniyshade@gmail.com](mailto:evgeniyshade@gmail.com)
+- GitHub: [github.com/22504105](https://github.com/22504105)
+
+Pricing and timelines are discussed individually based on project requirements.

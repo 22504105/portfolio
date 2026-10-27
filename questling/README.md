@@ -173,3 +173,10 @@ Full list: [`docs/release.md`](docs/release.md#known-limitations-the-whole-produ
 Screens were implemented from a design made in Google Stitch; the character and
 item artwork comes from that design, and four garments were re-cut in Blender
 to fit the heroes.
+
+## Author
+
+Built by Evgeniy, Full-Stack Web Developer: implementing application functionality, integrating
+frontend and backend components, and testing the resulting software. Contact:
+[Telegram @Maybemol](https://t.me/Maybemol) · [evgeniyshade@gmail.com](mailto:evgeniyshade@gmail.com) ·
+[GitHub](https://github.com/22504105). Other projects: [portfolio overview](../showcase/README.md).

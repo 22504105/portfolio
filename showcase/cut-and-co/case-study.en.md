@@ -5,6 +5,9 @@
 https://barbershop-demo-sable.vercel.app/en/demo/admin) ·
 **Code:** https://github.com/22504105/portfolio/tree/main/barbershop-demo
 
+**Role:** Full-Stack Developer responsible for implementing application functionality,
+integrating frontend and backend components, and testing the resulting software.
+
 ## Overview
 
 A website and booking system for a barbershop: a bilingual public site (English and Russian),
@@ -80,3 +83,13 @@ See [`screenshots.md`](screenshots.md).
 A full booking system for a barbershop: bilingual site, online booking with email confirmation,
 client, barber and admin workspaces with analytics, PWA. Concurrency-safe booking enforced in
 PostgreSQL, tested with 248 automated tests. Next.js, TypeScript, Supabase.
+
+## Contact
+
+Evgeniy, Full-Stack Web Developer
+
+- Telegram: [@Maybemol](https://t.me/Maybemol)
+- Email: [evgeniyshade@gmail.com](mailto:evgeniyshade@gmail.com)
+- GitHub: [github.com/22504105](https://github.com/22504105)
+
+Pricing and timelines are discussed individually based on project requirements.

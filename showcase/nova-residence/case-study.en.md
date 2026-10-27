@@ -3,6 +3,9 @@
 **Status:** completed concept, deployed · **Live demo:** https://nova-residence-five.vercel.app ·
 **Code:** https://github.com/22504105/portfolio/tree/main/nova-residence
 
+**Role:** Full-Stack Developer responsible for implementing application functionality,
+integrating frontend and backend components, and testing the resulting software.
+
 ## Overview
 
 A one-page marketing website for a fictional premium residential development in Istanbul. It
@@ -64,3 +67,13 @@ See [`screenshots.md`](screenshots.md).
 A premium real-estate landing page for a fictional Istanbul development: editorial design,
 residences with floor plans, gallery and a viewing request form. Built with Next.js, TypeScript,
 Tailwind CSS and Motion; fast, responsive and accessible.
+
+## Contact
+
+Evgeniy, Full-Stack Web Developer
+
+- Telegram: [@Maybemol](https://t.me/Maybemol)
+- Email: [evgeniyshade@gmail.com](mailto:evgeniyshade@gmail.com)
+- GitHub: [github.com/22504105](https://github.com/22504105)
+
+Pricing and timelines are discussed individually based on project requirements.
