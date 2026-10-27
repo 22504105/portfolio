@@ -480,7 +480,10 @@
   `lib/dub/sync.ts`, `lib/client/take-upload.ts`, `lib/story/spot.ts`. `scripts/vercel-env.mjs` шлёт и `MEDIA_S3_*`,
   `CRON_SECRET`. Телефоны не проверены. **Влито в main 2026-10-27 (`584ffd7`) и выложено на стенд**
   https://questling-staging.vercel.app (только демо) по слову владельца; браузерные тесты возможностей против стенда — 33/33
-  (`E2E_BASE=<адрес> npx playwright test -c .tmp/pw-staging.config.ts …`). Рабочий сайт не обновлялся.
+  (`E2E_BASE=<адрес> npx playwright test -c .tmp/pw-staging.config.ts …`). **Рабочий сайт выложен владельцем
+  2026-10-27** (`!`-командой) **без настроек хранилища**: перенос `MEDIA_S3_*`/`CRON_SECRET` в Vercel владелец остановил.
+  Живая проверка на сайте — 54 пункта, раздел медиа пропущен («storage not configured»). Загрузка видео и дублей на
+  сайте не работает до `node scripts/vercel-env.mjs` + повторной выкладки — только по слову владельца.
   Грабли: в полном параллельном прогоне первое нажатие на картинку поиска может прийти до готовности страницы —
   в тестах сначала «пустое» нажатие с `toPass` (`tapNothing`); `npx playwright test` и `next start` делят `.next` —
   не гонять e2e, пока работает сервер на 3100.
