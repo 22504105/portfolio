@@ -4,8 +4,8 @@ import { forgottenAcademy } from "../lib/content/campaigns/forgotten-academy";
 import type { SearchScene } from "../lib/story/graph";
 import { demoAt } from "./demo-run";
 
-// Gate F (docs/features-audit.md): the screens added by the features prompt at the student widths the
-// prompt names (Telegram 320/360/390/430) in both languages, Teacher Studio's new screens at 1280/1440,
+// Gate F (docs/features-audit.md): the screens added by the features specification at the student widths the
+// specification names (Telegram 320/360/390/430) in both languages, Teacher Studio's new screens at 1280/1440,
 // picture-search taps landing on the same spot at any size, and text a teacher types never running as
 // code. All on the demo (no account, nothing stored).
 

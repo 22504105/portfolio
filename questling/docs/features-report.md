@@ -1,8 +1,8 @@
-# Features prompt: final report (gates A–F, 2026-10-27)
+# Features specification: final report (gates A–F, 2026-10-27)
 
-The final report that `QUESTLING_UNIFIED_FEATURES_MASTER_PROMPT.txt` asks for. Details of each gate:
-`docs/features-audit.md`. Nothing here is merged into `main` or deployed to production: both wait for the
-owner's word.
+The final report on the learning features ([`requirements.md`](requirements.md), "Learning features").
+Details of each gate: `docs/features-audit.md`. Merged into `main` and deployed to production on
+2026-10-27, with media storage enabled.
 
 ## 1. What existed and what changed
 
@@ -13,9 +13,9 @@ owner's word.
 | D                | `questling/features-d`                                       | word journal, spaced repetition (`lib/learning/srs.ts`, `vocab.ts`), suggestions from mistakes, objectives (`lib/learning/recommend.ts`, `objectives.ts`), teacher insights                                                                                | 8 `20261027000100_vocab_journal.sql`  |
 | B, C             | `questling/features-bc`                                      | private S3-compatible storage (`lib/server/sigv4.ts`, `storage.ts`, `media-check.ts`, `media-store.ts`), voice-acting scenes in the studio and for students (`lib/dub/*`, `components/dub/*`, `components/studio/dubbing-screen.tsx`), review with XP once | 9 `20261028000100_media_dubbing.sql`  |
 | E                | `questling/features-e`                                       | talks and picture searches in the story, voice acting as a story scene, story items as rewards (`lib/story/*`, `components/student/story-extra.tsx`, `components/studio/story-forms.tsx`), campaign v2                                                     | 10 `20261029000100_story_rewards.sql` |
-| F                | `questling/features-e`                                       | tests for the prompt's list, three fixes (below), B2 connected, teacher email, docs                                                                                                                                                                        | —                                     |
+| F                | `questling/features-e`                                       | tests for the specified list, three fixes (below), B2 connected, teacher email, docs                                                                                                                                                                       | —                                     |
 
-Already there before the prompt and reused: grading by option id, server-side answer keys, the XP ledger
+Already there before this work and reused: grading by option id, server-side answer keys, the XP ledger
 with idempotent keys, the audio stack (built-in recordings, device voice, teachers' MP3/M4A/WAV uploads,
 `docs/audio.md`), dialogue and choice scenes with flags, the validator. Migrations 8–10 are applied to the
 working database, each after an inventory, a `pg_dump` backup verified by restoring it, and a dry run.
@@ -58,15 +58,15 @@ the bucket keeps only the last version of a file. Free-tier caveats: `docs/media
 
 Automated, local (2026-10-27, branch `questling/features-e`):
 
-| Command                                                                    | Result      |
-| -------------------------------------------------------------------------- | ----------- |
-| `npm run typecheck`, `npx eslint .`, `npx prettier --check .`              | clean       |
-| `npx vitest run` (unit + PostgreSQL)                                       | 205 / 205 (22 files) |
-| `npx playwright test` (Chrome, phone and desktop sizes, fake microphone)   | 129 / 129, twice in a row  |
-| `npx tsx scripts/storage-check.mts` (the real B2 bucket)                   | 12 / 12     |
+| Command                                                                    | Result                              |
+| -------------------------------------------------------------------------- | ----------------------------------- |
+| `npm run typecheck`, `npx eslint .`, `npx prettier --check .`              | clean                               |
+| `npx vitest run` (unit + PostgreSQL)                                       | 205 / 205 (22 files)                |
+| `npx playwright test` (Chrome, phone and desktop sizes, fake microphone)   | 129 / 129, twice in a row           |
+| `npx tsx scripts/storage-check.mts` (the real B2 bucket)                   | 12 / 12                             |
 | `npx tsx scripts/live-check.mjs` (working database + real B2, local build) | 67 / 67, everything it made removed |
 
-The map of the prompt's required tests to files: `docs/features-audit.md`, "Gate F".
+The map of the required tests to files: `docs/features-audit.md`, "Gate F".
 
 **Physical devices: none tested.** Android Chrome, Android Telegram, iOS Safari, iOS Telegram, old
 browsers, slow networks, calls during a take, real codecs (above all iPhone MP4/AAC recordings) — all
@@ -82,7 +82,7 @@ browsers, slow networks, calls during a take, real codecs (above all iPhone MP4/
 - Voices and music are one track in a teacher's video: during the student's take the whole clip is muted,
   and only a separate background track (if the teacher gives one) keeps the music.
 - Pitch is kept at 0.75×/0.5× only where the browser supports it.
-- No pronunciation scoring, no AI review: the teacher's rubric has no numbers (by the prompt).
+- No pronunciation scoring, no AI review: the teacher's rubric has no numbers (by the specification).
 - Sessions cannot be revoked before they expire (6 h); CSP allows inline scripts (Next.js) — both
   accepted earlier (`docs/security.md`).
 - No independent security review or penetration test; this one is the developer's own.

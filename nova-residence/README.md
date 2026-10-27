@@ -1,57 +1,72 @@
 # NOVA Residence
 
-A concept website for a fictional premium residential development in Istanbul.
+A marketing website for a fictional premium residential development in
+Istanbul: one page that presents the building, its residences and the
+neighbourhood, and leads the visitor to a single action, requesting a private
+viewing.
 
-**This is a concept portfolio project and is not affiliated with a real property development.**
+**Concept project.** NOVA Residence does not exist; it is not affiliated with
+any real development. Names, prices, figures and imagery are invented.
 
 **Live demo:** https://nova-residence-five.vercel.app
 
-## Overview
+![Hero: the wordmark set on the sky above the building](docs/screenshots/hero.jpg)
 
-A single-page site for an imagined residential project on the hillside above
-Beşiktaş. The goal was the kind of site a studio would build for a property
-developer: restrained editorial design carried by typography, spacing and
-photography rather than decoration, with a clear path to one action — requesting
-a private viewing.
+## Who it is for and what it solves
 
-All photography was generated for the project and shows one consistent, fictional building.
+The kind of site a studio builds for a property developer: buyers and investors
+should understand the project quickly, browse the residences, and book a
+viewing without friction. The design carries the brand through typography,
+spacing and photography rather than decoration, and the page has to stay fast
+and usable on a phone.
 
 ## Features
 
-- Hero with the wordmark set directly on the photograph's sky, with separate
-  frames for landscape and portrait screens
+- Hero with the wordmark set on the photograph's sky, with separate crops for
+  landscape and portrait screens
 - Residences with a detail drawer: photograph, facts, description and a floor
   plan drawn from data
 - Editorial gallery with a full-screen lightbox: keyboard, swipe and a counter
 - Stylised location map with travel times
-- Viewing request form with validation, a submitting state and a success
-  state (the request is simulated — nothing is sent)
-- Fixed header with the current section marked, and a full-screen mobile menu
+- Viewing request form with validation, a submitting state and a success state
+  (the request is simulated: nothing is sent)
+- Fixed header with the current section marked, full-screen mobile menu
 - Scroll reveals and light parallax that switch off with `prefers-reduced-motion`
-- Keyboard-accessible throughout: native dialogs, managed focus, visible focus states
-
-## Technology
-
-Next.js 16 (App Router) · TypeScript · Tailwind CSS 4 · Motion
-
-No UI kit, icon library or backend. The page is statically prerendered.
+- Keyboard accessible: native dialogs, managed focus, visible focus states
 
 ## Screenshots
 
-![Hero: the wordmark set on the sky above the building](docs/screenshots/hero.jpg)
-
-![Residence details drawer with photograph and facts](docs/screenshots/residence-details.jpg)
-
-![Editorial gallery on the dark tone](docs/screenshots/gallery.jpg)
-
-![Viewing request form](docs/screenshots/contact.jpg)
+| | |
+|---|---|
+| ![Residence details drawer](docs/screenshots/residence-details.jpg) | ![Editorial gallery](docs/screenshots/gallery.jpg) |
+| ![Viewing request form](docs/screenshots/contact.jpg) | |
 
 <p>
   <img src="docs/screenshots/mobile-hero.jpg" alt="Hero on a phone" width="300">
   <img src="docs/screenshots/mobile-residences.jpg" alt="Residences on a phone" width="300">
 </p>
 
+## Technology
+
+Next.js 16 (App Router) · React 19 · TypeScript · Tailwind CSS 4 · Motion
+
+No UI kit, icon library or backend. The page is statically prerendered. All
+copy, facts and floor plans live in `data/`, so content changes do not touch
+components.
+
+```
+app/          Layout, global styles and tokens, fonts, page
+components/   layout/ (header, navigation, footer), sections/ (one file per
+              section, plus their dialogs), ui/ (shared primitives)
+data/         Copy, facts, floor plans, image registry
+lib/          Small helpers and motion constants
+public/images Photography, grouped by section
+docs/         Requirements, design system, screenshots
+```
+
 ## Running locally
+
+Requires Node.js 20.9 or newer. No environment variables are needed.
 
 ```bash
 npm install
@@ -63,35 +78,35 @@ Open http://localhost:3000.
 | Command | Purpose |
 |---|---|
 | `npm run dev` | Development server |
-| `npm run build` | Production build |
-| `npm run start` | Serve the production build |
+| `npm run build` / `npm run start` | Production build and server |
 | `npm run lint` | ESLint |
 | `npm run typecheck` | TypeScript check |
-| `npm run images -- <folder>` | Rebuild `public/images` from the raw renders |
+| `npm run images -- <folder>` | Rebuild `public/images` from source renders |
 
-## Deployment
+## Testing and deployment
 
-The site deploys to Vercel with the default Next.js settings and needs no
-environment variables. When it lives in a subfolder of a repository, set the
-project's Root Directory to that folder.
+There is no automated test suite: the site has no logic beyond presentation.
+Quality is checked with `npm run typecheck`, `npm run lint`, `npm run build`
+and visual review at desktop and phone widths.
 
-## Structure
+Deployed to Vercel with the default Next.js settings; when the project lives in
+a subfolder of a repository, set the Vercel project's Root Directory to it.
 
-```
-app/          Layout, global styles and tokens, fonts, page
-components/   layout/ — header, navigation, footer
-              sections/ — one file per page section, plus their dialogs
-              ui/ — shared primitives
-data/         All copy, facts, floor plans and the image registry
-lib/          Small helpers and motion constants
-public/images Photography, grouped by section
-docs/         Design system, screenshots
-```
+## Status and limitations
 
-The design system is described in [`docs/design-system.md`](docs/design-system.md).
+- **Complete** as a concept site; deployed.
+- The viewing form does not send or store anything.
+- Photography was generated for the project and shows one consistent,
+  fictional building.
 
-## Concept disclaimer
+## Documents
 
-NOVA Residence does not exist. The name, prices, figures and imagery are
-invented for this portfolio piece, and any resemblance to a real development is
-coincidental. The contact form does not collect or send data.
+- [`docs/requirements.md`](docs/requirements.md): what the site had to do
+- [`docs/design-system.md`](docs/design-system.md): colour, type, spacing, motion
+
+## Author
+
+Built by Evgeniy, Full-Stack Web Developer: implementing application functionality, integrating
+frontend and backend components, and testing the resulting software. Contact:
+[Telegram @Maybemol](https://t.me/Maybemol) · [evgeniyshade@gmail.com](mailto:evgeniyshade@gmail.com) ·
+[GitHub](https://github.com/22504105). Other projects: [portfolio overview](../showcase/README.md).

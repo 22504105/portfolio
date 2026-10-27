@@ -26,7 +26,7 @@ export function Photo({ image, sizes, className = "", priority = false, decorati
   const frame = `${className.split(" ").includes("absolute") ? "" : "relative"} overflow-hidden bg-coal ${className}`;
 
   if (!file) {
-    // The photograph has not been supplied yet (docs/image-brief.md). The frame
+    // The photograph has not been supplied yet (see data/image-sources.json). The frame
     // keeps its place and says what belongs in it.
     return (
       <div

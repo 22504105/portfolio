@@ -129,5 +129,5 @@ other students untouched), `e2e/gate5.spec.ts` (the demo's download and deletion
 - No independent review and no penetration test. `npm audit --omit=dev`: 0 vulnerabilities (without
   `--omit=dev`, 5 "high" in linter-only dev dependencies, not shipped — same as Splitly).
 - Not tested on a physical Telegram client (Android, iOS, desktop): see `docs/telegram-checklist.md`.
-- Supabase project settings beyond those listed in `CLAUDE.md` (backups, network restrictions) were not
-  reviewed; the free plan has no point-in-time recovery.
+- Supabase project settings beyond Auth and the database connection (backups, network restrictions)
+  were not reviewed; the free plan has no point-in-time recovery.

@@ -1,14 +1,14 @@
 # Splitly — Deployment
 
-The brief asks for proof, in stage 1, that the chosen stack actually deploys
+The requirements ask for proof, in stage 1, that the chosen stack actually deploys
 to the chosen free host: a page and a server endpoint, with the real command
 and its real output, not a claim of compatibility. This is that record.
 
 ## Host
 
 **Vercel, Hobby plan** (free), chosen by the owner on 2026-10-12 in place of
-the brief's Cloudflare Workers target. No adapter is involved: Next.js runs
-there natively. The Cloudflare comparison the brief describes was therefore
+the Cloudflare Workers target in the requirements. No adapter is involved: Next.js runs
+there natively. The Cloudflare comparison the requirements describe was therefore
 not run.
 
 ## The proof (2026-10-12)

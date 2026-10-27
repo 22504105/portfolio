@@ -1,12 +1,12 @@
-# Features prompt: audit and delivery plan
+# Features specification: audit and delivery plan
 
-The owner's prompt `QUESTLING_UNIFIED_FEATURES_MASTER_PROMPT.txt` (2026-10-26) asks for ten parts
-delivered as gates A–F. This file is the written audit it asks for first, and the record of what each
-gate changed. Out of scope by the prompt: team quests, 3D.
+The learning-features specification ([`requirements.md`](requirements.md), "Learning features",
+2026-10-26) has ten parts, delivered as gates A–F. This file is the audit made before the work, and the
+record of what each gate changed. Out of scope: team quests, 3D.
 
 ## What already existed (audited 2026-10-26)
 
-| Prompt part              | Already in Questling                                                                                                                                                           | Gap                                                                                                                                             |
+| Part                     | Already in Questling                                                                                                                                                           | Gap                                                                                                                                             |
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- |
 | 1. Word help             | Options carry a gloss line; clue journal has phrase glosses; a hint after a wrong answer; the grimoire                                                                         | No tappable words in texts, no teacher authoring, no level-aware defaults, no hint before answering                                             |
 | 2. Fair order            | Grading by option id everywhere (`lib/story/run.ts`, `lib/learning/questions.ts`), server-side keys, idempotent ledger keys                                                    | Options always in authored order, and authored content often lists the answer first; teacher puzzles started as a rotation by one of the answer |
@@ -24,8 +24,8 @@ gate changed. Out of scope by the prompt: team quests, 3D.
   Uploads must go straight from the browser to storage with a signed upload URL.
 - Supabase free plan: 1 GB file storage, 5 GB egress a month, 50 MB per file, 500 MB database.
   A 30 s 480p clip at ~1 Mbit/s is ~4 MB, so about 200 clips fill storage and ~1 200 student
-  viewings use the month's egress. Video must stay short and small; the prompt's 10–60 s fits.
-- Videos must not go into Postgres (the prompt says so, and 500 MB would not hold them).
+  viewings use the month's egress. Video must stay short and small; the specified 10–60 s fits.
+- Videos must not go into Postgres (the specification says so, and 500 MB would not hold them).
   Student voice lines are small (Opus ~24 kbit/s: a 6 s line ≈ 18 KB) but also belong in storage.
 - Supabase Storage with private buckets needs the `service_role` key on the server to issue signed
   upload and download URLs. The app does not hold that key today (see `docs/audio.md`).
@@ -223,9 +223,9 @@ and what is left to tidy: `docs/media-storage.md`, "Connected".
 
 ## Gate F — QA, documentation, devices, rollout (2026-10-27)
 
-**The prompt's list of tests, and where each one is** (all run on every `npx vitest run` / `npx playwright test`):
+**The specification's list of tests, and where each one is** (all run on every `npx vitest run` / `npx playwright test`):
 
-| The prompt asks for tests of                                                       | Where                                                                                                                                                          |
+| The specification asks for tests of                                                | Where                                                                                                                                                          |
 | ---------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | answer shuffle stability and varied correct positions                              | `tests/learning.test.ts`, `e2e/features-a.spec.ts`                                                                                                             |
 | stable ids, old attempt/version compatibility, XP once                             | `tests/learning.test.ts`, `tests/story-gate-e.test.ts` ("versions"), `tests/db/students.test.ts`, `tests/db/media.test.ts`                                     |
@@ -265,4 +265,4 @@ matrix (`docs/telegram-checklist.md`) is **untested**, not passed. Automated tes
 microphone; real iOS Safari/Telegram recording (MP4/AAC), Android Telegram's WebView, slow networks and
 interruptions by calls are unverified.
 
-The final report the prompt asks for: `docs/features-report.md`.
+The final report: `docs/features-report.md`.

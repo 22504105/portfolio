@@ -14,7 +14,7 @@ import { campaignSchema } from "@/lib/story/schema";
 import { validateCampaign } from "@/lib/story/validate";
 import { questionNode, sceneGlosses } from "@/lib/student/story";
 
-// Gate A of the features prompt: fair answer order and word help (docs/features-audit.md).
+// Gate A of the features specification: fair answer order and word help (docs/features-audit.md).
 
 const clone = <T>(value: T): T => structuredClone(value);
 const students = Array.from({ length: 600 }, (_, i) => new Date(Date.UTC(2026, 9, 1) + i * 37_003).toISOString());

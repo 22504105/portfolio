@@ -1,21 +1,20 @@
 # Flowly — Architecture
 
-The brief is `docs/brief.md`. This document records how it is being built and
-every place where the build departs from it, with the reason. Order of
-authority: brief → this document → `metrics.md` → `design-system.md`.
+The requirements are in [`requirements.md`](requirements.md). This document records how
+Flowly is built and every place where the build departs from them, with the reason.
+Order of authority: requirements → this document → `metrics.md` → `design-system.md`.
 
-## 1. Decisions that depart from the brief
+## 1. Decisions that depart from the requirements
 
-| Brief                                                        | Decision                          | Why                                                                                                                                                                                               |
-| ------------------------------------------------------------ | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Hosting on Cloudflare Workers Free; adapter spike in Phase 1 | **Vercel (Hobby)**                | Owner's decision, 2026-10-11. No adapter, no 10 ms CPU limit, the same free host as the other portfolio projects. The Cloudflare spike was not run                                                |
-| Exactly three subagents                                      | Roles simulated by the lead agent | The brief allows it when stated honestly. Subagents are used only if a task warrants it; each phase report says which                                                                             |
-| Email verification on sign-up                                | **Off**                           | Owner's decision. Supabase's built-in mailer sends a few emails an hour; password reset still uses it                                                                                             |
-| Russian localisation                                         | Architecture only                 | Owner's decision. All interface text is in `lib/i18n/en.ts`; a second language is one more file of the same type                                                                                  |
-| One `Transaction/Order` table                                | `orders` + `order_lines`          | See section 4                                                                                                                                                                                     |
-| `Customer.first_order_at` stored                             | Derived when read                 | A stored copy goes stale when an import is deleted                                                                                                                                                |
-| TanStack Table, date-fns, React Hook Form in the demo        | Not installed                     | Sorting, paging and filtering are done on the server from the address, and dates by `Intl`; the libraries would have nothing to do. They are added if a later phase needs them (forms in Phase 3) |
-| Muted text `#737A86`, warning `#A66A20`                      | `#646B77`, `#9A6119`              | Contrast: see `design-system.md`                                                                                                                                                                  |
+| Requirement                                                  | Decision                 | Why                                                                                                                                                                                               |
+| ------------------------------------------------------------ | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Hosting on Cloudflare Workers Free; adapter spike in Phase 1 | **Vercel (Hobby)**       | Owner's decision, 2026-10-11. No adapter, no 10 ms CPU limit, the same free host as the other portfolio projects. The Cloudflare spike was not run                                                |
+| Email verification on sign-up                                | **Off**                  | Owner's decision. Supabase's built-in mailer sends a few emails an hour; password reset still uses it                                                                                             |
+| Russian localisation                                         | Architecture only        | Owner's decision. All interface text is in `lib/i18n/en.ts`; a second language is one more file of the same type                                                                                  |
+| One `Transaction/Order` table                                | `orders` + `order_lines` | See section 4                                                                                                                                                                                     |
+| `Customer.first_order_at` stored                             | Derived when read        | A stored copy goes stale when an import is deleted                                                                                                                                                |
+| TanStack Table, date-fns, React Hook Form in the demo        | Not installed            | Sorting, paging and filtering are done on the server from the address, and dates by `Intl`; the libraries would have nothing to do. They are added if a later phase needs them (forms in Phase 3) |
+| Muted text `#737A86`, warning `#A66A20`                      | `#646B77`, `#9A6119`     | Contrast: see `design-system.md`                                                                                                                                                                  |
 
 ## 2. Technology
 
@@ -60,7 +59,7 @@ workspaces 1 ─── * import_batches 1 ─── * orders 1 ─── * order
      └──────────── * customers 1 ─── * ────┘   (orders.customer_id may be null)
 ```
 
-- **Order and order line are separate.** The brief lists one table with both
+- **Order and order line are separate.** The requirements list one table with both
   an order identifier and a product, and asks that an order with several lines
   is never counted twice. With one table that cannot be guaranteed by a
   constraint; with two it is structural: `orders` has one row per

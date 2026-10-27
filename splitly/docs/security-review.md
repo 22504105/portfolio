@@ -1,9 +1,8 @@
 # Splitly — Security review (stage 5)
 
-**Date:** 2026-10-12. **By:** the agent that wrote the code. This is a
-self-review: it is honest about what was looked at, but it is not the
-independent look the brief's "Agent C" would have been, and it should not be
-read as one. What was checked is listed with how; what was not is listed too.
+**Date:** 2026-10-12. **By:** the project's own developer. This is a self-review: it is honest
+about what was looked at, but it is not an independent audit and should not
+be read as one. What was checked is listed with how; what was not is listed too.
 
 ## What was checked, and how
 

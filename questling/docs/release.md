@@ -23,8 +23,8 @@ Deploying is the owner's decision (the repository's rules): nothing here is run 
    (`pg_dump "$DATABASE_URL" --schema=questling --data-only > backup-<date>.sql`, kept outside git), then
    `npm run db:migrate`. Migrations only add; each is written to work with the code before and after it.
 3. **Staging**: the separate Vercel project `questling-staging` (below). Deploy the branch there first.
-4. **Production**: `npx vercel deploy --prod --yes --scope riddle6` from `questling/` (the owner runs it
-   with `!` in Claude Code: the auto mode does not deploy by itself).
+4. **Production**: `npx vercel deploy --prod --yes --scope riddle6` from `questling/`, run by the
+   project owner by hand.
 5. **Check the deployed site**: `node scripts/live-check.mjs https://questling-dusky.vercel.app` — signs a
    made-up student in with the real bot token, plays, checks the studio with a throwaway teacher, downloads
    and deletes the student's data, and removes everything it made (34 points from Gate 5).

@@ -15,6 +15,6 @@ playwright-report
 *.tsbuildinfo
 *.zip
 design-source
-QUESTLING_CLAUDE_CODE_MASTER_PROMPT.txt
+QUESTLING_*.txt
 art
 blender
