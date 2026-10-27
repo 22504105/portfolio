@@ -125,7 +125,7 @@ const localFor = new Map(index.map((e) => [e.url, path.join(remoteDir, e.file)])
 const browser = await chromium.launch({ channel: process.env.CI ? undefined : "chrome" });
 // Animations would make every run differ; both sides are frozen the same way.
 const freeze =
-  "*,*::before,*::after{animation:none!important;transition:none!important;caret-color:transparent!important}[data-demo-badge]{display:none!important}";
+  "*,*::before,*::after{animation:none!important;transition:none!important;caret-color:transparent!important}[data-demo-badge]{display:none!important}:root{--demo-bar:0px!important}";
 
 async function shoot(url, steps = [], route, viewportOnly = false, viewport = { width: 390, height: 844 }) {
   const context = await browser.newContext({ viewport, deviceScaleFactor: 1, reducedMotion: "reduce" });

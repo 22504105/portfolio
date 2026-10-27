@@ -16,7 +16,9 @@ import { studioRun, type StudioAction, type StudioOutcome, type StudioRefusal } 
 // studio holds the teacher's session in this tab (sessionStorage, sent as a header, like the student
 // app's) and asks the server for everything.
 
-const DEMO_KEY = "questling-studio-demo-v1";
+// One demo per interface language, since its names are in that language (demoStudio). The Russian one
+// keeps the original key, so a visitor's changes there survive.
+const demoKey = (locale: Locale) => (locale === "ru" ? "questling-studio-demo-v1" : `questling-studio-demo-v1-${locale}`);
 const GROUP_KEY = "questling-studio-group";
 export const SESSION_KEY = "questling-studio-session";
 
@@ -49,18 +51,20 @@ const randomCode = () => {
 
 // ——— Demo ———
 
-let memory: StudioFacts | null = null;
+const memory = new Map<Locale, StudioFacts>();
 const listeners = new Set<() => void>();
 
-function readDemo(): StudioFacts {
-  if (memory) return memory;
+function readDemo(locale: Locale): StudioFacts {
+  const cached = memory.get(locale);
+  if (cached) return cached;
+  let facts: StudioFacts | null = null;
   try {
-    const stored = window.localStorage.getItem(DEMO_KEY);
+    const stored = window.localStorage.getItem(demoKey(locale));
     if (stored) {
       const parsed = JSON.parse(stored) as StudioFacts;
       // Saved before voice acting existed: take the demo's scenes from a fresh demo.
       if (!parsed.dubs) {
-        const fresh = demoStudio(new Date());
+        const fresh = demoStudio(new Date(), locale);
         Object.assign(parsed, {
           dubs: fresh.dubs,
           dubAssignments: fresh.dubAssignments,
@@ -68,17 +72,18 @@ function readDemo(): StudioFacts {
           objects: [],
         });
       }
-      memory = parsed;
+      facts = parsed;
     }
   } catch {}
-  memory ??= demoStudio(new Date());
-  return memory;
+  facts ??= demoStudio(new Date(), locale);
+  memory.set(locale, facts);
+  return facts;
 }
 
-function writeDemo(facts: StudioFacts) {
-  memory = facts;
+function writeDemo(locale: Locale, facts: StudioFacts) {
+  memory.set(locale, facts);
   try {
-    window.localStorage.setItem(DEMO_KEY, JSON.stringify(facts));
+    window.localStorage.setItem(demoKey(locale), JSON.stringify(facts));
   } catch {}
   listeners.forEach((l) => l());
 }
@@ -90,22 +95,26 @@ const subscribe = (listener: () => void) => {
 
 export function DemoStudioProvider({ locale, children }: { locale: Locale; children: React.ReactNode }) {
   const router = useRouter();
-  const facts = useSyncExternalStore(subscribe, readDemo, () => null);
+  const read = useCallback(() => readDemo(locale), [locale]);
+  const facts = useSyncExternalStore(subscribe, read, () => null);
   const { groupId, setGroupId } = useGroup(facts);
-  const act = useCallback(async (action: StudioAction): Promise<StudioActResult> => {
-    const now = new Date();
-    const current = readDemo();
-    const result = studioRun(current, action, { now, newId: () => crypto.randomUUID(), newCode: randomCode });
-    if (!result.ok) return { ok: false, refusal: result.refusal, problems: result.problems };
-    writeDemo(applyStudioEffects(current, result.effects, now.toISOString()));
-    return { ok: true, outcome: result.outcome };
-  }, []);
+  const act = useCallback(
+    async (action: StudioAction): Promise<StudioActResult> => {
+      const now = new Date();
+      const current = readDemo(locale);
+      const result = studioRun(current, action, { now, newId: () => crypto.randomUUID(), newCode: randomCode });
+      if (!result.ok) return { ok: false, refusal: result.refusal, problems: result.problems };
+      writeDemo(locale, applyStudioEffects(current, result.effects, now.toISOString()));
+      return { ok: true, outcome: result.outcome };
+    },
+    [locale],
+  );
   const signOut = useCallback(() => {
     // Leaving the demo forgets what was changed in it.
     try {
-      window.localStorage.removeItem(DEMO_KEY);
+      window.localStorage.removeItem(demoKey(locale));
     } catch {}
-    memory = null;
+    memory.delete(locale);
     router.push(`/${locale}/studio/login`);
   }, [locale, router]);
   const api = useMemo<StudioApi | null>(
@@ -128,7 +137,8 @@ export function DemoStudioProvider({ locale, children }: { locale: Locale; child
         : null,
     [facts, locale, act, groupId, setGroupId, signOut],
   );
-  if (!api) return <div className="bg-background min-h-dvh" aria-busy="true"></div>;
+  // Marked as a studio section while loading, so the demo badge strip (globals.css) does not flash here.
+  if (!api) return <div data-studio-section="loading" className="bg-background min-h-dvh" aria-busy="true"></div>;
   return (
     <StudioProvider value={api}>
       <div data-studio-ready>{children}</div>

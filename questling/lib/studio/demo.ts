@@ -7,6 +7,7 @@ import { applyEffects, emptyFacts, type Facts } from "@/lib/game/facts";
 import { run, type Action } from "@/lib/game/ops";
 import { balance, dailyEntry, dailyQuests, runOf } from "@/lib/game/stats";
 import { dayFromNumber, dayNumber, dayOf } from "@/lib/game/time";
+import type { Locale } from "@/lib/i18n";
 import type { Answer, QuestionKey } from "@/lib/learning/questions";
 import { rightMove } from "@/lib/story/autoplay";
 import { locate, runSeed, startRun } from "@/lib/story/run";
@@ -18,6 +19,7 @@ import { starterCampaign } from "./starter";
 // played through the real rules: daily quests, the day's word, the story, with wrong answers and
 // help requests where a student is weaker. So every figure the demo studio shows — progress, errors,
 // streaks, the review queue — is worked out from records, not drawn. The screens say "Демо".
+// Names follow the interface language: the English demo shows English names (NAMES_EN).
 
 /** A small seeded random source, so the demo classes are the same on every visit. */
 function seeded(seed: number) {
@@ -68,7 +70,7 @@ const noonOf = (now: Date, offset: number) => {
   return offset === 0 && noon.getTime() > now.getTime() - 3 * 3_600_000 ? new Date(now.getTime() - 3 * 3_600_000) : noon;
 };
 
-function simulate(profile: Profile, now: Date, seed: number): Facts {
+function simulate(profile: Profile, now: Date, seed: number, locale: Locale): Facts {
   const random = seeded(seed);
   // Their group was assigned this campaign: it is open for them as for a real student in the group.
   let facts: Facts = {
@@ -81,7 +83,7 @@ function simulate(profile: Profile, now: Date, seed: number): Facts {
     },
   };
   const act = (action: Action, at: Date) => {
-    const result = run(facts, action, { now: at, locale: "ru", demo: true, random });
+    const result = run(facts, action, { now: at, locale, demo: true, random });
     if (result.ok) facts = applyEffects(facts, result.effects, at.toISOString());
     return result;
   };
@@ -323,9 +325,35 @@ export const DEMO_TEACHER = {
   email: "demo@questling.example",
 };
 
-export function demoStudio(now: Date): StudioFacts {
-  const members: Member[] = PEOPLE.map((person, i) => {
-    const facts = simulate(person, now, 7919 * (i + 1));
+/** The same classes in English: group, student, teacher and campaign names (by id or Russian name). */
+const NAMES_EN = {
+  groups: { "Детективы A2": "A2 Detectives", "Новички A1": "A1 Beginners", "Искатели B1": "B1 Seekers" } as Record<string, string>,
+  heroes: {
+    "1": "Barsik",
+    "2": "Alice",
+    "3": "Daniel",
+    "4": "Sofia",
+    "5": "Mark",
+    "6": "Helena",
+    "7": "Tim",
+    "8": "Michael",
+    "9": "Vera",
+    "10": "Eli",
+    "11": "Eva",
+    "12": "Arthur",
+    "13": "Diana",
+  } as Record<string, string>,
+  teacher: "Archmage Eleanor",
+  quest: "The Clock Tower Mystery",
+  note: "First version",
+};
+
+export function demoStudio(now: Date, locale: Locale = "ru"): StudioFacts {
+  const en = locale === "en";
+  const people = en ? PEOPLE.map((person) => ({ ...person, hero: NAMES_EN.heroes[person.id] })) : PEOPLE;
+  const questTitle = en ? NAMES_EN.quest : "Тайна часовой башни";
+  const members: Member[] = people.map((person, i) => {
+    const facts = simulate(person, now, 7919 * (i + 1), locale);
     return {
       userId: `dddddddd-0000-4000-8000-${person.id.padStart(12, "0")}`,
       heroName: facts.profile.heroName,
@@ -339,17 +367,24 @@ export function demoStudio(now: Date): StudioFacts {
     };
   });
   const created = noonOf(now, -30).toISOString();
-  const own = starterCampaign("t-tajna-chasov-demo01", "Тайна часовой башни", "A2");
+  const own = starterCampaign("t-tajna-chasov-demo01", questTitle, "A2");
   const published = { ...own.graph, version: 1 };
   return {
-    teacher: DEMO_TEACHER,
-    groups: GROUPS.map((g) => ({ id: g.id, name: g.name, cefr: g.cefr, inviteCode: g.inviteCode, createdAt: created, archivedAt: null })),
+    teacher: en ? { ...DEMO_TEACHER, displayName: NAMES_EN.teacher } : DEMO_TEACHER,
+    groups: GROUPS.map((g) => ({
+      id: g.id,
+      name: en ? NAMES_EN.groups[g.name] : g.name,
+      cefr: g.cefr,
+      inviteCode: g.inviteCode,
+      createdAt: created,
+      archivedAt: null,
+    })),
     members,
     quests: [
       {
         id: "99999999-0000-4000-8000-000000000001",
         slug: "t-tajna-chasov-demo01",
-        title: "Тайна часовой башни",
+        title: questTitle,
         cefr: "A2",
         createdAt: created,
         archivedAt: null,
@@ -359,7 +394,7 @@ export function demoStudio(now: Date): StudioFacts {
             status: "published",
             graph: published,
             keys: own.keys,
-            note: "Первая версия",
+            note: en ? NAMES_EN.note : "Первая версия",
             updatedAt: created,
             publishedAt: created,
           },

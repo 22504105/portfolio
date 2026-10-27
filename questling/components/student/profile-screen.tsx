@@ -42,7 +42,7 @@ export function ProfileScreen() {
   const { telegram, group } = view.account;
   return (
     <div data-scope="profile" className="bg-background text-text-ivory flex min-h-dvh flex-col">
-      <header className="pt-safe fixed inset-x-0 top-0 z-50 border-b border-[#6E5A3A]/20 bg-[#1C1B27]/90 shadow-[0_1px_8px_rgba(0,0,0,0.5)] backdrop-blur-xl">
+      <header className="pt-safe fixed inset-x-0 top-(--demo-bar) z-50 border-b border-[#6E5A3A]/20 bg-[#1C1B27]/90 shadow-[0_1px_8px_rgba(0,0,0,0.5)] backdrop-blur-xl">
         <div className="px-gutter mx-auto flex h-16 w-full max-w-md items-center justify-between">
           <div className="gap-space-sm flex items-center">
             <div className="bg-surface-container-high text-primary flex h-9 w-9 items-center justify-center rounded-full">

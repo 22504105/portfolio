@@ -19,7 +19,7 @@ export function CoinHeader({
 }) {
   return (
     <header
-      className={`pt-safe fixed inset-x-0 top-0 z-50 backdrop-blur-xl ${
+      className={`pt-safe fixed inset-x-0 top-(--demo-bar) z-50 backdrop-blur-xl ${
         bordered
           ? "border-b border-[#6E5A3A]/20 bg-[#1C1B27]/90 shadow-[0_1px_8px_rgba(0,0,0,0.5)]"
           : "bg-surface/90 shadow-[0_1px_8px_rgba(0,0,0,0.4)]"
