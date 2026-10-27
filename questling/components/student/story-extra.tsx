@@ -15,6 +15,7 @@ import { itemById } from "@/lib/content/items";
 import { GlossedText } from "./glossed-text";
 import { PronounceButton } from "./pronounce-button";
 import { Failed, GoldButton, Page, StoryReward, TranslationToggle, type Common } from "./story-scenes";
+import { spotAt } from "@/lib/story/spot";
 
 // The story scenes of features gate E, put together from the player's approved parts only: the
 // dialogue cards and choice rows (05), the scene picture and the reward card (05_story_player_50_xp).
@@ -124,13 +125,7 @@ export function SearchScreen({
   };
   const onPicture = (e: React.MouseEvent) => {
     const rect = box.current!.getBoundingClientRect();
-    const x = (e.clientX - rect.left) / rect.width;
-    const y = (e.clientY - rect.top) / rect.height;
-    // The smallest spot under the finger (spots may nest), with a little slack around each.
-    const pad = 0.02;
-    const hit = scene.spots
-      .filter((s) => x >= s.x - pad && x <= s.x + s.w + pad && y >= s.y - pad && y <= s.y + s.h + pad)
-      .sort((a, b) => a.w * a.h - b.w * b.h)[0];
+    const hit = spotAt(scene.spots, (e.clientX - rect.left) / rect.width, (e.clientY - rect.top) / rect.height);
     if (hit) void tap(hit.id);
     else setMessage({ text: t.scenes.nothing, tone: "plain" });
   };

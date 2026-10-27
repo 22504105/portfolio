@@ -103,10 +103,14 @@ describe("storage round trip (stand-in that checks signatures like B2)", () => {
     rmSync(dir, { recursive: true, force: true });
   });
 
-  it("uploads with the signed type only, reads back with ranges, deletes", async () => {
+  it("uploads with the signed type and length only, reads back with ranges, deletes", async () => {
     const bytes = fixture("voice.webm");
-    const put = uploadUrl("voice/u1/take.webm", "audio/webm");
+    const put = uploadUrl("voice/u1/take.webm", "audio/webm", bytes.length);
     expect((await fetch(put, { method: "PUT", body: Buffer.from(bytes), headers: { "content-type": "video/mp4" } })).status).toBe(403);
+    // A bigger file than declared is refused by storage itself (the length is signed).
+    const bigger = Buffer.concat([Buffer.from(bytes), Buffer.alloc(10_000)]);
+    expect((await fetch(put, { method: "PUT", body: bigger, headers: { "content-type": "audio/webm" } })).status).toBe(403);
+    expect(await headObject("voice/u1/take.webm")).toBeNull();
     expect((await fetch(put, { method: "PUT", body: Buffer.from(bytes), headers: { "content-type": "audio/webm" } })).status).toBe(200);
     expect(await headObject("voice/u1/take.webm")).toEqual({ size: bytes.length, contentType: "audio/webm" });
     expect(await readObject("voice/u1/take.webm", 10_000_000)).toEqual(bytes);

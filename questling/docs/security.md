@@ -89,16 +89,40 @@ other students untouched), `e2e/gate5.spec.ts` (the demo's download and deletion
 
 ## Findings of this review
 
-| #   | Finding                                                                                     | Status                                                                   |
-| --- | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| 1   | No way for a student to get or delete their data (brief §7)                                 | Fixed: export and deletion, with tests                                   |
-| 2   | `.env.example` lacked the teacher sign-in variables                                         | Fixed                                                                    |
-| 3   | A teacher session can also call the student routes (it is a `users` row)                    | Accepted: it acts as a student of its own, sees no one else              |
-| 4   | Sessions cannot be revoked before they expire (6 h)                                         | Accepted: after deletion the token opens nothing (404)                   |
-| 5   | Off Vercel, the rate-limit address comes from `X-Forwarded-For`, which is forgeable         | Accepted: on Vercel `x-vercel-forwarded-for` is read first               |
-| 6   | CSP allows `'unsafe-inline'` scripts (Next.js's inline bootstrap)                           | Accepted: no user content is ever rendered as HTML                       |
-| 7   | Supabase's built-in mailer sends only to the project team's addresses                       | Open, owner's decision (own SMTP or confirmation off)                    |
-| 8   | A teacher saw a shared student's work on another teacher's campaigns, and could reply to it | Fixed (Gate 5): only built-in and own campaigns' work is loaded; DB test |
+| #   | Finding                                                                                     | Status                                                                        |
+| --- | ------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| 1   | No way for a student to get or delete their data (brief §7)                                 | Fixed: export and deletion, with tests                                        |
+| 2   | `.env.example` lacked the teacher sign-in variables                                         | Fixed                                                                         |
+| 3   | A teacher session can also call the student routes (it is a `users` row)                    | Accepted: it acts as a student of its own, sees no one else                   |
+| 4   | Sessions cannot be revoked before they expire (6 h)                                         | Accepted: after deletion the token opens nothing (404)                        |
+| 5   | Off Vercel, the rate-limit address comes from `X-Forwarded-For`, which is forgeable         | Accepted: on Vercel `x-vercel-forwarded-for` is read first                    |
+| 6   | CSP allows `'unsafe-inline'` scripts (Next.js's inline bootstrap)                           | Accepted: no user content is ever rendered as HTML                            |
+| 7   | Supabase's built-in mailer sends only to the project team's addresses                       | Closed 2026-10-27: "Confirm email" off (owner's word); reset emails need SMTP |
+| 8   | A teacher saw a shared student's work on another teacher's campaigns, and could reply to it | Fixed (Gate 5): only built-in and own campaigns' work is loaded; DB test      |
+| 9   | A signed upload link accepted a file of any size (up to 5 GB) until the server's check      | Fixed (features gate F): the length is signed; B2 refuses another size        |
+| 10  | Teacher sign-up needs no proof of the address (confirmation off)                            | Accepted by the owner: teachers are isolated from each other; demo-scale      |
+
+## Media and the features gates (A–F, 2026-10-26/27)
+
+- **Storage** (Backblaze B2, `docs/media-storage.md`): a private bucket; the app's key reaches only that
+  bucket and only files (no bucket settings); the browser gets signed links for one object — upload with
+  its exact type and length for 10 minutes, download for 15 minutes — only after the server checks who
+  asks (`lib/server/media-store.ts`, `visible()`). No public links; student recordings are seen only by the
+  student and the teacher of that scene. Tests: `tests/storage.test.ts`, `tests/db/media.test.ts`,
+  `scripts/storage-check.mts` on the real bucket (12 points), `scripts/live-check.mjs` (67).
+- **What an upload is** is decided by reading it back (`lib/server/media-check.ts`), not by its name or the
+  browser's type: MOV, H.265, audio posing as video, SVG and junk are refused and deleted.
+- **Teacher text** (lines, subtitles, dialogue, tags, titles) is plain text everywhere: no
+  `dangerouslySetInnerHTML` in the app; ids and media references are checked by pattern (`dubSchema`, story
+  schema), so a link, a path or a script cannot be a video. `e2e/features-f.spec.ts` types markup into
+  the studio and checks nothing runs.
+- **Microphone**: asked only after the student's button; `Permissions-Policy: microphone=(self)`; CSP allows
+  media only from the site, `blob:` (fresh takes) and the storage origin.
+- **Retention**: voice takes deleted after 180 days, at most two kept per line, everything of a student
+  deleted with their data; uploads never completed are removed after an hour (daily cron, `CRON_SECRET`).
+- **Secrets** stay on the server and in `.env.local`/Vercel. During the B2 and email setup the owner put a
+  master B2 key and a Supabase access token into `.env.local`; neither is used by the app, and both
+  should be removed and revoked (`docs/features-report.md`, "What the owner should do").
 
 ## Not examined
 

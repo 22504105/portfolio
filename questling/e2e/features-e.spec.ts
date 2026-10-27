@@ -1,46 +1,9 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test, type Page } from "@playwright/test";
-import { forgottenAcademy } from "../lib/content/campaigns/forgotten-academy";
-import { keysOf } from "../lib/content/campaigns/keys";
-import { rightMove } from "../lib/story/autoplay";
-import { runSeed, startRun, move, type RunState } from "../lib/story/run";
-import { demoFacts } from "../lib/demo/seed";
-
+import { expect, test } from "@playwright/test";
+import { demoAt, sceneOn } from "./demo-run";
 // Gate E (docs/features-audit.md): the forest's picture search and the talk with the spirit (built-in
 // campaign, version 2), played on the demo; the studio's forms for talks, searches and voice-acting
 // scenes. The demo student starts at tower-2; the story is walked to the forest through the demo store.
-
-const ready = (page: Page) => expect(page.locator("[data-play-scene]")).toBeAttached();
-const sceneOn = (page: Page) => page.locator("[data-play-scene]").getAttribute("data-play-scene");
-
-/** Puts the demo run straight at a scene, as if played there (the rules decide the run's state). */
-async function demoAt(page: Page, until: string, choices: Record<string, string> = {}) {
-  // The demo student as the demo makes them (lib/demo/seed.ts), moved on by the same rules.
-  const facts = demoFacts(new Date());
-  const campaign = forgottenAcademy;
-  const keys = keysOf(campaign);
-  let run: RunState =
-    facts.runs.find((r: RunState) => r.campaign === campaign.id) ?? startRun(campaign, runSeed(facts.profile.joinedAt, campaign));
-  for (let i = 0; i < 80 && run.scene !== until; i++) {
-    const m = rightMove(campaign, keys, run, choices)!;
-    const r = move(campaign, keys, run, m);
-    if (!r.ok) throw new Error(r.refusal);
-    run = r.run;
-  }
-  facts.runs = [...facts.runs.filter((r: RunState) => r.campaign !== campaign.id), run];
-  // Once per test: later navigations keep what the test did.
-  await page.addInitScript(
-    ({ value, scene }) => {
-      if (window.sessionStorage.getItem("seeded") === scene) return;
-      window.localStorage.setItem("questling-demo-v2", value);
-      window.sessionStorage.setItem("seeded", scene);
-    },
-    { value: JSON.stringify(facts), scene: until },
-  );
-  await page.goto("/ru/demo/play");
-  await ready(page);
-  await expect(page.locator(`[data-play-scene="${until}"]`)).toBeAttached();
-}
 
 test("the picture search: nothing where nothing is, a wrong find explained, the hint, the right order, the glow sprite", async ({
   page,

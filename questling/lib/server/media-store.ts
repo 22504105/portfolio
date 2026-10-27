@@ -166,7 +166,7 @@ export async function requestUpload(
     [id, actor.userId, kind, key, mime, size, kind !== "voice"],
   );
   await countOp(db, "upload");
-  return { id, url: uploadUrl(key, mime), contentType: mime, expiresIn: UPLOAD_SECONDS };
+  return { id, url: uploadUrl(key, mime, size), contentType: mime, expiresIn: UPLOAD_SECONDS };
 }
 
 const CHECKS: Record<MediaKind, (bytes: Uint8Array) => Promise<Checked> | Checked> = {

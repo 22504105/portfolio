@@ -38,7 +38,10 @@ export function startFakeS3(opts: { port: number; dir: string; bucket: string; c
       res.writeHead(404, cors).end();
       return;
     }
-    const problem = checkPresigned(creds, req.method ?? "GET", url, { "content-type": req.headers["content-type"] });
+    const problem = checkPresigned(creds, req.method ?? "GET", url, {
+      "content-type": req.headers["content-type"],
+      "content-length": req.headers["content-length"],
+    });
     if (problem) {
       res.writeHead(403, { ...cors, "Content-Type": "text/plain" }).end(problem);
       return;

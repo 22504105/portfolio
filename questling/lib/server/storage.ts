@@ -36,10 +36,18 @@ const objectUrl = (config: StorageConfig, key: string) => new URL(`${config.endp
 export const UPLOAD_SECONDS = 10 * 60;
 export const DOWNLOAD_SECONDS = 15 * 60;
 
-/** A URL the browser PUTs one object to, with exactly this Content-Type. */
-export function uploadUrl(key: string, contentType: string, seconds = UPLOAD_SECONDS): string {
+/**
+ * A URL the browser PUTs one object to, with exactly this Content-Type and exactly `size` bytes: the
+ * length is signed, so storage refuses a bigger file instead of keeping it until the server checks it.
+ */
+export function uploadUrl(key: string, contentType: string, size: number, seconds = UPLOAD_SECONDS): string {
   const config = required();
-  return presign(config, { method: "PUT", url: objectUrl(config, key), expires: seconds, headers: { "content-type": contentType } });
+  return presign(config, {
+    method: "PUT",
+    url: objectUrl(config, key),
+    expires: seconds,
+    headers: { "content-type": contentType, "content-length": String(size) },
+  });
 }
 
 /** A URL the browser reads one object from (video, audio and image elements, ranges included). */

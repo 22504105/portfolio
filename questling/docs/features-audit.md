@@ -6,17 +6,17 @@ gate changed. Out of scope by the prompt: team quests, 3D.
 
 ## What already existed (audited 2026-10-26)
 
-| Prompt part | Already in Questling | Gap |
-| --- | --- | --- |
-| 1. Word help | Options carry a gloss line; clue journal has phrase glosses; a hint after a wrong answer; the grimoire | No tappable words in texts, no teacher authoring, no level-aware defaults, no hint before answering |
-| 2. Fair order | Grading by option id everywhere (`lib/story/run.ts`, `lib/learning/questions.ts`), server-side keys, idempotent ledger keys | Options always in authored order, and authored content often lists the answer first; teacher puzzles started as a rotation by one of the answer |
-| 3. Voice acting | Audio stack: built-in clips, device voice fallback, teacher MP3/M4A/WAV uploads (`lib/server/media.ts`, Postgres `bytea`, 2 MB / 60 s / 50 MB quota, 6 h tickets, byte ranges) | No video, no microphone recording, no submissions or review |
-| 4. NPC dialogue trees | `dialogue` scenes (linear lines) and `choice` scenes with flags; conditions on clues/flags; validator for reachability | Dialogue with responses is expressible as dialogue + choice, but there is no dialogue-tree node or editor |
-| 5. Vocabulary journal | `saved` table (kinds `word`, `fact`), daily word | No journal of marked words, no spaced repetition |
-| 6. Clue search in images | Scenes with fixed app illustrations | No hotspots, no image uploads (scene images are an allow-list) |
-| 7. Recommendations | Answers recorded with a skill; profile progress by skill; studio analytics by skill | No objective/grammar tags, no recommendations |
-| 8. Narrative rewards | Clues, chapters, endings, ledger, cosmetics, chest | Rewards tied to new activity kinds come with those kinds |
-| 9. Audio reuse | See part 3 | — |
+| Prompt part              | Already in Questling                                                                                                                                                           | Gap                                                                                                                                             |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1. Word help             | Options carry a gloss line; clue journal has phrase glosses; a hint after a wrong answer; the grimoire                                                                         | No tappable words in texts, no teacher authoring, no level-aware defaults, no hint before answering                                             |
+| 2. Fair order            | Grading by option id everywhere (`lib/story/run.ts`, `lib/learning/questions.ts`), server-side keys, idempotent ledger keys                                                    | Options always in authored order, and authored content often lists the answer first; teacher puzzles started as a rotation by one of the answer |
+| 3. Voice acting          | Audio stack: built-in clips, device voice fallback, teacher MP3/M4A/WAV uploads (`lib/server/media.ts`, Postgres `bytea`, 2 MB / 60 s / 50 MB quota, 6 h tickets, byte ranges) | No video, no microphone recording, no submissions or review                                                                                     |
+| 4. NPC dialogue trees    | `dialogue` scenes (linear lines) and `choice` scenes with flags; conditions on clues/flags; validator for reachability                                                         | Dialogue with responses is expressible as dialogue + choice, but there is no dialogue-tree node or editor                                       |
+| 5. Vocabulary journal    | `saved` table (kinds `word`, `fact`), daily word                                                                                                                               | No journal of marked words, no spaced repetition                                                                                                |
+| 6. Clue search in images | Scenes with fixed app illustrations                                                                                                                                            | No hotspots, no image uploads (scene images are an allow-list)                                                                                  |
+| 7. Recommendations       | Answers recorded with a skill; profile progress by skill; studio analytics by skill                                                                                            | No objective/grammar tags, no recommendations                                                                                                   |
+| 8. Narrative rewards     | Clues, chapters, endings, ledger, cosmetics, chest                                                                                                                             | Rewards tied to new activity kinds come with those kinds                                                                                        |
+| 9. Audio reuse           | See part 3                                                                                                                                                                     | —                                                                                                                                               |
 
 ## Free tier limits that shape gates B–C
 
@@ -53,12 +53,12 @@ its own hard limits below the free tier (gate B).
 **Fair answer order** (`lib/learning/shuffle.ts`). Fisher–Yates with a seeded generator; the seed is
 the attempt: when the student joined plus what the attempt is.
 
-| Activity | Attempt (new order) | Shuffled |
-| --- | --- | --- |
-| Story question / evidence | the run of a campaign version (`RunState.seed`, stored with the run) | options, evidence clues, grimoire words |
-| Quick quest | that day's quest (`letter@2026-10-26`) per question | choice and multi options, fill bank, right column of a match |
-| Daily quiz | that day | options |
-| Word order, story puzzles | never: the sequence is the answer | tiles keep their authored mix; teacher puzzles now start in a random mix (was a rotation by one) |
+| Activity                  | Attempt (new order)                                                  | Shuffled                                                                                         |
+| ------------------------- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| Story question / evidence | the run of a campaign version (`RunState.seed`, stored with the run) | options, evidence clues, grimoire words                                                          |
+| Quick quest               | that day's quest (`letter@2026-10-26`) per question                  | choice and multi options, fill bank, right column of a match                                     |
+| Daily quiz                | that day                                                             | options                                                                                          |
+| Word order, story puzzles | never: the sequence is the answer                                    | tiles keep their authored mix; teacher puzzles now start in a random mix (was a rotation by one) |
 
 The same attempt shows the same order after reloads, retries and on the server; grading is by id
 (unchanged). Runs begun before shuffling have no seed and keep the authored order. The teacher can
@@ -71,6 +71,7 @@ Russian translation and optional English meaning, example, explanation and CEFR 
 the grimoire-style bottom sheet; the text stays. Marks follow their words when the text is edited
 (nearest occurrence) and are reported as lost otherwise, never moved onto other words. Overlaps are
 refused by the validator and skipped by the screen.
+
 - Levels: A1–A2 chapters show every mark; from B1, marks more than one level below the chapter are
   taken as known. The campaign can override: every mark, or none.
 - Answers: a mark on the answer's words opens only once the question is solved; the validator refuses
@@ -139,6 +140,7 @@ takes (`blob:`); both now allow exactly the site and the storage origin. Studio 
 for studio actions (what the database keeps).
 
 **Gate C — voice acting** (`lib/dub/model.ts`, `components/dub/*`, `components/studio/dubbing-screen.tsx`):
+
 - Teacher Studio, new section **Voice acting** (`/studio/dubbing`): a scene = a video (own upload, with
   rights confirmed, or the built-in original clip), a non-destructive trim, characters, timed lines with
   English text, Russian translation and optional word help, modes, subtitles, XP, sends allowed. Draft
@@ -218,3 +220,49 @@ The real bucket is in use locally: `scripts/storage-check.mts` 11/11, live check
 with real storage 67/67 (uploads, content checks, signed links, access refusals, takes, review, XP,
 cleanup). Media uploads are no longer "unverified" on the server side; phones remain unverified. Setup
 and what is left to tidy: `docs/media-storage.md`, "Connected".
+
+## Gate F — QA, documentation, devices, rollout (2026-10-27)
+
+**The prompt's list of tests, and where each one is** (all run on every `npx vitest run` / `npx playwright test`):
+
+| The prompt asks for tests of                                                       | Where                                                                                                                                                          |
+| ---------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| answer shuffle stability and varied correct positions                              | `tests/learning.test.ts`, `e2e/features-a.spec.ts`                                                                                                             |
+| stable ids, old attempt/version compatibility, XP once                             | `tests/learning.test.ts`, `tests/story-gate-e.test.ts` ("versions"), `tests/db/students.test.ts`, `tests/db/media.test.ts`                                     |
+| teacher word annotations, untranslated content, accessibility                      | `tests/learning.test.ts`, `e2e/features-a.spec.ts`, axe in every features spec                                                                                 |
+| codec rejection and private media access                                           | `tests/storage.test.ts`, `tests/db/media.test.ts`, `scripts/storage-check.mts` (real bucket)                                                                   |
+| trimming / segment boundaries and subtitle sync                                    | `tests/dub.test.ts` ("the timeline", "subtitles and takes in step")                                                                                            |
+| denied microphone, unsupported browser, interruptions, upload failures             | `e2e/features-c.spec.ts` (first three), `tests/dub.test.ts` ("keeping a take")                                                                                 |
+| Original vs My Voice, seeking, drift, background track                             | `tests/dub.test.ts` (`lib/dub/sync.ts`), `e2e/features-c.spec.ts`                                                                                              |
+| several speakers and role-play                                                     | `tests/dub.test.ts` ("several speakers"), `tests/db/media.test.ts`                                                                                             |
+| teacher permissions, cross-group isolation, child privacy, expiry, deletion/export | `tests/db/media.test.ts`, `tests/db/studio.test.ts`, `tests/db/students.test.ts`, `tests/storage.test.ts`                                                      |
+| story progress and reward unlocking                                                | `tests/story-gate-e.test.ts`, `tests/story-run.test.ts`, `e2e/features-e.spec.ts`                                                                              |
+| journal scheduling, recommendations, objective tags                                | `tests/vocab.test.ts`, `e2e/features-d.spec.ts`                                                                                                                |
+| hotspot accuracy at different resolutions, accessible alternative                  | `tests/dub.test.ts` ("picture search taps", `lib/story/spot.ts`), `e2e/features-f.spec.ts` (taps at 320, 430, 1440), the spot list in `e2e/features-e.spec.ts` |
+| RU/EN, Telegram 320/360/390/430; Teacher Studio 1280/1440                          | `e2e/features-f.spec.ts` (every new student screen in both languages at the four widths; studio's new screens at both widths), `e2e/studio-mobile.spec.ts`     |
+
+**Found and fixed by this gate**
+
+- **Upload size was not part of the signed link** (security): a signed PUT accepted a file of any size,
+  so a student or teacher could put up to 5 GB into the bucket; the server removed it only on its check
+  or at the nightly cleanup, and meanwhile it filled the free 10 GB for everyone. The declared size is now
+  signed (`content-length`), and storage itself refuses another size — checked on the real B2 bucket
+  (`scripts/storage-check.mts`) and on the stand-in, which now checks the length as B2 does.
+- **A failed take showed a code** ("upload", "quota") to the student. Each reason is now told in words in
+  both languages, with what to do (`lib/client/take-upload.ts`, `dub.keepReasons`).
+- **Builder controls without names** (gate 4, found by the new 1280/1440 axe run): the illustration
+  buttons and three selects of the quest builder had no accessible name; they have now.
+- The scene-sync arithmetic (`lib/dub/sync.ts`), the take upload steps (`lib/client/take-upload.ts`)
+  and the picture-search hit test (`lib/story/spot.ts`) moved out of components so they are tested.
+
+**Teacher email**: the owner's SMTP attempts (Gmail, Mail.ru) were refused by both providers ("application
+password required"), so by the owner's word "Confirm email" was turned off (Supabase Management API,
+2026-10-27). Sign-up now goes straight into the studio; checked in a browser on the working database.
+Password-reset emails still do not send until a working SMTP is set.
+
+**Not done — physical devices.** No phone was available to the developer: every row of the manual
+matrix (`docs/telegram-checklist.md`) is **untested**, not passed. Automated tests use Chrome with a fake
+microphone; real iOS Safari/Telegram recording (MP4/AAC), Android Telegram's WebView, slow networks and
+interruptions by calls are unverified.
+
+The final report the prompt asks for: `docs/features-report.md`.

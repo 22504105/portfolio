@@ -22,6 +22,7 @@ import { glossViews } from "@/lib/learning/gloss";
 import { BackHeader } from "@/components/student/back-header";
 import { GlossedText } from "@/components/student/glossed-text";
 import { useScene } from "./use-scene";
+import { takeReason } from "@/lib/client/take-upload";
 
 // Voice acting, the student's side (lib/dub/model.ts). No Stitch screen exists for it: it is put
 // together from approved parts only — the story player's header, scene card, option rows and gold
@@ -448,7 +449,7 @@ function LineCard({
     const result = await media.uploadTake(exercise, line.id, { blob: take.blob, mime: take.mime });
     setKeeping(null);
     if (result.ok) setKept(i);
-    else setKeepError(fill(t.dub.keepFailed, { reason: result.reason }));
+    else setKeepError(fill(t.dub.keepFailed, { reason: t.dub.keepReasons[takeReason(result.reason)] }));
   };
 
   return (

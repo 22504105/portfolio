@@ -22,6 +22,14 @@ profile; wardrobe, shop and inventory with all 24 items drawn on all six heroes 
 invite code or link; mentor replies; settings with language, and the student's own data to download or
 delete.
 
+**Learning features** (features prompt, gates A–F, branch `questling/features-e`, not deployed yet): tappable
+word help with translations in every task, set by the teacher; answer options shuffled per attempt and
+graded by id; a word journal with spaced repetition and suggestions from mistakes; **voice acting** —
+teachers upload a short video (or use the built-in clip), time the lines; students listen line by line,
+record and retry, hear the scene in their own voice and send it for review (XP once, on approval);
+talks with characters and picture searches inside the story, with story items as rewards. Media live in
+a private Backblaze B2 bucket behind signed links (`docs/media-storage.md`).
+
 **Teachers** (email and password, Supabase Auth): dashboard, groups with CEFR levels and invites, a visual
 quest builder with validation, versions that stay fixed for students already playing, a library with
 publish, assign and archive, analytics with question-level errors, the group's word of the day, and
@@ -77,9 +85,13 @@ from this folder; settings with `node scripts/vercel-env.mjs`. Release order, st
 | [`docs/telegram-checklist.md`](docs/telegram-checklist.md) | the manual check on phones (not done yet)                      |
 | [`docs/release.md`](docs/release.md)                       | release, staging, rollback, known limitations                  |
 | [`docs/3d.md`](docs/3d.md)                                 | the first-pass 3D cat in Blender and its GLB files             |
+| [`docs/features-audit.md`](docs/features-audit.md)         | features prompt: audit, every gate, the test map               |
+| [`docs/features-report.md`](docs/features-report.md)       | features prompt: the final report                              |
+| [`docs/media-storage.md`](docs/media-storage.md)           | B2 storage, limits, setup, checks                              |
 
 ## Limitations
 
-Not yet tested on a physical Telegram client; teacher email needs the owner's SMTP for real teachers;
+Not yet tested on a physical Telegram client (voice recording on real iPhones and Android phones
+included); teacher sign-up works without email, but password-reset emails need a working SMTP;
 audio: built-in recordings and teachers' uploads, the device's voice as a fallback. The full list:
 [`docs/release.md`](docs/release.md#known-limitations-the-whole-product).

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { DubContent, DubLine } from "@/lib/dub/model";
+import { follow, linesAt, takeAt, type TrackStep } from "@/lib/dub/sync";
 
 // Playing a voice-acting scene over one <video>: a single line (at normal or slower speed), or the
 // whole trimmed scene, either as it is or with the student's character replaced by their takes.
@@ -12,7 +13,15 @@ import type { DubContent, DubLine } from "@/lib/dub/model";
 
 export type Playing = { kind: "line"; line: string } | { kind: "scene"; mine: boolean } | null;
 
-const DRIFT_S = 0.15;
+function apply(media: HTMLMediaElement, step: TrackStep) {
+  if (!step) return;
+  if ("pause" in step) media.pause();
+  else if ("seek" in step) media.currentTime = step.seek;
+  else {
+    media.currentTime = step.play;
+    void media.play().catch(() => {});
+  }
+}
 
 export function useScene(content: DubContent, opts: { takes?: Map<string, string>; background?: string | null; role?: string }) {
   const video = useRef<HTMLVideoElement | null>(null);
@@ -100,27 +109,13 @@ export function useScene(content: DubContent, opts: { takes?: Map<string, string
         let replaced = false;
         for (const line of own) {
           const audio = audios.current.get(line.id)!;
-          const inside = t >= line.start && t < line.end;
-          if (inside) {
-            replaced = true;
-            const want = (t - line.start) / 1000;
-            if (audio.paused) {
-              audio.currentTime = want;
-              void audio.play().catch(() => {});
-            } else if (Math.abs(audio.currentTime - want) > DRIFT_S) audio.currentTime = want;
-          } else if (!audio.paused) audio.pause();
+          const { on, want } = takeAt(line, t);
+          replaced ||= on;
+          apply(audio, follow(audio, on, want));
         }
         v.muted = replaced;
         const bg = background.current;
-        if (bg) {
-          if (replaced) {
-            const want = t / 1000;
-            if (bg.paused) {
-              bg.currentTime = want;
-              void bg.play().catch(() => {});
-            } else if (Math.abs(bg.currentTime - want) > DRIFT_S) bg.currentTime = want;
-          } else if (!bg.paused) bg.pause();
-        }
+        if (bg) apply(bg, follow(bg, replaced, t / 1000));
         frame.current = requestAnimationFrame(tick);
       };
       frame.current = requestAnimationFrame(tick);
@@ -129,7 +124,7 @@ export function useScene(content: DubContent, opts: { takes?: Map<string, string
   );
 
   /** The lines being spoken now (for subtitles). */
-  const current = content.lines.filter((l) => time >= l.start && time < l.end);
+  const current = linesAt(content.lines, time);
 
   return { video, playing, time, current, playLine, playScene, stop };
 }

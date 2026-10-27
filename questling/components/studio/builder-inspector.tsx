@@ -32,6 +32,13 @@ const LETTERS = "ABCDEFGH";
 
 type Update = (fn: (draft: Draft) => void) => void;
 
+/** "tower-night" for "/images/scenes/tower-night.webp": what a picture button is called. */
+const pictureName = (src: string) =>
+  src
+    .split("/")
+    .pop()!
+    .replace(/\.[a-z0-9]+$/, "");
+
 export function Label({ children, note }: { children: React.ReactNode; note?: string }) {
   return (
     <span className="font-label-sm text-label-sm text-text-ivory flex items-center justify-between gap-2">
@@ -197,6 +204,7 @@ export function SceneInspector({
               type="button"
               onClick={() => edit((s) => (s.image = src))}
               aria-pressed={scene.image === src}
+              aria-label={`${f.image}: ${pictureName(src)}`}
               className={`aspect-square overflow-hidden rounded ${scene.image === src ? "ring-primary ring-2" : "opacity-60 hover:opacity-100"}`}
             >
               <img src={src} alt="" className="h-full w-full object-cover" />
@@ -790,7 +798,7 @@ function NextForm({
             }
           />
         </div>
-        <select className={field} value={next ?? ""} onChange={(e) => setNext(e.target.value || undefined)}>
+        <select className={field} aria-label={f.next} value={next ?? ""} onChange={(e) => setNext(e.target.value || undefined)}>
           <option value="">{f.nextAuto}</option>
           {targets.map((o) => (
             <option key={o.value} value={o.value}>
@@ -828,6 +836,7 @@ function NextForm({
               <span className="font-caption text-caption text-text-muted">{f.when}</span>
               <select
                 className={`${small} w-auto`}
+                aria-label={f.when}
                 value={isClue ? "clue" : "flag"}
                 onChange={(e) => set(e.target.value === "clue" ? { clue: clues[0]?.id ?? "clue" } : { flag: "flag" })}
               >
@@ -835,7 +844,7 @@ function NextForm({
                 <option value="clue">{f.hasClue}</option>
               </select>
               {isClue ? (
-                <select className={small} value={value} onChange={(e) => set({ clue: e.target.value })}>
+                <select className={small} aria-label={f.hasClue} value={value} onChange={(e) => set({ clue: e.target.value })}>
                   {clues.map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.title[locale]}
@@ -972,6 +981,7 @@ export function CampaignInspector({ draft, update, onCefr }: { draft: Draft; upd
                     type="button"
                     onClick={() => chapter(i, (x) => (x.image = src))}
                     aria-pressed={c.image === src}
+                    aria-label={`${t.builder.fields.image}: ${pictureName(src)}`}
                     className={`aspect-square overflow-hidden rounded ${c.image === src ? "ring-primary ring-2" : "opacity-60 hover:opacity-100"}`}
                   >
                     <img src={src} alt="" className="h-full w-full object-cover" />

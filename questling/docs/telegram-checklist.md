@@ -33,8 +33,8 @@ Open the bot @QuestlingEnglish_bot → menu button "Играть" (it opens `htt
 | 20  | Android hardware back button / iOS swipe-back moves within the app, not out of it unexpectedly                                |         |     |         |
 
 Teacher Studio is desktop-first and opens in a browser, not in Telegram: `/{ru,en}/studio`. Its checks
-are automated (`e2e/gate4.spec.ts`, `scripts/live-check.mjs`); manually, sign up with a real address only
-once the owner has set up email (see `docs/security.md`, finding 7).
+are automated (`e2e/gate4.spec.ts`, `scripts/live-check.mjs`); manually, any address can sign up now
+("Confirm email" is off since 2026-10-27; password-reset emails still need a working SMTP).
 
 Record the date, the Telegram app version and the device model with the results.
 
@@ -46,27 +46,43 @@ Record the date, the Telegram app version and the device model with the results.
   including my data, audio and the back button, can be checked on a phone now.
 - The database is ready (migration 7 applied, backup taken); test accounts made on a phone are real rows
   of the development data: delete them in the app (Settings → My data) when done.
-- Teachers: signing up a new teacher needs confirmation off or SMTP (`docs/security.md`, finding 7);
-  the owner's own teacher account signs in already.
+- Teachers: sign-up works without email since 2026-10-27 (confirmation off); the owner's own teacher
+  account signs in already.
 
-## Voice acting and word journal (features gates A–D, 2026-10-26)
+## Features gates A–F (voice acting, word help, journal, talks, picture search)
 
 Record each item as passed, failed or not tested — never "passed" without having done it on the device.
 
-| Check | Android Chrome | Android Telegram | iOS Safari | iOS Telegram |
-| --- | --- | --- | --- | --- |
-| A scene's video plays, with sound, seek by line, 0.75× and 0.5× | | | | |
-| Microphone prompt appears only after "Record"; denying it shows what to do | | | | |
-| A take records and ends by itself at the end of the line; listen, delete, keep | | | | |
-| A call or switching apps during a take drops it with the message | | | | |
-| Keep uploads (slow network: 3G throttling); a failed upload says so, retry works | | | | |
-| "My voice" plays the takes in step with the video; background track when given | | | | |
-| Send; the mentor's "record again" and "accepted" (+XP) come back to the screen | | | | |
-| Shadowing with headphones (with and after the speaker) | | | | |
-| A tapped word opens its translation; "Keep the word" adds it to My words | | | | |
-| My words: review today's words; a mistake costs nothing | | | | |
-| Answer options are in a different order for another student; a reload keeps the order | | | | |
-| Teacher (desktop and phone): upload MP4 (accepted), MOV (refused with reason), publish, assign, review | | | | |
-| Forest search: tapping the picture finds the R stone and the mushrooms; wrong taps explained; hint after two | | | | |
-| Forest talk: answers on offer change with the owl's note; reload keeps the current line | | | | |
-| A story voice-acting scene: go on after sending; "go on without recording" when allowed | | | | |
+| Check                                                                                                           | Android Chrome | Android Telegram | iOS Safari | iOS Telegram |
+| --------------------------------------------------------------------------------------------------------------- | -------------- | ---------------- | ---------- | ------------ |
+| A scene's video plays, with sound, seek by line, 0.75× and 0.5×                                                 |                |                  |            |              |
+| Microphone prompt appears only after "Record"; denying it shows what to do                                      |                |                  |            |              |
+| A take records and ends by itself at the end of the line; listen, delete, keep                                  |                |                  |            |              |
+| A call or switching apps during a take drops it with the message                                                |                |                  |            |              |
+| Keep uploads (slow network: 3G throttling); a failed upload says so, retry works                                |                |                  |            |              |
+| "My voice" plays the takes in step with the video; background track when given                                  |                |                  |            |              |
+| Send; the mentor's "record again" and "accepted" (+XP) come back to the screen                                  |                |                  |            |              |
+| Shadowing with headphones (with and after the speaker)                                                          |                |                  |            |              |
+| A tapped word opens its translation; "Keep the word" adds it to My words                                        |                |                  |            |              |
+| My words: review today's words; a mistake costs nothing                                                         |                |                  |            |              |
+| Answer options are in a different order for another student; a reload keeps the order                           |                |                  |            |              |
+| Teacher (desktop and phone): upload MP4 (accepted), MOV (refused with reason), publish, assign, review          |                |                  |            |              |
+| Forest search: tapping the picture finds the R stone and the mushrooms; wrong taps explained; hint after two    |                |                  |            |              |
+| Forest talk: answers on offer change with the owl's note; reload keeps the current line                         |                |                  |            |              |
+| A story voice-acting scene: go on after sending; "go on without recording" when allowed                         |                |                  |            |              |
+| A take kept on a slow network (DevTools / phone "3G"): it arrives, or the message says what happened            |                |                  |            |              |
+| The same line recorded five times in a row; only the last two takes are kept                                    |                |                  |            |              |
+| A recording longer than 30 s or from an old browser: refused with a reason, nothing stuck                       |                |                  |            |              |
+| Headphones unplugged / Bluetooth connected during a take                                                        |                |                  |            |              |
+| Picture search on a phone: a finger on the stone's edge counts; the spot list is usable with TalkBack/VoiceOver |                |                  |            |              |
+
+**Which browsers and formats to cover** (the prompt's matrix): Android Chrome and Android Telegram (records
+WebM/Opus), iOS Safari and iOS Telegram (records MP4/AAC — the format checked by the server but never by a
+real iPhone yet), one old browser (e.g. iOS 15 Safari or Android 9 WebView: expected "cannot record" with
+the reason, never a broken button), the microphone allowed and denied, a slow network, a call or another
+app interrupting a take, repeated attempts.
+
+**State on 2026-10-27**: none of the rows above has been done. The code for them is on the branch
+`questling/features-e` (not deployed). To test on a phone before production, deploy that branch to the
+staging site (demo only: recording, keeping in the browser, the story scenes and the studio's demo all
+work there without sign-in) — or, after the owner approves, to production with the storage settings.

@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Icon } from "@/components/ui/icon";
 import { StudentProvider, type ActResult } from "@/lib/client/student";
+import { sendTake } from "@/lib/client/take-upload";
 import type { Facts } from "@/lib/game/facts";
 import type { Action, Outcome, Refusal } from "@/lib/game/ops";
 import { getDictionary, type Locale } from "@/lib/i18n";
@@ -244,17 +245,8 @@ export function LiveProvider({ locale, children }: { locale: Locale; children: R
         return ((await response.json()) as { url: string }).url;
       },
       uploadTake: async (exercise: string, line: string, take: { blob: Blob; mime: string }) => {
-        const ask = await post("media/upload", { kind: "voice", mime: take.mime, size: take.blob.size, exercise, line });
-        if (!ask) return { ok: false as const, reason: "network" };
-        const ticket = (await ask.json().catch(() => ({}))) as { id?: string; url?: string; contentType?: string; error?: string };
-        if (!ask.ok || !ticket.id || !ticket.url) return { ok: false as const, reason: ticket.error ?? "server" };
-        const put = await fetch(ticket.url, { method: "PUT", body: take.blob, headers: { "Content-Type": ticket.contentType! } }).catch(
-          () => null,
-        );
-        if (!put?.ok) return { ok: false as const, reason: "upload" };
-        const done = await post("media/complete", { id: ticket.id, exercise, line });
-        if (!done?.ok)
-          return { ok: false as const, reason: ((await done?.json().catch(() => ({}))) as { error?: string }).error ?? "network" };
+        const sent = await sendTake(post, fetch, { exercise, line, blob: take.blob, mime: take.mime });
+        if (!sent.ok) return sent;
         // The take is in the submission now: read the record again.
         const state = await fetch("/api/v1/state", { headers: { Authorization: `Bearer ${session!.token}` } }).catch(() => null);
         if (state?.ok) setFacts(((await state.json()) as { facts: Facts }).facts);

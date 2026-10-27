@@ -20,12 +20,12 @@ older audio recordings (`media_assets`, migration 7) stay where they are.
   `vercel.json`, 03:30 UTC) removes uploads never completed within an hour and voice recordings past
   180 days. Deleting a student removes their recordings from the bucket first.
 
-| Kind | Who | Formats (checked by content) | Size / length | Own quota |
-| --- | --- | --- | --- | --- |
-| video | teacher | MP4 H.264 (+AAC), WebM VP8/VP9 (+Opus/Vorbis); MOV and H.265 refused | 25 MB, 60 s | 300 MB |
-| background | teacher | M4A (AAC), WebM (Opus), MP3 | 5 MB, 60 s | 50 MB |
-| image | teacher | PNG, JPEG, WebP, up to 4096 px | 2 MB | 50 MB |
-| voice | student | WebM/Opus (Chrome, Android), MP4/AAC (Safari, iOS) | 2 MB, 30 s | 50 MB; two takes kept a line |
+| Kind       | Who     | Formats (checked by content)                                         | Size / length | Own quota                    |
+| ---------- | ------- | -------------------------------------------------------------------- | ------------- | ---------------------------- |
+| video      | teacher | MP4 H.264 (+AAC), WebM VP8/VP9 (+Opus/Vorbis); MOV and H.265 refused | 25 MB, 60 s   | 300 MB                       |
+| background | teacher | M4A (AAC), WebM (Opus), MP3                                          | 5 MB, 60 s    | 50 MB                        |
+| image      | teacher | PNG, JPEG, WebP, up to 4096 px                                       | 2 MB          | 50 MB                        |
+| voice      | student | WebM/Opus (Chrome, Android), MP4/AAC (Safari, iOS)                   | 2 MB, 30 s    | 50 MB; two takes kept a line |
 
 The whole bucket has a cap (`MEDIA_GLOBAL_CAP_BYTES`, default 8 GiB) checked before every upload, warning
 levels (`MEDIA_WARN_AT`, default 70 % and 90 %) shown in Teacher Studio, and a daily ceiling of signed
@@ -85,7 +85,8 @@ download links (`MEDIA_DAILY_DOWNLOADS`, default 2000). Operations are counted p
   `scripts/fake-s3.ts` (endpoint `http://localhost:54330`, bucket `questling-media`).
 - On the working database: `npx tsx scripts/live-check.mjs <site>` — with storage configured it uploads a
   video and a take, checks links and refusals, approves, and removes everything it stored.
-- Against the real bucket: `npx tsx scripts/storage-check.mts` (signed upload with its type, size read back,
+- Against the real bucket: `npx tsx scripts/storage-check.mts` (signed upload with its type and exact length —
+  a bigger file is refused by B2 itself —, size read back,
   byte range, unsigned/tampered/expired links refused, CORS from the site only, deletion).
 - **Not yet done**: real phones.
 
@@ -97,7 +98,7 @@ download links (`MEDIA_DAILY_DOWNLOADS`, default 2000). Operations are counted p
   lifecycle "keep only the last version" were set through the B2 API with the master key.
 - The app uses the key `questling-app`: this bucket only; listBuckets, listFiles, readFiles, writeFiles,
   deleteFiles. It is in `.env.local` (not in Vercel yet: that is part of the deployment, by the owner's word).
-- Checked: `scripts/storage-check.mts` 11/11; the live check on the working database with the real
+- Checked: `scripts/storage-check.mts` 12/12 (with the signed length since gate F); the live check on the working database with the real
   bucket 67/67, nothing visible left (deletes leave "hide" markers that the lifecycle removes a day later,
   so the bucket may briefly hold a little more than `media_objects` counts).
 - B2 answers 401 (not 403) for an expired link, after a few seconds of allowed clock difference.
