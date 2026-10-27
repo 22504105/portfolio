@@ -69,7 +69,7 @@ projects).
 | Output | static export; Vercel serves it as static files, no server functions |
 | Node.js | 24.x, the Vercel default (Next.js 16 needs 20.9 or newer) |
 | Environment variables | none |
-| Git connection | the CLI linked the repository on the first deploy. With no root directory set, Git builds start from the repository root and fail, so pushes and merges do not change the live site; disconnecting the repository is the planned clean-up |
+| Git connection | none (disconnected on 2026-10-27): pushes and merges deploy nothing; releases are made with the CLI |
 | Headers | `nosniff`, referrer policy, no framing, no camera/microphone/location (`vercel.json`) |
 
 Deploy an update (run by the owner):
