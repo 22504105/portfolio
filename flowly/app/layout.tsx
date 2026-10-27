@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { THEME_SCRIPT, ThemeKeeper } from "@/components/theme/ThemeToggle";
+import { ThemeKeeper } from "@/components/theme/ThemeToggle";
+import { THEME_SCRIPT } from "@/components/theme/theme-script";
 import { defaultLocale, getMessages } from "@/lib/i18n";
 import "./globals.css";
 
