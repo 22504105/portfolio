@@ -31,7 +31,7 @@ A photographed receipt can be split line by line.
 - **Telegram sign-in** verified on the server; no passwords.
 - **Groups**: invitations by link or QR code, roles, guests without an
   account, archived groups.
-- **Expenses**: equal, exact amounts, percentages or shares; several payers;
+- **Expenses**: equal, exact amounts or percentages; several payers;
   refunds; every change kept as a replacement, never edited in place.
 - **Receipt scanner**: photo or upload, read on the device (Tesseract.js),
   review and correct lines, assign items to people. Names stay as printed;
