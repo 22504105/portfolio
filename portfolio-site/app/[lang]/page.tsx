@@ -11,7 +11,9 @@ export default async function Home({ params }: PageProps<"/[lang]">) {
   const other = lang === "en" ? "ru" : "en";
 
   return (
-    <>
+    // A plain wrapper, not a fragment: after a link Next.js scrolls to the page's first element only when it is
+    // off screen, and the sticky header never is, so the next page opened where the last one was scrolled to.
+    <div>
       <Header lang={lang} alternate={`/${other}/`} />
       <main id="main">
         <section className={`${container} pt-14 pb-16 sm:pt-24 sm:pb-24`}>
@@ -143,6 +145,6 @@ export default async function Home({ params }: PageProps<"/[lang]">) {
         <ContactSection lang={lang} />
       </main>
       <Footer lang={lang} />
-    </>
+    </div>
   );
 }

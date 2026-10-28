@@ -25,7 +25,7 @@ export default async function LangLayout({ children, params }: LayoutProps<"/[la
   const { lang } = await params;
   if (!isLang(lang)) notFound();
   return (
-    <html lang={lang} className={`${inter.variable} ${manrope.variable}`}>
+    <html data-scroll-behavior="smooth" lang={lang} className={`${inter.variable} ${manrope.variable}`}>
       <body className="min-h-dvh">{children}</body>
     </html>
   );

@@ -31,7 +31,9 @@ export default async function ProjectPage({ params }: PageProps<"/[lang]/project
   const phones = p.shots.filter((s) => s.kind === "phone");
 
   return (
-    <>
+    // A plain wrapper, not a fragment: after a link Next.js scrolls to the page's first element only when it is
+    // off screen, and the sticky header never is, so the next page opened where the last one was scrolled to.
+    <div>
       <Header lang={lang} alternate={`/${other}/projects/${p.slug}/`} />
       <main id="main">
         <div className={`${container} pt-8 sm:pt-12`}>
@@ -152,6 +154,6 @@ export default async function ProjectPage({ params }: PageProps<"/[lang]/project
         <ContactSection lang={lang} />
       </main>
       <Footer lang={lang} />
-    </>
+    </div>
   );
 }
