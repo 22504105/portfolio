@@ -185,12 +185,14 @@ export function Chips({ items }: { items: string[] }) {
 }
 
 export function Shot({ slug, shot, lang, priority = false, className = "" }: { slug: string; shot: ShotData; lang: Lang; priority?: boolean; className?: string }) {
-  const [width, height] = sizes[`${slug}/${shot.file}`] ?? [1440, 900];
+  // English pages show the English-interface version where there is one (`npm run sync` makes `<file>-en.webp`).
+  const file = lang === "en" && shot.sourceEn ? shot.file.replace(/\.webp$/, "-en.webp") : shot.file;
+  const [width, height] = sizes[`${slug}/${file}`] ?? [1440, 900];
   return (
     // Static export: images are pre-sized by `npm run sync`, so a plain <img> is enough.
     // eslint-disable-next-line @next/next/no-img-element
     <img
-      src={`/shots/${slug}/${shot.file}`}
+      src={`/shots/${slug}/${file}`}
       alt={shot.caption[lang]}
       width={width}
       height={height}

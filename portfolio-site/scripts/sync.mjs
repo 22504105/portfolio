@@ -13,9 +13,13 @@ const repo = path.dirname(site);
 const source = await readFile(path.join(site, "lib/projects.ts"), "utf8");
 const slugs = [];
 const shots = [];
-for (const m of source.matchAll(/showcase: "([^"]+)"|file: "([^"]+)", source: "([^"]+)", kind: "(desktop|phone)"/g)) {
+for (const m of source.matchAll(/showcase: "([^"]+)"|file: "([^"]+)", source: "([^"]+)", kind: "(desktop|phone)"(?:, sourceEn: "([^"]+)")?/g)) {
   if (m[1]) slugs.push(m[1]);
-  else shots.push({ slug: slugs.at(-1), file: m[2], src: m[3], kind: m[4] });
+  else {
+    shots.push({ slug: slugs.at(-1), file: m[2], src: m[3], kind: m[4] });
+    // The English-interface version of the same screen, for the English pages.
+    if (m[5]) shots.push({ slug: slugs.at(-1), file: m[2].replace(/\.webp$/, "-en.webp"), src: m[5], kind: m[4] });
+  }
 }
 
 for (const slug of slugs) {
