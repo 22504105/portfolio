@@ -8,6 +8,8 @@ export type Shot = {
   /** Source file, relative to the repository root. */
   source: string;
   kind: "desktop" | "phone";
+  /** The same screen with the English interface, shown on the English pages (`<file>-en.webp`). */
+  sourceEn?: string;
   caption: Text;
 };
 
@@ -160,11 +162,11 @@ export const projects: Project[] = [
       ru: "Демо в браузере показывает те же экраны на демонстрационных данных и не требует аккаунта. Аккаунты версии для Telegram в этой витрине не включены.",
     },
     shots: [
-      { file: "desktop-group.webp", source: "splitly/docs/screenshots/stitch/desktop-group.webp", kind: "desktop", caption: { en: "A group: balance, members, expenses", ru: "Группа: баланс, участники, расходы" } },
-      { file: "desktop-dark-analytics.webp", source: "splitly/docs/screenshots/stitch/desktop-dark-analytics.webp", kind: "desktop", caption: { en: "Analytics in the dark theme", ru: "Аналитика в тёмной теме" } },
-      { file: "phone-home.webp", source: "splitly/docs/screenshots/stitch/phone-home.webp", kind: "phone", caption: { en: "Home: groups and recent expenses", ru: "Главная: группы и последние расходы" } },
-      { file: "phone-scan-2-review.webp", source: "splitly/docs/screenshots/stitch/phone-scan-2-review.webp", kind: "phone", caption: { en: "Receipt scanner: reviewing lines", ru: "Сканер чеков: проверка строк" } },
-      { file: "phone-scan-3-assign.webp", source: "splitly/docs/screenshots/stitch/phone-scan-3-assign.webp", kind: "phone", caption: { en: "Receipt scanner: assigning items", ru: "Сканер чеков: распределение позиций" } },
+      { file: "desktop-group.webp", source: "splitly/docs/screenshots/stitch/desktop-group.webp", kind: "desktop", sourceEn: "splitly/docs/screenshots/stitch-en/desktop-group.webp", caption: { en: "A group: balance, members, expenses", ru: "Группа: баланс, участники, расходы" } },
+      { file: "desktop-dark-analytics.webp", source: "splitly/docs/screenshots/stitch/desktop-dark-analytics.webp", kind: "desktop", sourceEn: "splitly/docs/screenshots/stitch-en/desktop-dark-analytics.webp", caption: { en: "Analytics in the dark theme", ru: "Аналитика в тёмной теме" } },
+      { file: "phone-home.webp", source: "splitly/docs/screenshots/stitch/phone-home.webp", kind: "phone", sourceEn: "splitly/docs/screenshots/stitch-en/phone-home.webp", caption: { en: "Home: groups and recent expenses", ru: "Главная: группы и последние расходы" } },
+      { file: "phone-scan-2-review.webp", source: "splitly/docs/screenshots/stitch/phone-scan-2-review.webp", kind: "phone", sourceEn: "splitly/docs/screenshots/stitch-en/phone-scan-2-review.webp", caption: { en: "Receipt scanner: reviewing lines", ru: "Сканер чеков: проверка строк" } },
+      { file: "phone-scan-3-assign.webp", source: "splitly/docs/screenshots/stitch/phone-scan-3-assign.webp", kind: "phone", sourceEn: "splitly/docs/screenshots/stitch-en/phone-scan-3-assign.webp", caption: { en: "Receipt scanner: assigning items", ru: "Сканер чеков: распределение позиций" } },
     ],
   },
   {

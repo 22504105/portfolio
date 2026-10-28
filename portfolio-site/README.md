@@ -13,7 +13,7 @@ them.
 | What | Source |
 |---|---|
 | Case-study text | `../showcase/<project>/case-study.{en,ru}.md`, copied into `content/` by `npm run sync` |
-| Screenshots | each project's `docs/screenshots/`, resized to WebP in `public/shots/` by `npm run sync` |
+| Screenshots | each project's `docs/screenshots/`, resized to WebP in `public/shots/` by `npm run sync`; a shot with `sourceEn` also gets `<file>-en.webp`, shown on the English pages |
 | Project facts (status, stack, links, tests, limitations) | `lib/projects.ts` |
 | Interface text and contact details | `lib/i18n.ts` |
 

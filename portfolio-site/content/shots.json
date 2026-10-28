@@ -75,7 +75,15 @@
     1440,
     900
   ],
+  "splitly/desktop-group-en.webp": [
+    1440,
+    900
+  ],
   "splitly/desktop-dark-analytics.webp": [
+    1440,
+    900
+  ],
+  "splitly/desktop-dark-analytics-en.webp": [
     1440,
     900
   ],
@@ -83,11 +91,23 @@
     412,
     838
   ],
+  "splitly/phone-home-en.webp": [
+    412,
+    838
+  ],
   "splitly/phone-scan-2-review.webp": [
     412,
     838
   ],
+  "splitly/phone-scan-2-review-en.webp": [
+    412,
+    838
+  ],
   "splitly/phone-scan-3-assign.webp": [
+    412,
+    838
+  ],
+  "splitly/phone-scan-3-assign-en.webp": [
     412,
     838
   ],
