@@ -47,6 +47,10 @@
     1440,
     900
   ],
+  "flowly/overview-dark.webp": [
+    1440,
+    900
+  ],
   "flowly/analytics.webp": [
     1440,
     900
@@ -60,6 +64,10 @@
     900
   ],
   "flowly/mobile-overview.webp": [
+    640,
+    1385
+  ],
+  "flowly/mobile-overview-dark.webp": [
     640,
     1385
   ],

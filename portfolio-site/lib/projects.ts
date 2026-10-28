@@ -127,10 +127,12 @@ export const projects: Project[] = [
     },
     shots: [
       { file: "overview.webp", source: "flowly/docs/screenshots/overview.jpg", kind: "desktop", caption: { en: "Overview: KPIs, revenue trend, channels", ru: "Обзор: показатели, динамика выручки, каналы" } },
+      { file: "overview-dark.webp", source: "flowly/docs/screenshots/overview-dark.jpg", kind: "desktop", caption: { en: "Overview in the dark theme", ru: "Обзор в тёмной теме" } },
       { file: "analytics.webp", source: "flowly/docs/screenshots/analytics.jpg", kind: "desktop", caption: { en: "Analytics by category", ru: "Аналитика по категориям" } },
       { file: "import-map.webp", source: "flowly/docs/screenshots/import-map.jpg", kind: "desktop", caption: { en: "Import wizard: matching columns", ru: "Мастер импорта: сопоставление колонок" } },
       { file: "report.webp", source: "flowly/docs/screenshots/report.jpg", kind: "desktop", caption: { en: "Printable report", ru: "Отчёт для печати" } },
       { file: "mobile-overview.webp", source: "flowly/docs/screenshots/mobile-overview.jpg", kind: "phone", caption: { en: "Overview on a phone", ru: "Обзор на телефоне" } },
+      { file: "mobile-overview-dark.webp", source: "flowly/docs/screenshots/mobile-overview-dark.jpg", kind: "phone", caption: { en: "On a phone, dark theme", ru: "На телефоне, тёмная тема" } },
     ],
   },
   {
