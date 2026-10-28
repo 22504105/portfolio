@@ -338,6 +338,15 @@ body {
     bottom: calc(env(safe-area-inset-bottom, 0px) + 0.75rem);
     left: auto;
     right: 0.75rem;
-    transform: none;
+    translate: none;
+  }
+}
+/* On a desktop the middle of the studio header holds the group selector, so the badge goes to the right end
+   of the sidebar's logo row (w-72), where nothing else sits and nothing scrolls under it. */
+@media (min-width: 1024px) {
+  body:has([data-studio-section]) [data-demo-badge] {
+    top: 1.375rem;
+    left: calc(18rem - 1rem);
+    translate: -100% 0;
   }
 }
