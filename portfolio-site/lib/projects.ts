@@ -196,6 +196,7 @@ export const projects: Project[] = [
       { file: "studio-analytics.webp", source: "questling/docs/screenshots/studio-analytics.jpg", kind: "desktop", caption: { en: "Teacher Studio: help queue and answers", ru: "Студия учителя: очередь помощи и ответы" } },
       { file: "home.webp", source: "questling/docs/screenshots/home.jpg", kind: "phone", caption: { en: "Student home: hero, chapter, daily quests", ru: "Главная ученика: герой, глава, квесты дня" } },
       { file: "story-player.webp", source: "questling/docs/screenshots/story-player.jpg", kind: "phone", caption: { en: "Story player: a clue question", ru: "Плеер истории: вопрос-улика" } },
+      { file: "wardrobe.webp", source: "questling/docs/screenshots/wardrobe.jpg", kind: "phone", caption: { en: "Wardrobe: layered equipment on the hero", ru: "Гардероб: экипировка героя слоями" } },
       { file: "story-map.webp", source: "questling/docs/screenshots/story-map.jpg", kind: "phone", caption: { en: "Story map", ru: "Карта истории" } },
       { file: "word-journal.webp", source: "questling/docs/screenshots/word-journal.jpg", kind: "phone", caption: { en: "Word journal", ru: "Словарь" } },
     ],

@@ -123,7 +123,7 @@ export default async function ProjectPage({ params }: PageProps<"/[lang]/project
               ))}
             </ul>
             {phones.length > 0 && (
-              <ul className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+              <ul className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
                 {phones.map((s) => (
                   <li key={s.file}>
                     <figure>
