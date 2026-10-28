@@ -1,7 +1,7 @@
 # Questling - screenshots
 
 Selected for the portfolio. Taken from the live demo (a fresh demo student and the demo studio,
-invented names) on 2026-10-27 with `node scripts/portfolio-shots.mjs`. Paths are relative to this
+invented names) on 2026-10-28 with `node scripts/portfolio-shots.mjs`. Paths are relative to this
 file.
 
 | File | View | Size | Shows |
@@ -14,5 +14,5 @@ file.
 
 Also available: `story-map.jpg`, `word-journal.jpg`, `home-ru.jpg` (Russian), `studio-dashboard.jpg`.
 
-Known cosmetic issues visible in the shots: the "Demo" badge overlaps the wardrobe title; in the
-English studio the demo group and student names are in Russian.
+The "Demo" badge at the top of the student screens marks the public demo; it sits in its own strip
+and covers nothing. Russian words in the word journal are the learners' translations.
