@@ -1,10 +1,10 @@
 // Portfolio screenshots of the public demo (invented data only): student screens on a phone and
 // Teacher Studio on a desktop, written to docs/screenshots/*.jpg.
-//   node scripts/portfolio-shots.mjs [origin]      default: the production site
+//   node scripts/portfolio-shots.mjs [origin] [name…]   default: the production site, every shot
 import { chromium } from "@playwright/test";
 import { mkdirSync } from "node:fs";
 
-const origin = process.argv[2] ?? "https://questling-dusky.vercel.app";
+const [origin = "https://questling-dusky.vercel.app", ...only] = process.argv.slice(2);
 const out = "docs/screenshots";
 mkdirSync(out, { recursive: true });
 
@@ -24,7 +24,7 @@ const shots = [
 ];
 
 const browser = await chromium.launch({ channel: "chrome" });
-for (const [name, path, device] of shots) {
+for (const [name, path, device] of shots.filter(([name]) => !only.length || only.includes(name))) {
   // A fresh context per shot: a fresh demo student, nothing carried over.
   const context = await browser.newContext(device);
   const page = await context.newPage();
