@@ -108,7 +108,7 @@ try {
 
   // Today's quick quests, answered right: XP and coins once each, then a real purchase with the coins.
   const { quickQuestKeys } = await import("../lib/content/quick-quest-keys.ts");
-  const { dailyQuests } = await import("../lib/game/stats.ts");
+  const { dailyQuests, priceOf } = await import("../lib/game/stats.ts");
   const { items } = await import("../lib/content/items.ts");
   const right = (key) =>
     key.kind === "choice"
@@ -159,27 +159,29 @@ try {
   check(replay.status === 409, "a finished quest cannot be played again for more");
   const coins = balanceOf(facts, "coins");
   const owned = new Set((facts.inventory ?? []).map((i) => i.item));
+  // The shop's deal of the day sells one item 25% off: the price is the day's price, as the server charges it.
+  const price = (item) => priceOf(item, day);
   const affordable = items
-    .filter((i) => i.price > 0 && i.price <= coins && i.level <= 1 && !owned.has(i.id))
-    .sort((a, b) => a.price - b.price)[0];
+    .filter((i) => i.price > 0 && price(i) <= coins && i.level <= 1 && !owned.has(i.id))
+    .sort((a, b) => price(a) - price(b))[0];
   if (affordable) {
     const bought = await call("POST", "actions", { action: { type: "buy", itemId: affordable.id } }, token);
     check(
       bought.status === 200 &&
-        balanceOf(bought.data.facts, "coins") === coins - affordable.price &&
+        balanceOf(bought.data.facts, "coins") === coins - price(affordable) &&
         bought.data.facts.inventory.some((i) => i.item === affordable.id),
-      `a shop purchase takes ${affordable.price} coins once and adds the item`,
+      `a shop purchase takes ${price(affordable)} coins once and adds the item`,
     );
     const twice = await call("POST", "actions", { action: { type: "buy", itemId: affordable.id } }, token);
     check(twice.status === 409, "the same item is not sold twice");
   } else {
     // Today's quests did not pay enough for any level-1 item (the rotation decides): the purchase
     // itself is not tested today, which is said as such; the refusal for too few coins is.
-    const cheapest = items.filter((i) => i.price > 0 && i.level <= 1 && !owned.has(i.id)).sort((x, y) => x.price - y.price)[0];
+    const cheapest = items.filter((i) => i.price > 0 && i.level <= 1 && !owned.has(i.id)).sort((x, y) => price(x) - price(y))[0];
     const refused = await call("POST", "actions", { action: { type: "buy", itemId: cheapest.id } }, token);
     check(
       refused.status === 409 && refused.data.error === "not_enough_coins",
-      `with ${coins} coins, a ${cheapest.price}-coin item is refused`,
+      `with ${coins} coins, a ${price(cheapest)}-coin item is refused`,
     );
     console.log(`SKIP  no level-1 item costs at most ${coins} coins today: the purchase itself was not tested`);
   }
